@@ -91,35 +91,37 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($keys as $k) {
             if (array_key_exists($k, $_POST)) setting_set($pdo, $k, trim($_POST[$k]));
         }
-        
-        // Handle OG Image Upload
-        if (!empty($_FILES['seo_og_image_file']['tmp_name'])) {
-            $maxBytes = 5 * 1024 * 1024;
-            $tmpFile = $_FILES['seo_og_image_file']['tmp_name'];
-            $origName = $_FILES['seo_og_image_file']['name'];
-            $fileSize = $_FILES['seo_og_image_file']['size'];
-            $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
-            
-            if ($fileSize <= $maxBytes && in_array($ext, ['png','jpg','jpeg','webp'])) {
-                $filename = 'og_image_' . time() . '.' . $ext;
-                $uploadDir = dirname(__DIR__) . '/uploads/';
-                if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
-                
-                $dest = $uploadDir . $filename;
-                if (move_uploaded_file($tmpFile, $dest)) {
-                    setting_set($pdo, 'seo_og_image', '/uploads/' . $filename);
-                }
-            } else {
-                $flash = '❌ Gagal upload OG Image. Cek ukuran (Maks 5MB) dan format (PNG/JPG/WEBP).'; 
-                $flashType = 'error';
-            }
-        }
-
         // Robots.txt write
         if (isset($_POST['robots_txt'])) {
             file_put_contents(dirname(__DIR__) . '/robots.txt', trim($_POST['robots_txt']));
         }
         if (!$flash) $flash = '✅ Pengaturan SEO disimpan!';
+    }
+
+    // ── OG Image Upload (dedicated action) ──────────────────────
+    if ($action === 'upload_og_image' && !empty($_FILES['og_image']['tmp_name'])) {
+        $maxBytes = 5 * 1024 * 1024;
+        $tmpFile  = $_FILES['og_image']['tmp_name'];
+        $origName = $_FILES['og_image']['name'];
+        $fileSize = $_FILES['og_image']['size'];
+        $ext      = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+
+        if ($fileSize > $maxBytes) {
+            $flash = '❌ File terlalu besar. Maksimal 5MB.'; $flashType = 'error';
+        } elseif (!in_array($ext, ['png','jpg','jpeg','webp'])) {
+            $flash = '❌ Format tidak didukung. Gunakan PNG/JPG/WEBP.'; $flashType = 'error';
+        } else {
+            $filename  = 'og_image_' . time() . '.' . $ext;
+            $uploadDir = dirname(__DIR__) . '/uploads/';
+            if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+            $dest = $uploadDir . $filename;
+            if (move_uploaded_file($tmpFile, $dest)) {
+                setting_set($pdo, 'seo_og_image', '/uploads/' . $filename);
+                $flash = '✅ OG Image berhasil diupload!';
+            } else {
+                $flash = '❌ Gagal menyimpan file. Cek permission folder /uploads/.'; $flashType = 'error';
+            }
+        }
     }
 }
 
@@ -145,8 +147,9 @@ require __DIR__ . '/partials/header.php';
 <div class="alert alert-success py-2 mb-3" style="border-radius:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
 <?php endif; ?>
 
-<form method="POST" enctype="multipart/form-data">
+<form method="POST">
   <?= csrf_field() ?>
+  <input type="hidden" name="action" value="save_seo">
 <div class="row g-3">
 
   <!-- Meta Tags -->
@@ -220,9 +223,7 @@ require __DIR__ . '/partials/header.php';
           <input type="text" name="seo_og_image" class="c-form-control"
                  value="<?= htmlspecialchars($s('seo_og_image')) ?>"
                  placeholder="<?= htmlspecialchars(base_url('og-image.jpg')) ?>">
-          <div style="font-size:11px;color:#666;margin-top:6px;font-weight:500;">Atau Upload File Baru:</div>
-          <input type="file" name="seo_og_image_file" class="c-form-control mt-1" accept="image/png,image/jpeg,image/webp">
-          <div style="font-size:11px;color:#666;margin-top:3px">Maks 5MB. Format: JPG/PNG/WEBP. Ideal: 1200×630px</div>
+          <div style="font-size:11px;color:#666;margin-top:3px">Ideal: 1200×630px</div>
         </div>
         <?php $og = $s('seo_og_image'); if ($og): ?>
         <img src="<?= htmlspecialchars($og) ?>" alt="OG Preview" style="width:100%;border-radius:8px;border:1px solid #1f2235;margin-top:8px">
@@ -278,6 +279,42 @@ require __DIR__ . '/partials/header.php';
 </form>
 
 <div class="row g-3 mt-1">
+  <!-- OG Image Upload -->
+  <div class="col-12">
+    <div class="c-card">
+      <div class="c-card-header">
+        <span class="c-card-title">🖼 Upload OG Image</span>
+        <span style="font-size:11px;color:#666">Disimpan ke /uploads/ · Maks 5MB · Ideal 1200×630px</span>
+      </div>
+      <div class="c-card-body">
+        <div class="row align-items-center g-3">
+          <!-- Preview -->
+          <div class="col-auto">
+            <?php $og = $s('seo_og_image'); if ($og): ?>
+            <div style="width:120px;height:63px;border:1.5px solid #1f2235;border-radius:8px;overflow:hidden;background:#111">
+              <img src="<?= htmlspecialchars($og) ?>?v=<?= time() ?>" style="width:100%;height:100%;object-fit:cover" alt="OG Preview">
+            </div>
+            <div style="font-size:10px;color:#666;text-align:center;margin-top:4px">Current (1200×630)</div>
+            <?php else: ?>
+            <div style="width:120px;height:63px;border:1.5px dashed #444;border-radius:8px;display:flex;align-items:center;justify-content:center;color:#555;font-size:22px">🖼</div>
+            <div style="font-size:10px;color:#666;text-align:center;margin-top:4px">Belum ada</div>
+            <?php endif; ?>
+          </div>
+          <!-- Upload form -->
+          <div class="col">
+            <form method="POST" enctype="multipart/form-data" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+              <?= csrf_field() ?>
+              <input type="hidden" name="action" value="upload_og_image">
+              <input type="file" name="og_image" accept="image/png,image/jpeg,image/webp"
+                     class="c-form-control" style="flex:1;min-width:180px" required>
+              <button type="submit" class="btn btn-sm text-white" style="background:var(--brand);white-space:nowrap">⬆️ Upload OG Image</button>
+            </form>
+            <div style="font-size:11px;color:#666;margin-top:6px">Format: PNG, JPG, WEBP &mdash; Setelah upload, URL otomatis tersimpan ke pengaturan SEO</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
   <!-- Favicon -->
   <div class="col-12">
     <div class="c-card">

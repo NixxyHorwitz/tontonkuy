@@ -24,7 +24,7 @@ $history = $pdo->prepare(
      FROM watch_history wh
      JOIN videos v ON v.id=wh.video_id
      WHERE wh.user_id=?
-     ORDER BY wh.watched_at DESC LIMIT 5"
+     ORDER BY wh.watched_at DESC LIMIT 4"
 );
 $history->execute([$user['id']]);
 $history = $history->fetchAll();
@@ -42,58 +42,58 @@ $activePage = 'home';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
 
-<!-- Hero balance -->
-<div class="hero-card">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-    <div class="hero-card__label">👋 Hai, <?= htmlspecialchars($user['username']) ?>!</div>
-    <span class="badge badge--neutral">⭐ <?= $membership_name ?></span>
+<!-- Hero balance (compact) -->
+<div class="hero-card" style="padding:14px 16px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div class="hero-card__label" style="font-size:13px">👋 <?= htmlspecialchars($user['username']) ?></div>
+    <span class="badge badge--neutral" style="font-size:11px">⭐ <?= $membership_name ?></span>
   </div>
-  <div class="dual-balance">
+  <div class="dual-balance" style="gap:8px">
     <div class="dual-balance__item dual-balance__item--wd">
-      <div class="dual-balance__label">💸 Saldo Penarikan</div>
-      <div class="dual-balance__val"><?= format_rp((float)$user['balance_wd']) ?></div>
-      <div class="dual-balance__hint">Bisa ditarik</div>
+      <div class="dual-balance__label" style="font-size:10px">💸 WD</div>
+      <div class="dual-balance__val" style="font-size:18px"><?= format_rp((float)$user['balance_wd']) ?></div>
     </div>
     <div class="dual-balance__item dual-balance__item--dep">
-      <div class="dual-balance__label">💳 Saldo Deposit</div>
-      <div class="dual-balance__val"><?= format_rp((float)$user['balance_dep']) ?></div>
-      <div class="dual-balance__hint">Untuk upgrade</div>
+      <div class="dual-balance__label" style="font-size:10px">💳 Deposit</div>
+      <div class="dual-balance__val" style="font-size:18px"><?= format_rp((float)$user['balance_dep']) ?></div>
     </div>
   </div>
-  <div class="hero-card__sub" style="margin-top:8px">Total reward: <?= format_rp((float)$user['total_earned']) ?></div>
-  <div class="hero-card__actions">
-    <a href="/deposit" class="hero-card__btn">⬆️ Deposit</a>
+  <div class="hero-card__actions" style="margin-top:10px;gap:6px">
+    <a href="/deposit"  class="hero-card__btn">⬆️ Deposit</a>
     <a href="/withdraw" class="hero-card__btn">⬇️ WD</a>
-    <a href="/upgrade" class="hero-card__btn">👑 Upgrade</a>
-    <a href="/checkin" class="hero-card__btn">📅 Check-in</a>
+    <a href="/upgrade"  class="hero-card__btn">👑 Upgrade</a>
+    <a href="/checkin"  class="hero-card__btn">📅 Check-in</a>
   </div>
 </div>
 
-<!-- Stats row -->
-<div class="stat-row">
+<!-- Stats row (compact) -->
+<div class="stat-row" style="margin-top:10px">
   <div class="stat-mini">
-    <div class="stat-mini__val"><?= $watch_today ?><span style="font-size:12px;color:var(--text3)">/<?= $watch_limit ?></span></div>
-    <div class="stat-mini__lbl">Tonton Hari Ini</div>
+    <div class="stat-mini__val"><?= $watch_today ?><span style="font-size:11px;color:var(--text3)">/<?= $watch_limit ?></span></div>
+    <div class="stat-mini__lbl">Tonton</div>
   </div>
   <div class="stat-mini">
     <div class="stat-mini__val" style="font-size:14px"><?= count($videos) ?></div>
-    <div class="stat-mini__lbl">Video Tersedia</div>
+    <div class="stat-mini__lbl">Tersedia</div>
   </div>
   <div class="stat-mini">
     <div class="stat-mini__val" style="font-size:12px;letter-spacing:2px"><?= $user['referral_code'] ?></div>
-    <div class="stat-mini__lbl">Kode Referral</div>
+    <div class="stat-mini__lbl">Referral</div>
+  </div>
+  <div class="stat-mini">
+    <div class="stat-mini__val" style="font-size:12px"><?= format_rp((float)$user['total_earned']) ?></div>
+    <div class="stat-mini__lbl">Total Reward</div>
   </div>
 </div>
 
 <?php if ($watch_today >= $watch_limit): ?>
-<div class="alert alert--warn" style="margin-top:16px">
-  ⚠️ Limit tonton hari ini sudah habis (<?= $watch_limit ?>×). Reset besok atau
-  <a href="/upgrade" style="color:inherit;font-weight:800">upgrade paket →</a>
+<div class="alert alert--warn" style="margin-top:10px;font-size:12px;padding:8px 12px">
+  ⚠️ Limit hari ini habis (<?= $watch_limit ?>×). <a href="/upgrade" style="color:inherit;font-weight:800">Upgrade →</a>
 </div>
 <?php endif; ?>
 
 <!-- Available videos -->
-<div class="section-header" style="margin-top:20px">
+<div class="section-header" style="margin-top:16px">
   <div class="section-title">🎬 Video Tersedia</div>
   <a href="/videos" class="section-link">Lihat semua →</a>
 </div>
@@ -101,26 +101,26 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php if (empty($videos)): ?>
 <div class="card">
   <div class="empty-state">
-    <svg width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-    <p>Semua video sudah kamu tonton hari ini! 🎉</p>
+    <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+    <p style="font-size:13px">Semua video sudah ditonton hari ini! 🎉</p>
   </div>
 </div>
 <?php else: ?>
 <?php foreach ($videos as $v): ?>
-<a href="/watch?id=<?= $v['id'] ?>" class="video-card" style="margin-bottom:12px">
+<a href="/watch?id=<?= $v['id'] ?>" class="video-card" style="margin-bottom:8px">
   <div class="video-card__thumb-wrap">
     <img src="<?= yt_thumb($v['youtube_id']) ?>" alt="<?= htmlspecialchars($v['title']) ?>"
          loading="lazy" onerror="this.src='https://img.youtube.com/vi/<?= $v['youtube_id'] ?>/hqdefault.jpg'">
     <div class="video-card__play"><div class="video-card__play-btn">
-      <svg width="18" height="18" fill="#fff" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      <svg width="16" height="16" fill="#fff" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
     </div></div>
     <div class="video-card__badge">+<?= format_rp((float)$v['reward_amount']) ?></div>
   </div>
   <div class="video-card__body">
-    <div class="video-card__title"><?= htmlspecialchars($v['title']) ?></div>
+    <div class="video-card__title" style="font-size:13px"><?= htmlspecialchars($v['title']) ?></div>
     <div class="video-card__meta">
       <div class="video-card__reward">
-        <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
         <?= format_rp((float)$v['reward_amount']) ?>
       </div>
       <div class="video-card__duration">⏱ <?= $v['watch_duration'] ?>s</div>
@@ -132,20 +132,21 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Recent activity -->
 <?php if (!empty($history)): ?>
-<div class="section-header" style="margin-top:20px">
+<div class="section-header" style="margin-top:14px">
   <div class="section-title">📋 Aktivitas Terbaru</div>
+  <a href="/history" class="section-link">Lihat semua →</a>
 </div>
 <div class="card">
-  <div class="card__body">
+  <div class="card__body" style="padding:4px 0">
     <?php foreach ($history as $h): ?>
-    <div class="list-item">
-      <div class="list-item__icon" style="background:var(--lime)">🎬</div>
+    <div class="list-item" style="padding:8px 14px">
+      <div class="list-item__icon" style="background:var(--lime);width:30px;height:30px;font-size:14px">🎬</div>
       <div class="list-item__body">
-        <div class="list-item__title"><?= htmlspecialchars($h['title']) ?></div>
-        <div class="list-item__sub"><?= date('d M Y H:i', strtotime($h['watched_at'])) ?></div>
+        <div class="list-item__title" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px"><?= htmlspecialchars($h['title']) ?></div>
+        <div class="list-item__sub" style="font-size:10px"><?= date('d M H:i', strtotime($h['watched_at'])) ?></div>
       </div>
       <div class="list-item__right">
-        <div class="list-item__amount list-item__amount--green">+<?= format_rp((float)$h['reward_given']) ?></div>
+        <div class="list-item__amount list-item__amount--green" style="font-size:12px">+<?= format_rp((float)$h['reward_given']) ?></div>
       </div>
     </div>
     <?php endforeach; ?>
