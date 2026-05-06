@@ -79,7 +79,7 @@ require __DIR__ . '/partials/header.php';
         </td>
         <td style="color:#4CAF82;font-weight:700"><?= format_rp((float)$v['reward_amount']) ?></td>
         <td style="color:#888"><?= $v['watch_duration'] ?>s</td>
-        <td><span class="badge b-neutral" style="border-radius:6px">👁 <?= number_format($v['total_watches']) ?></span></td>
+        <td><span class="badge b-neutral" style="border-radius:6px">👁 <?= number_format((int)$v['total_watches']) ?></span></td>
         <td>
           <form method="POST" class="d-inline">
             <?= csrf_field() ?><input type="hidden" name="action" value="toggle">

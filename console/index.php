@@ -104,7 +104,7 @@ require __DIR__ . '/partials/header.php';
           <span style="font-size:16px"><?= ['🥇','🥈','🥉','4️⃣','5️⃣'][$i] ?></span>
           <div style="flex:1;min-width:0">
             <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($v['title']) ?></div>
-            <div style="font-size:11px;color:#666"><?= number_format($v['total_watches']) ?>× · <?= format_rp((float)$v['reward_amount']) ?></div>
+            <div style="font-size:11px;color:#666"><?= number_format((int)$v['total_watches']) ?>× · <?= format_rp((float)$v['reward_amount']) ?></div>
           </div>
         </div>
         <?php endforeach; ?>

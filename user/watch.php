@@ -264,6 +264,7 @@ let ytPlayer    = null;
 
 // ── YouTube IFrame API ───────────────────────────────
 window.onYouTubeIframeAPIReady = function() {
+  console.log('[DEBUG] onYouTubeIframeAPIReady fired. Init player with videoId: <?= htmlspecialchars($video['youtube_id']) ?>');
   ytPlayer = new YT.Player('yt-player', {
     videoId: '<?= htmlspecialchars($video['youtube_id']) ?>',
     playerVars: {
@@ -274,37 +275,55 @@ window.onYouTubeIframeAPIReady = function() {
       origin: window.location.origin
     },
     events: {
-      onReady:       onPlayerReady,
-      onStateChange: onPlayerStateChange
+      onReady: function(e) {
+          console.log('[DEBUG] Player onReady');
+          onPlayerReady(e);
+      },
+      onStateChange: function(e) {
+          console.log('[DEBUG] Player onStateChange, state:', e.data);
+          onPlayerStateChange(e);
+      },
+      onError: function(e) {
+          console.log('[DEBUG] Player onError, error code:', e.data);
+          setStatus('⚠️ YouTube Error: ' + e.data, 'Video tidak dapat diputar. ID: <?= htmlspecialchars($video['youtube_id']) ?>');
+      }
     }
   });
 };
 
 // Load API script
+console.log('[DEBUG] Injecting YouTube iframe_api script');
 const tag = document.createElement('script');
 tag.src = 'https://www.youtube.com/iframe_api';
 document.head.appendChild(tag);
 
 function onPlayerReady(e) {
   playerReady = true;
+  console.log('[DEBUG] Player is actually ready now.');
 }
 
 function onPlayerStateChange(e) {
-  if (!CAN_WATCH) return;
+  console.log('[DEBUG] onPlayerStateChange logic triggered. State=', e.data, 'CAN_WATCH=', CAN_WATCH);
+  if (!CAN_WATCH) {
+      console.log('[DEBUG] CAN_WATCH is false, ignoring state change.');
+      return;
+  }
 
   if (e.data === YT.PlayerState.PLAYING) {
-    // Video mulai/resume play
+    console.log('[DEBUG] Video is PLAYING.');
     if (!watchStarted) {
-      // Pertama kali play: minta token ke server
+      console.log('[DEBUG] First time playing, calling startWatchSession().');
       startWatchSession();
     } else if (timerHandle === null && !claimReady) {
-      // Resume dari pause: lanjut countdown
+      console.log('[DEBUG] Resuming countdown.');
       resumeCountdown();
     }
   } else if (e.data === YT.PlayerState.PAUSED ||
              e.data === YT.PlayerState.BUFFERING) {
-    // Pause countdown saat video pause/buffering
+    console.log('[DEBUG] Video paused or buffering. Calling pauseCountdown().');
     pauseCountdown();
+  } else if (e.data === YT.PlayerState.ENDED) {
+    console.log('[DEBUG] Video ended.');
   }
 }
 
