@@ -86,10 +86,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // ── Save SEO meta settings ─────────────────────────────────
     if ($action === 'save_seo') {
         $keys = ['seo_title','seo_description','seo_og_image','seo_robots',
-                 'seo_keywords','seo_author','seo_twitter_card'];
+                 'seo_keywords','seo_author','seo_twitter_card',
+                 'seo_og_title','seo_og_description','seo_og_type'];
         foreach ($keys as $k) {
             if (array_key_exists($k, $_POST)) setting_set($pdo, $k, trim($_POST[$k]));
         }
+        
+        // Handle OG Image Upload
+        if (!empty($_FILES['seo_og_image_file']['tmp_name'])) {
+            $maxBytes = 5 * 1024 * 1024;
+            $tmpFile = $_FILES['seo_og_image_file']['tmp_name'];
+            $origName = $_FILES['seo_og_image_file']['name'];
+            $fileSize = $_FILES['seo_og_image_file']['size'];
+            $ext = strtolower(pathinfo($origName, PATHINFO_EXTENSION));
+            
+            if ($fileSize <= $maxBytes && in_array($ext, ['png','jpg','jpeg','webp'])) {
+                $filename = 'og_image_' . time() . '.' . $ext;
+                $uploadDir = dirname(__DIR__) . '/uploads/';
+                if (!is_dir($uploadDir)) mkdir($uploadDir, 0755, true);
+                
+                $dest = $uploadDir . $filename;
+                if (move_uploaded_file($tmpFile, $dest)) {
+                    setting_set($pdo, 'seo_og_image', '/uploads/' . $filename);
+                }
+            } else {
+                $flash = '❌ Gagal upload OG Image. Cek ukuran (Maks 5MB) dan format (PNG/JPG/WEBP).'; 
+                $flashType = 'error';
+            }
+        }
+
         // Robots.txt write
         if (isset($_POST['robots_txt'])) {
             file_put_contents(dirname(__DIR__) . '/robots.txt', trim($_POST['robots_txt']));
@@ -120,7 +145,7 @@ require __DIR__ . '/partials/header.php';
 <div class="alert alert-success py-2 mb-3" style="border-radius:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
 <?php endif; ?>
 
-<form method="POST">
+<form method="POST" enctype="multipart/form-data">
   <?= csrf_field() ?>
 <div class="row g-3">
 
@@ -171,11 +196,33 @@ require __DIR__ . '/partials/header.php';
       <div class="c-card-header"><span class="c-card-title">📱 Open Graph & Social</span></div>
       <div class="c-card-body">
         <div class="c-form-group">
+          <label class="c-label">OG Title (opsional)</label>
+          <input type="text" name="seo_og_title" class="c-form-control"
+                 value="<?= htmlspecialchars($s('seo_og_title')) ?>"
+                 placeholder="Default: mengikuti Site Title">
+        </div>
+        <div class="c-form-group">
+          <label class="c-label">OG Description (opsional)</label>
+          <textarea name="seo_og_description" class="c-form-control" rows="2"
+                    placeholder="Default: mengikuti Meta Description"><?= htmlspecialchars($s('seo_og_description')) ?></textarea>
+        </div>
+        <div class="c-form-group">
+          <label class="c-label">OG Type</label>
+          <select name="seo_og_type" class="c-form-control">
+            <option value="website" <?= $s('seo_og_type','website')==='website'?'selected':'' ?>>website</option>
+            <option value="article" <?= $s('seo_og_type')==='article'?'selected':'' ?>>article</option>
+            <option value="profile" <?= $s('seo_og_type')==='profile'?'selected':'' ?>>profile</option>
+          </select>
+        </div>
+
+        <div class="c-form-group">
           <label class="c-label">OG Image URL</label>
           <input type="text" name="seo_og_image" class="c-form-control"
                  value="<?= htmlspecialchars($s('seo_og_image')) ?>"
                  placeholder="<?= htmlspecialchars(base_url('og-image.jpg')) ?>">
-          <div style="font-size:11px;color:#666;margin-top:3px">Ukuran ideal: 1200×630px</div>
+          <div style="font-size:11px;color:#666;margin-top:6px;font-weight:500;">Atau Upload File Baru:</div>
+          <input type="file" name="seo_og_image_file" class="c-form-control mt-1" accept="image/png,image/jpeg,image/webp">
+          <div style="font-size:11px;color:#666;margin-top:3px">Maks 5MB. Format: JPG/PNG/WEBP. Ideal: 1200×630px</div>
         </div>
         <?php $og = $s('seo_og_image'); if ($og): ?>
         <img src="<?= htmlspecialchars($og) ?>" alt="OG Preview" style="width:100%;border-radius:8px;border:1px solid #1f2235;margin-top:8px">

@@ -5,9 +5,12 @@ $_seo_title  = setting($pdo, 'seo_title', 'TontonKuy');
 $_seo_desc   = setting($pdo, 'seo_description', '');
 $_seo_kw     = setting($pdo, 'seo_keywords', '');
 $_seo_robots = setting($pdo, 'seo_robots', 'index,follow');
-$_seo_og     = setting($pdo, 'seo_og_image', '');
-$_seo_twcard = setting($pdo, 'seo_twitter_card', 'summary_large_image');
-$_seo_author = setting($pdo, 'seo_author', 'TontonKuy');
+$_seo_og       = setting($pdo, 'seo_og_image', '');
+$_seo_twcard   = setting($pdo, 'seo_twitter_card', 'summary_large_image');
+$_seo_author   = setting($pdo, 'seo_author', 'TontonKuy');
+$_seo_og_title = setting($pdo, 'seo_og_title', '');
+$_seo_og_desc  = setting($pdo, 'seo_og_description', '');
+$_seo_og_type  = setting($pdo, 'seo_og_type', 'website');
 $_favicon    = setting($pdo, 'favicon_path', '');
 ?>
 <!DOCTYPE html>
@@ -21,9 +24,14 @@ $_favicon    = setting($pdo, 'favicon_path', '');
 <?php if ($_seo_kw):   ?><meta name="keywords"    content="<?= htmlspecialchars($_seo_kw) ?>"><?php endif; ?>
 <?php if ($_seo_author):?><meta name="author"     content="<?= htmlspecialchars($_seo_author) ?>"><?php endif; ?>
 <meta name="robots" content="<?= htmlspecialchars($_seo_robots) ?>">
-<?php if ($_seo_og):   ?><meta property="og:image" content="<?= htmlspecialchars($_seo_og) ?>"><?php endif; ?>
-<meta property="og:title" content="<?= htmlspecialchars($pageTitle ?? $_seo_title) ?>">
-<?php if ($_seo_desc): ?><meta property="og:description" content="<?= htmlspecialchars($_seo_desc) ?>"><?php endif; ?>
+<meta property="og:type" content="<?= htmlspecialchars($_seo_og_type) ?>">
+<?php if ($_seo_og): ?>
+<meta property="og:image" content="<?= htmlspecialchars(preg_match('~^https?://~', $_seo_og) ? $_seo_og : rtrim(base_url(''), '/') . '/' . ltrim($_seo_og, '/')) ?>">
+<?php endif; ?>
+<meta property="og:title" content="<?= htmlspecialchars($_seo_og_title ?: (($pageTitle ?? '') ? $pageTitle . ' — ' . $_seo_title : $_seo_title)) ?>">
+<?php $final_og_desc = $_seo_og_desc ?: $_seo_desc; if ($final_og_desc): ?>
+<meta property="og:description" content="<?= htmlspecialchars($final_og_desc) ?>">
+<?php endif; ?>
 <meta name="twitter:card" content="<?= htmlspecialchars($_seo_twcard) ?>">
 <?php if ($_favicon): ?><link rel="icon" type="image/png" href="<?= htmlspecialchars($_favicon) ?>?v=<?= @filemtime(dirname(__DIR__) . $_favicon) ?: time() ?>"><?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css">
