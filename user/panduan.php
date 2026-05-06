@@ -11,6 +11,16 @@ $free_reward = (float) setting($pdo, 'free_reward_amount', '200');
 $free_limit  = (int)   setting($pdo, 'free_watch_limit', '5');
 $min_wd      = (float) setting($pdo, 'min_withdraw', '50000');
 $ref_bonus   = (float) setting($pdo, 'referral_bonus', '1000');
+
+// Panduan customizable content from DB
+$panduan_intro  = setting($pdo, 'panduan_intro', 'Cara kerja platform reward video ini');
+$panduan_step1  = setting($pdo, 'panduan_step1', 'Buat akun gratis, tidak perlu verifikasi ribet. Langsung bisa mulai tonton.');
+$panduan_step2  = setting($pdo, 'panduan_step2', 'Setiap video yang ditonton hingga selesai akan otomatis memberikan reward ke Saldo Penarikan kamu.');
+$panduan_step3  = setting($pdo, 'panduan_step3', 'Reward terkumpul di Saldo Penarikan. Cek progresmu di halaman Beranda kapan saja.');
+$panduan_step4  = setting($pdo, 'panduan_step4', 'Minimal withdraw ' . format_rp($min_wd) . '. Proses 1–3 hari kerja ke rekening/e-wallet pilihanmu.');
+$panduan_faq    = setting($pdo, 'panduan_faq_custom', '');
+$panduan_cta_text = setting($pdo, 'panduan_cta_text', '🎬 Mulai Tonton Sekarang →');
+$panduan_cta_url  = setting($pdo, 'panduan_cta_url', '/videos');
 ?>
 
 <style>
@@ -34,7 +44,7 @@ $ref_bonus   = (float) setting($pdo, 'referral_bonus', '1000');
 <div style="text-align:center;margin-bottom:16px">
   <div style="font-size:28px;margin-bottom:4px">📖</div>
   <div style="font-weight:900;font-size:18px">Panduan TontonKuy</div>
-  <div style="font-size:12px;color:#666;margin-top:2px">Cara kerja platform reward video ini</div>
+  <div style="font-size:12px;color:#666;margin-top:2px"><?= htmlspecialchars($panduan_intro) ?></div>
 </div>
 
 <!-- Cara Kerja -->
@@ -45,28 +55,28 @@ $ref_bonus   = (float) setting($pdo, 'referral_bonus', '1000');
       <div class="guide-step__num">1</div>
       <div class="guide-step__body">
         <div class="guide-step__title">Daftar & Login</div>
-        <div class="guide-step__desc">Buat akun gratis, tidak perlu verifikasi ribet. Langsung bisa mulai tonton.</div>
+        <div class="guide-step__desc"><?= nl2br(htmlspecialchars($panduan_step1)) ?></div>
       </div>
     </div>
     <div class="guide-step">
       <div class="guide-step__num">2</div>
       <div class="guide-step__body">
         <div class="guide-step__title">Tonton Video</div>
-        <div class="guide-step__desc">Setiap video yang ditonton hingga selesai akan otomatis memberikan reward ke <strong>Saldo Penarikan</strong> kamu. Akun Free bisa tonton <strong><?= $free_limit ?> video/hari</strong>.</div>
+        <div class="guide-step__desc"><?= nl2br(htmlspecialchars($panduan_step2)) ?></div>
       </div>
     </div>
     <div class="guide-step">
       <div class="guide-step__num">3</div>
       <div class="guide-step__body">
         <div class="guide-step__title">Kumpulkan Reward</div>
-        <div class="guide-step__desc">Reward terkumpul di Saldo Penarikan. Cek progresmu di halaman Beranda kapan saja.</div>
+        <div class="guide-step__desc"><?= nl2br(htmlspecialchars($panduan_step3)) ?></div>
       </div>
     </div>
     <div class="guide-step">
       <div class="guide-step__num">4</div>
       <div class="guide-step__body">
         <div class="guide-step__title">Tarik Saldo (Withdraw)</div>
-        <div class="guide-step__desc">Minimal withdraw <strong><?= format_rp($min_wd) ?></strong>. Proses 1–3 hari kerja ke rekening/e-wallet pilihanmu.</div>
+        <div class="guide-step__desc"><?= nl2br(htmlspecialchars($panduan_step4)) ?></div>
       </div>
     </div>
   </div>
@@ -145,12 +155,17 @@ $ref_bonus   = (float) setting($pdo, 'referral_bonus', '1000');
       <div style="font-weight:800;font-size:13px">Withdraw ke mana saja?</div>
       <div style="font-size:12px;color:#555;margin-top:2px">Semua bank dan e-wallet Indonesia (BCA, BNI, BRI, Mandiri, GoPay, OVO, Dana, dll).</div>
     </div>
+    <?php if ($panduan_faq): ?>
+    <div style="border-top:1.5px solid #eee;padding-top:10px">
+      <div style="font-size:12px;color:#555"><?= nl2br(htmlspecialchars($panduan_faq)) ?></div>
+    </div>
+    <?php endif; ?>
   </div>
 </div>
 
 <!-- CTA -->
 <div style="text-align:center;margin-top:4px;margin-bottom:8px">
-  <a href="/videos" class="btn btn--primary btn--full" style="font-size:14px;font-weight:900">🎬 Mulai Tonton Sekarang →</a>
+  <a href="<?= htmlspecialchars($panduan_cta_url) ?>" class="btn btn--primary btn--full" style="font-size:14px;font-weight:900"><?= htmlspecialchars($panduan_cta_text) ?></a>
 </div>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>

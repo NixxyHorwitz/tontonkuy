@@ -151,7 +151,18 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 <?php endif; ?>
 
-<!-- Popup Panduan (muncul sekali) -->
+<?php
+// Popup settings from DB
+$popup_enabled      = setting($pdo, 'popup_enabled', '1') === '1';
+$popup_title        = setting($pdo, 'popup_title',   '📖 Hei, sudah baca panduan?');
+$popup_body         = setting($pdo, 'popup_body',    'Biar makin lancar dapat reward, yuk baca dulu cara kerja TontonKuy! Dari cara tonton, jenis saldo, sampai tips withdraw.');
+$popup_cta_text     = setting($pdo, 'popup_cta_text', '📖 Baca Panduan →');
+$popup_cta_url      = setting($pdo, 'popup_cta_url',  '/panduan');
+$popup_delay        = max(0, (int) setting($pdo, 'popup_delay', '1500'));
+$popup_reset_hours  = max(0, (int) setting($pdo, 'popup_reset_hours', '0'));
+?>
+<?php if ($popup_enabled): ?>
+<!-- Popup Panduan -->
 <div id="guide-popup" style="
   display:none;
   position:fixed;inset:0;
@@ -173,14 +184,14 @@ require dirname(__DIR__) . '/partials/header.php';
     animation:slideUp .3s cubic-bezier(.22,.68,0,1.2);
   ">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-weight:900;font-size:16px">📖 Hei, sudah baca panduan?</div>
+      <div style="font-weight:900;font-size:16px"><?= htmlspecialchars($popup_title) ?></div>
       <button onclick="closeGuidePopup()" style="background:none;border:none;font-size:20px;cursor:pointer;line-height:1;color:#999">✕</button>
     </div>
     <div style="font-size:13px;color:#555;margin-bottom:16px;line-height:1.6">
-      Biar makin lancar dapat reward, yuk baca dulu cara kerja TontonKuy! Dari cara tonton, jenis saldo, sampai tips withdraw.
+      <?= nl2br(htmlspecialchars($popup_body)) ?>
     </div>
     <div style="display:flex;gap:8px">
-      <a href="/panduan" class="btn btn--primary btn--full" style="font-weight:900;font-size:13px">📖 Baca Panduan →</a>
+      <a href="<?= htmlspecialchars($popup_cta_url) ?>" class="btn btn--primary btn--full" style="font-weight:900;font-size:13px"><?= htmlspecialchars($popup_cta_text) ?></a>
       <button onclick="closeGuidePopup()" class="btn btn--secondary" style="flex-shrink:0;font-size:12px;padding:0 14px">Nanti</button>
     </div>
   </div>
@@ -195,21 +206,30 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <script>
 (function(){
-  const KEY = 'tk_guide_seen';
-  if (!localStorage.getItem(KEY)) {
+  const KEY   = 'tk_guide_seen';
+  const RESET = <?= $popup_reset_hours ?>;
+  const DELAY = <?= $popup_delay ?>;
+  const stored = localStorage.getItem(KEY);
+  let show = !stored;
+  if (stored && RESET > 0) {
+    const seenAt = parseInt(stored, 10);
+    if (Date.now() - seenAt > RESET * 3600 * 1000) show = true;
+  }
+  if (show) {
     setTimeout(function(){
       const el = document.getElementById('guide-popup');
-      el.style.display = 'flex';
-    }, 1500);
+      if (el) el.style.display = 'flex';
+    }, DELAY);
   }
 })();
 function closeGuidePopup() {
-  document.getElementById('guide-popup').style.display = 'none';
-  localStorage.setItem('tk_guide_seen', '1');
+  const el = document.getElementById('guide-popup');
+  if (el) el.style.display = 'none';
+  localStorage.setItem('tk_guide_seen', Date.now().toString());
 }
-document.getElementById('guide-popup').addEventListener('click', function(e){
-  if (e.target === this) closeGuidePopup();
-});
+const popup = document.getElementById('guide-popup');
+if (popup) popup.addEventListener('click', function(e){ if (e.target===this) closeGuidePopup(); });
 </script>
+<?php endif; ?>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>

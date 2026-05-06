@@ -143,6 +143,9 @@ $_page_title = 'Masuk — ' . $_seo_title;
       <button type="submit" class="btn btn--yellow btn--full btn--lg" style="margin-top:4px">
         🚀 Masuk Sekarang
       </button>
+      <a href="/register" class="btn btn--full btn--lg" style="margin-top:8px;background:var(--white);border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);font-weight:800;font-size:15px;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">
+        ✨ Daftar Gratis
+      </a>
     </form>
 
     <!-- Visual divider -->
