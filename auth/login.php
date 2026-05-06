@@ -128,7 +128,7 @@ end_login:
     <!-- Feature highlights -->
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
       <?php
-      $feats = [['🎬','Tonton\nVideo'],['💰','Dapat\nReward'],['🏆','Withdraw\nSaldo']];
+      $feats = [['🎬',"Tonton\nVideo"],['💰',"Dapat\nReward"],['🏆',"Withdraw\nSaldo"]];
       $cols  = ['var(--mint)','var(--yellow)','var(--lavender)'];
       foreach ($feats as $i => [$ic,$lbl]): ?>
       <div style="background:<?= $cols[$i] ?>;border:var(--border);box-shadow:var(--shadow-sm);border-radius:10px;padding:10px 6px;text-align:center">
