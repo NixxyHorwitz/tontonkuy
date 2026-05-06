@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `membership_expires_at` DATETIME DEFAULT NULL,
   `watch_count_today` INT NOT NULL DEFAULT 0,
   `watch_reset_date`  DATE DEFAULT NULL,
+  `last_checkin`      DATE DEFAULT NULL,
   `is_active`      TINYINT(1) NOT NULL DEFAULT 1,
   `created_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

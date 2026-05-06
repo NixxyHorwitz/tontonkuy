@@ -110,8 +110,8 @@ require dirname(__DIR__) . '/partials/header.php';
 <!-- Stats -->
 <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">
   <div class="stat-mini"><div class="stat-mini__val"><?= format_rp((float)$user['total_earned']) ?></div><div class="stat-mini__lbl" style="font-size:9.5px">Total Earned</div></div>
-  <div class="stat-mini"><div class="stat-mini__val" style="font-size:17px"><?= number_format($total_watches) ?></div><div class="stat-mini__lbl">Video Ditonton</div></div>
-  <div class="stat-mini"><div class="stat-mini__val" style="font-size:17px"><?= $refs ?></div><div class="stat-mini__lbl">Referral</div></div>
+  <div class="stat-mini"><div class="stat-mini__val" style="font-size:17px"><?= number_format((int)$total_watches) ?></div><div class="stat-mini__lbl">Video Ditonton</div></div>
+  <div class="stat-mini"><div class="stat-mini__val" style="font-size:17px"><?= (int)$refs ?></div><div class="stat-mini__lbl">Referral</div></div>
 </div>
 
 <!-- Referral code -->
