@@ -80,13 +80,7 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 <?php endif; ?>
 
-<!-- Level block notice -->
-<?php if ($level_blocked): ?>
-<div class="alert alert--warn" style="margin-bottom:16px">
-  🔒 Penarikan memerlukan paket minimum <strong><?= htmlspecialchars($min_level_name) ?></strong>.
-  <a href="/upgrade" style="font-weight:800;color:inherit"> Upgrade sekarang →</a>
-</div>
-<?php endif; ?>
+
 
 <!-- Balance card -->
 <div class="hero-card" style="background:var(--mint);margin-bottom:16px">
@@ -96,7 +90,6 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 
 <!-- Form -->
-<?php if (!$wd_locked && !$level_blocked): ?>
 <div class="card">
   <div class="card__header"><div class="card__title">🏦 Form Penarikan</div></div>
   <div class="card__body">
@@ -130,8 +123,12 @@ require dirname(__DIR__) . '/partials/header.php';
         <input class="form-control" type="text" name="account_name" value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>" placeholder="Nama sesuai rekening" required>
       </div>
       <?php if ((float)$user['balance_wd'] < $min_withdraw): ?>
-        <div class="alert alert--warn" style="margin-bottom:12px">Saldo penarikan belum mencukupi minimum withdraw.</div>
-        <button type="submit" class="btn btn--primary btn--full" disabled>Saldo Tidak Cukup</button>
+        <button type="submit" class="btn btn--primary btn--full" disabled>💸 Saldo Belum Cukup</button>
+      <?php elseif ($level_blocked): ?>
+        <div class="alert alert--warn" style="margin-bottom:12px">🔒 Upgrade ke <strong><?= htmlspecialchars($min_level_name) ?></strong> untuk bisa menarik. <a href="/upgrade" style="font-weight:800">Upgrade →</a></div>
+        <button type="submit" class="btn btn--primary btn--full" disabled>Akun Belum Memenuhi Syarat</button>
+      <?php elseif ($wd_locked): ?>
+        <button type="submit" class="btn btn--primary btn--full" disabled>⏰ Sedang Ditutup</button>
       <?php else: ?>
         <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full">Ajukan Penarikan</button>
       <?php endif; ?>
@@ -155,15 +152,6 @@ require dirname(__DIR__) . '/partials/header.php';
   });
 })();
 </script>
-<?php else: ?>
-<div class="card">
-  <div class="card__body" style="text-align:center;padding:32px 20px">
-    <div style="font-size:48px;margin-bottom:12px">🔒</div>
-    <div style="font-weight:800;margin-bottom:8px">Penarikan Tidak Tersedia</div>
-    <div style="color:var(--text2);font-size:14px"><?= $wd_locked ? htmlspecialchars($wd_lock_notice) : 'Upgrade akun untuk mengaktifkan penarikan.' ?></div>
-  </div>
-</div>
-<?php endif; ?>
 
 <!-- History -->
 <?php if (!empty($wds)): ?>

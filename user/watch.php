@@ -241,6 +241,54 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
     <a href="/videos" class="btn btn--ghost btn--full" style="margin-top:8px">← Lihat Video Lain</a>
     <?php endif; ?>
   </div>
+
+  <?php
+  // Load other videos the user hasn't watched today
+  $others = $pdo->prepare(
+    "SELECT v.*,
+       (SELECT COUNT(*) FROM watch_history wh WHERE wh.user_id=? AND wh.video_id=v.id AND DATE(wh.watched_at)=CURDATE()) AS watched_today
+     FROM videos v
+     WHERE v.is_active=1 AND v.id != ?
+     ORDER BY RAND() LIMIT 4"
+  );
+  $others->execute([$user['id'], $vid_id]);
+  $other_videos = $others->fetchAll();
+  ?>
+  <?php if (!empty($other_videos)): ?>
+  <div style="padding:0 16px 16px">
+    <div style="font-size:14px;font-weight:900;margin-bottom:10px;padding-top:4px;border-top:2px solid #1A1A1A">
+      🎬 Video Lainnya
+    </div>
+    <?php foreach ($other_videos as $ov):
+      $ov_done    = (bool)$ov['watched_today'];
+      $ov_blocked = !$ov_done && ($watch_today >= $watch_limit);
+      $ov_href    = ($ov_done || $ov_blocked) ? '#' : '/watch?id=' . $ov['id'];
+    ?>
+    <a href="<?= $ov_href ?>" style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1.5px solid #eee;text-decoration:none;color:inherit;<?= ($ov_done || $ov_blocked) ? 'opacity:.6;pointer-events:none' : '' ?>">
+      <div style="position:relative;flex-shrink:0;width:96px;height:54px;border-radius:8px;overflow:hidden;border:2px solid #1A1A1A">
+        <img src="<?= yt_thumb($ov['youtube_id']) ?>" alt="" style="width:100%;height:100%;object-fit:cover"
+             onerror="this.src='https://img.youtube.com/vi/<?= $ov['youtube_id'] ?>/hqdefault.jpg'">
+        <?php if ($ov_done): ?>
+        <div style="position:absolute;inset:0;background:rgba(34,197,94,.7);display:flex;align-items:center;justify-content:center">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <?php else: ?>
+        <div style="position:absolute;inset:0;background:rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center">
+          <svg width="14" height="14" fill="#fff" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        </div>
+        <?php endif; ?>
+      </div>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:12px;font-weight:800;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical"><?= htmlspecialchars($ov['title']) ?></div>
+        <div style="font-size:11px;color:#666;margin-top:3px;font-weight:700">
+          <?= $ov_done ? '✅ Selesai' : '🎁 ' . format_rp((float)$ov['reward_amount']) ?>
+        </div>
+      </div>
+    </a>
+    <?php endforeach; ?>
+    <a href="/videos" class="btn btn--ghost btn--full" style="margin-top:12px;font-size:13px">Lihat Semua Video →</a>
+  </div>
+  <?php endif; ?>
 </div>
 
 <!-- Reward popup -->

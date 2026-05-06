@@ -64,9 +64,9 @@ require dirname(__DIR__) . '/partials/header.php';
            loading="lazy" onerror="this.src='https://img.youtube.com/vi/<?= $v['youtube_id'] ?>/hqdefault.jpg'">
       <div class="video-card__play"><div class="video-card__play-btn" style="<?= $done?'background:var(--green)':'' ?>">
         <?php if ($done): ?>
-          <svg width="18" height="18" fill="#fff" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+          <svg width="18" height="18" fill="#fff" viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
         <?php else: ?>
-          <svg width="18" height="18" fill="#fff" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <svg width="18" height="18" fill="#1A1A1A" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
         <?php endif; ?>
       </div></div>
       <div class="video-card__badge" style="<?= $done?'background:var(--green);color:#fff':'' ?>">
