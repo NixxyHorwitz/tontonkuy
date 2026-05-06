@@ -221,10 +221,16 @@ require __DIR__ . '/partials/header.php';
       <div class="c-card-body">
         <textarea name="robots_txt" class="c-form-control" rows="8"
           style="font-family:monospace;font-size:12px"><?= htmlspecialchars($robots_txt_content) ?></textarea>
-      </div>
     </div>
   </div>
 
+  <div class="col-12">
+    <button type="submit" class="btn btn-sm text-white px-4" style="background:var(--brand)">💾 Simpan Semua SEO Settings</button>
+  </div>
+</div>
+</form>
+
+<div class="row g-3 mt-1">
   <!-- Favicon -->
   <div class="col-12">
     <div class="c-card">
@@ -265,11 +271,6 @@ require __DIR__ . '/partials/header.php';
       </div>
     </div>
   </div>
-
-  <div class="col-12">
-    <button type="submit" class="btn btn-sm text-white px-4" style="background:var(--brand)">💾 Simpan Semua SEO Settings</button>
-  </div>
 </div>
-</form>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
