@@ -57,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $where  = $filter !== 'all' ? "WHERE d.status=?" : "";
 $params = $filter !== 'all' ? [$filter] : [];
-$rows   = $pdo->prepare("SELECT d.*, u.username, u.email FROM deposits d JOIN users u ON u.id=d.user_id $where ORDER BY d.created_at DESC LIMIT 50");
+$rows   = $pdo->prepare("SELECT d.*, u.username, u.email FROM deposits d JOIN users u ON u.id=d.user_id $where ORDER BY d.created_at DESC");
 $rows->execute($params); $rows = $rows->fetchAll();
 
 $counts = $pdo->query("SELECT status, COUNT(*) as cnt FROM deposits GROUP BY status")->fetchAll();

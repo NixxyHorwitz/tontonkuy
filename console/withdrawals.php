@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $where = $filter !== 'all' ? "WHERE status=?" : "";
 $params = $filter !== 'all' ? [$filter] : [];
-$rows = $pdo->prepare("SELECT w.*, u.username, u.email FROM withdrawals w JOIN users u ON u.id=w.user_id $where ORDER BY w.created_at DESC LIMIT 50");
+$rows = $pdo->prepare("SELECT w.*, u.username, u.email FROM withdrawals w JOIN users u ON u.id=w.user_id $where ORDER BY w.created_at DESC");
 $rows->execute($params); $rows = $rows->fetchAll();
 
 // Counts

@@ -270,6 +270,7 @@ window.onYouTubeIframeAPIReady = function() {
       rel: 0,
       modestbranding: 1,
       playsinline: 1,
+      autoplay: 1,
       origin: window.location.origin
     },
     events: {

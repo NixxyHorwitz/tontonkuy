@@ -26,14 +26,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$where  = $search ? "WHERE username LIKE ? OR email LIKE ?" : "";
-$params = $search ? ["%$search%", "%$search%"] : [];
-$total  = $pdo->prepare("SELECT COUNT(*) FROM users $where"); $total->execute($params); $total = (int)$total->fetchColumn();
-$offset = ($page-1)*$perPage;
-$stmt   = $pdo->prepare("SELECT u.*, m.name as membership_name FROM users u LEFT JOIN memberships m ON m.id=u.membership_id $where ORDER BY u.created_at DESC LIMIT $perPage OFFSET $offset");
-$stmt->execute($params);
+$total  = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+$stmt   = $pdo->query("SELECT u.*, m.name as membership_name FROM users u LEFT JOIN memberships m ON m.id=u.membership_id ORDER BY u.created_at DESC");
 $users  = $stmt->fetchAll();
-$totalPages = max(1, (int)ceil($total / $perPage));
 
 $pageTitle  = 'Pengguna';
 $activePage = 'users';
@@ -48,16 +43,10 @@ require __DIR__ . '/partials/header.php';
 <div class="alert alert-<?= $flashType==='error'?'danger':'success' ?> py-2 mb-3" style="border-radius:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
 <?php endif; ?>
 
-<form method="GET" class="mb-3 d-flex gap-2">
-  <input type="text" name="q" class="c-form-control" style="max-width:300px" placeholder="Cari username/email..." value="<?= htmlspecialchars($search) ?>">
-  <button type="submit" class="btn btn-sm text-white" style="background:var(--brand)">Cari</button>
-  <?php if ($search): ?><a href="/console/users.php" class="btn btn-sm btn-secondary">Reset</a><?php endif; ?>
-</form>
-
 <div class="c-card">
   <div style="overflow-x:auto">
     <table class="c-table">
-      <thead><tr><th>Username</th><th>Email / WA</th><th>Saldo WD</th><th>Saldo Dep</th><th>Total Earned</th><th>Paket</th><th>Referral</th><th>Status</th><th>Aksi</th></tr></thead>
+      <thead><tr><th>Username</th><th>Email / WA</th><th>Saldo (WD/Dep)</th><th>Total Earned</th><th>Paket</th><th>Referral</th><th>Status</th><th>Aksi</th></tr></thead>
       <tbody>
         <?php foreach ($users as $u): ?>
         <tr>
@@ -90,15 +79,6 @@ require __DIR__ . '/partials/header.php';
     <?php if (empty($users)): ?><div style="padding:40px;text-align:center;color:#555">Tidak ada pengguna ditemukan.</div><?php endif; ?>
   </div>
 </div>
-
-<!-- Pagination -->
-<?php if ($totalPages > 1): ?>
-<div class="d-flex gap-1 mt-3 flex-wrap">
-  <?php for($p=1;$p<=$totalPages;$p++): ?>
-  <a href="?q=<?= urlencode($search) ?>&page=<?= $p ?>" class="btn btn-sm <?= $p===$page?'text-white':'btn-secondary' ?>" style="<?= $p===$page?'background:var(--brand)':'' ?>"><?= $p ?></a>
-  <?php endfor; ?>
-</div>
-<?php endif; ?>
 
 <!-- Adjust balance modal -->
 <div class="modal fade" id="balanceModal" tabindex="-1">

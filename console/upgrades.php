@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $where  = $filter !== 'all' ? "WHERE uo.status=?" : "";
 $params = $filter !== 'all' ? [$filter] : [];
-$rows   = $pdo->prepare("SELECT uo.*, u.username, u.email, m.name as plan_name FROM upgrade_orders uo JOIN users u ON u.id=uo.user_id JOIN memberships m ON m.id=uo.membership_id $where ORDER BY uo.created_at DESC LIMIT 50");
+$rows   = $pdo->prepare("SELECT uo.*, u.username, u.email, m.name as plan_name FROM upgrade_orders uo JOIN users u ON u.id=uo.user_id JOIN memberships m ON m.id=uo.membership_id $where ORDER BY uo.created_at DESC");
 $rows->execute($params); $rows = $rows->fetchAll();
 
 $counts = $pdo->query("SELECT status, COUNT(*) as cnt FROM upgrade_orders GROUP BY status")->fetchAll();

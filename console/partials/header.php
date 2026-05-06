@@ -17,6 +17,7 @@ try {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= htmlspecialchars($pageTitle) ?> — TontonKuy Admin</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -130,6 +131,22 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
 .c-table td { padding: 12px 14px; border-bottom: 1px solid #1a1d27; vertical-align: middle; }
 .c-table tbody tr:hover { background: #15182a; }
 .c-table tbody tr:last-child td { border-bottom: none; }
+
+/* ── DataTables Overrides ── */
+.dataTables_wrapper { font-size: 13px; color: #888; padding: 10px; }
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+  background: #0f1117; border: 1.5px solid #1f2235; border-radius: 6px;
+  color: #e0e0f0; padding: 4px 8px; outline: none;
+}
+.dataTables_wrapper .dataTables_length select:focus,
+.dataTables_wrapper .dataTables_filter input:focus { border-color: var(--brand); }
+.dataTables_wrapper .pagination .page-link {
+  background: #0f1117; border-color: #1f2235; color: #888;
+}
+.dataTables_wrapper .pagination .page-item.active .page-link {
+  background: var(--brand); border-color: var(--brand); color: #fff;
+}
 
 /* ── Badges ── */
 .b-success { background: rgba(76,175,130,.15); color: #4CAF82; }
