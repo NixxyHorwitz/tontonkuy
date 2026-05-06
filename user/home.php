@@ -80,10 +80,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <div class="stat-mini__val" style="font-size:12px;letter-spacing:2px"><?= $user['referral_code'] ?></div>
     <div class="stat-mini__lbl">Referral</div>
   </div>
-  <div class="stat-mini">
-    <div class="stat-mini__val" style="font-size:12px"><?= format_rp((float)$user['total_earned']) ?></div>
-    <div class="stat-mini__lbl">Total Reward</div>
-  </div>
+
 </div>
 
 <?php if ($watch_today >= $watch_limit): ?>

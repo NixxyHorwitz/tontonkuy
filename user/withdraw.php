@@ -13,7 +13,6 @@ $wd_locked    = is_wd_locked($pdo);
 $user_level   = user_membership_level($pdo, $user);
 $level_blocked= $wd_min_level > 0 && $user_level < $wd_min_level;
 
-// Get min level membership name
 $min_level_name = '';
 if ($wd_min_level > 0) {
     $lv = $pdo->prepare("SELECT name FROM memberships WHERE sort_order=? AND is_active=1 LIMIT 1");
@@ -25,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($wd_locked) {
         $flash = '⏰ ' . $wd_lock_notice; $flashType = 'error';
     } elseif ($level_blocked) {
-        $flash = "Kamu perlu upgrade ke {$min_level_name} untuk bisa menarik saldo."; $flashType = 'error';
+        $flash = "Upgrade ke {$min_level_name} untuk bisa menarik saldo."; $flashType = 'error';
     } else {
         $amount  = (float) preg_replace('/\D/', '', $_POST['amount'] ?? '0');
         $bank    = trim($_POST['bank_name'] ?? '');
@@ -45,13 +44,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute([$user['id'], $amount, $bank, $accnum, $accname]);
             $pdo->commit();
             $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
-            $flash = 'Permintaan withdraw dikirim! Proses 1-3 hari kerja.';
+            $flash = '✅ Permintaan withdraw dikirim! Proses 1-3 hari kerja.';
         }
     }
 }
 
-// History
-$wds = $pdo->prepare("SELECT * FROM withdrawals WHERE user_id=? ORDER BY created_at DESC LIMIT 10");
+$wds = $pdo->prepare("SELECT * FROM withdrawals WHERE user_id=? ORDER BY created_at DESC LIMIT 6");
 $wds->execute([$user['id']]);
 $wds = $wds->fetchAll();
 
@@ -60,84 +58,98 @@ $activePage = 'withdraw';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
 
-<div class="page-title-bar">
-  <h1>⬇️ Tarik Saldo</h1>
-  <p>Penarikan dari Saldo Penarikan saja</p>
+<style>
+.wd-bal{border:2.5px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink);background:var(--mint);padding:14px 16px;margin-bottom:12px}
+.wd-bal__lbl{font-size:11px;font-weight:700;color:#444;margin-bottom:2px}
+.wd-bal__val{font-size:22px;font-weight:900}
+.wd-bal__min{font-size:11px;color:#555;margin-top:2px}
+.qty-pills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
+.qty-pills button{font-size:11px;padding:4px 10px}
+</style>
+
+<!-- Balance -->
+<div class="wd-bal">
+  <div class="wd-bal__lbl">💸 Saldo Penarikan</div>
+  <div class="wd-bal__val"><?= format_rp((float)$user['balance_wd']) ?></div>
+  <div class="wd-bal__min">Min. withdraw: <?= format_rp($min_withdraw) ?></div>
 </div>
 
 <?php if ($flash): ?>
-<div class="alert alert--<?= $flashType === 'error' ? 'error' : 'success' ?>"><?= htmlspecialchars($flash) ?></div>
+<div class="alert alert--<?= $flashType === 'error' ? 'error' : 'success' ?>" style="margin-bottom:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
 <?php endif; ?>
 
 <!-- Lock notice -->
 <?php if ($wd_locked): ?>
-<div class="alert alert--warn" style="margin-bottom:16px">
-  🔒 <strong>Penarikan Ditutup</strong><br>
-  <?= htmlspecialchars($wd_lock_notice) ?>
+<div class="alert alert--warn" style="margin-bottom:10px;font-size:12px">
+  🔒 <strong>Penarikan Ditutup</strong> — <?= htmlspecialchars($wd_lock_notice) ?>
   <?php if ($wd_lock_start && $wd_lock_end): ?>
   <br><small>Jam lock: <?= htmlspecialchars($wd_lock_start) ?> – <?= htmlspecialchars($wd_lock_end) ?></small>
   <?php endif; ?>
 </div>
 <?php endif; ?>
 
-
-
-<!-- Balance card -->
-<div class="hero-card" style="background:var(--mint);margin-bottom:16px">
-  <div class="hero-card__label">💸 Saldo Penarikan</div>
-  <div class="hero-card__amount"><?= format_rp((float)$user['balance_wd']) ?></div>
-  <div class="hero-card__sub">Min. withdraw: <?= format_rp($min_withdraw) ?></div>
+<!-- Level block notice -->
+<?php if ($level_blocked): ?>
+<div class="alert alert--warn" style="margin-bottom:10px;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap">
+  <span>🔒 Upgrade ke <strong><?= htmlspecialchars($min_level_name) ?></strong> untuk WD.</span>
+  <a href="/upgrade" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:11px;padding:4px 10px;flex-shrink:0">Upgrade →</a>
 </div>
+<?php endif; ?>
 
 <!-- Form -->
 <div class="card">
-  <div class="card__header"><div class="card__title">🏦 Form Penarikan</div></div>
+  <div class="card__header"><div class="card__title" style="font-size:14px">🏦 Form Penarikan</div></div>
   <div class="card__body">
-    <form method="POST">
+    <form method="POST" id="wd-form">
       <?= csrf_field() ?>
-      <div class="form-group">
-        <label class="form-label">Jumlah Withdraw (Rp)</label>
-        <div class="input-wrap">
-          <svg class="input-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
-          <input class="form-control" type="number" name="amount" min="<?= $min_withdraw ?>" max="<?= $user['balance_wd'] ?>" step="1000" placeholder="Min. <?= number_format($min_withdraw,0,'','') ?>" required>
-        </div>
+      <div class="form-group" style="margin-bottom:8px">
+        <label class="form-label" style="font-size:12px">Jumlah Withdraw (Rp)</label>
+        <input class="form-control" type="number" name="amount"
+               min="<?= $min_withdraw ?>" max="<?= $user['balance_wd'] ?>"
+               step="1000" placeholder="Min. <?= number_format($min_withdraw,0,'','') ?>" required>
       </div>
-      <!-- Quick amounts -->
-      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px">
+      <div class="qty-pills">
         <?php foreach ([50000,100000,200000,500000] as $q): ?>
         <?php if ($q <= (float)$user['balance_wd']): ?>
         <button type="button" class="btn btn--secondary btn--sm" onclick="document.querySelector('[name=amount]').value=<?= $q ?>"><?= format_rp($q) ?></button>
         <?php endif; ?>
         <?php endforeach; ?>
       </div>
-      <div class="form-group">
-        <label class="form-label">Nama Bank / E-Wallet</label>
-        <input class="form-control" type="text" name="bank_name" value="<?= htmlspecialchars($_POST['bank_name'] ?? '') ?>" placeholder="Contoh: BCA, GoPay, OVO" required>
+      <div class="form-group" style="margin-bottom:8px">
+        <label class="form-label" style="font-size:12px">Nama Bank / E-Wallet</label>
+        <input class="form-control" type="text" name="bank_name"
+               value="<?= htmlspecialchars($_POST['bank_name'] ?? '') ?>"
+               placeholder="BCA, GoPay, OVO, Dana..." required>
       </div>
-      <div class="form-group">
-        <label class="form-label">Nomor Rekening / Akun</label>
-        <input class="form-control" type="text" name="account_number" value="<?= htmlspecialchars($_POST['account_number'] ?? '') ?>" placeholder="08xxxxxxxxxx atau 1234567890" required>
+      <div class="form-group" style="margin-bottom:8px">
+        <label class="form-label" style="font-size:12px">Nomor Rekening / Akun</label>
+        <input class="form-control" type="text" name="account_number"
+               value="<?= htmlspecialchars($_POST['account_number'] ?? '') ?>"
+               placeholder="08xxxxxxxxxx atau nomor rekening" required>
       </div>
-      <div class="form-group">
-        <label class="form-label">Nama Pemilik Rekening</label>
-        <input class="form-control" type="text" name="account_name" value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>" placeholder="Nama sesuai rekening" required>
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label" style="font-size:12px">Nama Pemilik Rekening</label>
+        <input class="form-control" type="text" name="account_name"
+               value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>"
+               placeholder="Nama sesuai rekening" required>
       </div>
+
       <?php if ((float)$user['balance_wd'] < $min_withdraw): ?>
-        <button type="submit" class="btn btn--primary btn--full" disabled>💸 Saldo Belum Cukup</button>
-      <?php elseif ($level_blocked): ?>
-        <div class="alert alert--warn" style="margin-bottom:12px">🔒 Upgrade ke <strong><?= htmlspecialchars($min_level_name) ?></strong> untuk bisa menarik. <a href="/upgrade" style="font-weight:800">Upgrade →</a></div>
-        <button type="submit" class="btn btn--primary btn--full" disabled>Akun Belum Memenuhi Syarat</button>
-      <?php elseif ($wd_locked): ?>
-        <button type="submit" class="btn btn--primary btn--full" disabled>⏰ Sedang Ditutup</button>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px">💸 Saldo Belum Cukup</button>
+      <?php elseif ($level_blocked || $wd_locked): ?>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px">
+          <?= $wd_locked ? '⏰ Sedang Ditutup' : '🔒 Akun Belum Memenuhi Syarat' ?>
+        </button>
       <?php else: ?>
-        <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full">Ajukan Penarikan</button>
+        <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full" style="font-size:13px">💸 Ajukan Penarikan</button>
       <?php endif; ?>
     </form>
   </div>
 </div>
+
 <script>
 (function(){
-  const form = document.querySelector('form[method="POST"]');
+  const form = document.getElementById('wd-form');
   const btn  = document.getElementById('wd-submit-btn');
   if (!form || !btn) return;
   form.addEventListener('submit', function(e) {
@@ -155,20 +167,23 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- History -->
 <?php if (!empty($wds)): ?>
-<div class="section-header" style="margin-top:20px"><div class="section-title">📜 Riwayat Withdraw</div></div>
-<div class="card"><div class="card__body">
+<div class="section-header" style="margin-top:14px">
+  <div class="section-title" style="font-size:13px">📜 Riwayat Withdraw</div>
+  <a href="/history" class="section-link">Lihat semua →</a>
+</div>
+<div class="card"><div class="card__body" style="padding:4px 0">
   <?php foreach ($wds as $w): ?>
-  <div class="list-item">
-    <div class="list-item__icon" style="background:var(--brand-soft,#fff5cc)">💸</div>
+  <div class="list-item" style="padding:8px 14px">
+    <div class="list-item__icon" style="background:var(--brand-soft,#fff5cc);width:30px;height:30px;font-size:14px">💸</div>
     <div class="list-item__body">
-      <div class="list-item__title"><?= format_rp((float)$w['amount']) ?></div>
-      <div class="list-item__sub"><?= htmlspecialchars($w['bank_name']) ?> · <?= date('d M Y H:i', strtotime($w['created_at'])) ?></div>
+      <div class="list-item__title" style="font-size:13px"><?= format_rp((float)$w['amount']) ?></div>
+      <div class="list-item__sub" style="font-size:10px"><?= htmlspecialchars($w['bank_name']) ?> · <?= date('d M H:i', strtotime($w['created_at'])) ?></div>
       <?php if ($w['admin_note']): ?>
-      <div class="list-item__sub" style="color:var(--red,#ef4444)">📝 <?= htmlspecialchars($w['admin_note']) ?></div>
+      <div class="list-item__sub" style="color:var(--red,#ef4444);font-size:10px">📝 <?= htmlspecialchars($w['admin_note']) ?></div>
       <?php endif; ?>
     </div>
     <div class="list-item__right">
-      <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','rejected'=>'error'} ?>">
+      <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','rejected'=>'error'} ?>" style="font-size:10px">
         <?= ucfirst($w['status']) ?>
       </span>
     </div>
