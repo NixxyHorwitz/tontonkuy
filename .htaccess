@@ -1,0 +1,40 @@
+Options -Indexes
+RewriteEngine On
+RewriteBase /
+
+# Block direct access to sensitive files
+RewriteRule ^bootstrap\.php$  - [F,L]
+RewriteRule ^install\.sql$    - [F,L]
+RewriteRule ^migrate\.sql$    - [F,L]
+RewriteRule ^\.env$           - [F,L]
+
+# Pass real files/dirs through
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# ── Auth routes ────────────────────────────
+RewriteRule ^login/?$    auth/login.php    [L,QSA]
+RewriteRule ^register/?$ auth/register.php [L,QSA]
+RewriteRule ^logout/?$   auth/logout.php   [L,QSA]
+
+# ── User routes ────────────────────────────
+RewriteRule ^home/?$        user/home.php        [L,QSA]
+RewriteRule ^videos/?$      user/videos.php      [L,QSA]
+RewriteRule ^watch/?$       user/watch.php       [L,QSA]
+RewriteRule ^profile/?$     user/profile.php     [L,QSA]
+RewriteRule ^deposit/?$     user/deposit.php     [L,QSA]
+RewriteRule ^withdraw/?$    user/withdraw.php    [L,QSA]
+RewriteRule ^upgrade/?$     user/upgrade.php     [L,QSA]
+RewriteRule ^checkin/?$     user/checkin.php     [L,QSA]
+RewriteRule ^referral/?$    user/referral.php    [L,QSA]
+RewriteRule ^history/?$     user/history.php     [L,QSA]
+RewriteRule ^pay/?$         user/pay.php         [L,QSA]
+RewriteRule ^maintenance/?$ user/maintenance.php [L,QSA]
+
+# ── Console routes ─────────────────────────
+RewriteRule ^console/login/?$     console/login.php     [L,QSA]
+RewriteRule ^console/logout/?$    console/logout.php    [L,QSA]
+RewriteRule ^console/payment/?$   console/payment.php   [L,QSA]
+RewriteRule ^console/seo/?$       console/seo.php       [L,QSA]
+RewriteRule ^console/analytics/?$ console/analytics.php [L,QSA]
