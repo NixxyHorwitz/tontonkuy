@@ -151,4 +151,65 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 <?php endif; ?>
 
+<!-- Popup Panduan (muncul sekali) -->
+<div id="guide-popup" style="
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(0,0,0,.55);
+  z-index:9999;
+  align-items:flex-end;
+  justify-content:center;
+  padding-bottom:0;
+">
+  <div style="
+    background:var(--white);
+    border:2.5px solid var(--ink);
+    border-bottom:none;
+    border-radius:20px 20px 0 0;
+    box-shadow:0 -6px 0 var(--ink);
+    padding:20px 20px 28px;
+    max-width:480px;
+    width:100%;
+    animation:slideUp .3s cubic-bezier(.22,.68,0,1.2);
+  ">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-weight:900;font-size:16px">📖 Hei, sudah baca panduan?</div>
+      <button onclick="closeGuidePopup()" style="background:none;border:none;font-size:20px;cursor:pointer;line-height:1;color:#999">✕</button>
+    </div>
+    <div style="font-size:13px;color:#555;margin-bottom:16px;line-height:1.6">
+      Biar makin lancar dapat reward, yuk baca dulu cara kerja TontonKuy! Dari cara tonton, jenis saldo, sampai tips withdraw.
+    </div>
+    <div style="display:flex;gap:8px">
+      <a href="/panduan" class="btn btn--primary btn--full" style="font-weight:900;font-size:13px">📖 Baca Panduan →</a>
+      <button onclick="closeGuidePopup()" class="btn btn--secondary" style="flex-shrink:0;font-size:12px;padding:0 14px">Nanti</button>
+    </div>
+  </div>
+</div>
+
+<style>
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity:0; }
+  to   { transform: translateY(0);    opacity:1; }
+}
+</style>
+
+<script>
+(function(){
+  const KEY = 'tk_guide_seen';
+  if (!localStorage.getItem(KEY)) {
+    setTimeout(function(){
+      const el = document.getElementById('guide-popup');
+      el.style.display = 'flex';
+    }, 1500);
+  }
+})();
+function closeGuidePopup() {
+  document.getElementById('guide-popup').style.display = 'none';
+  localStorage.setItem('tk_guide_seen', '1');
+}
+document.getElementById('guide-popup').addEventListener('click', function(e){
+  if (e.target === this) closeGuidePopup();
+});
+</script>
+
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>

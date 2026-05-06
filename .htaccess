@@ -31,6 +31,7 @@ RewriteRule ^referral/?$    user/referral.php    [L,QSA]
 RewriteRule ^history/?$     user/history.php     [L,QSA]
 RewriteRule ^pay/?$         user/pay.php         [L,QSA]
 RewriteRule ^maintenance/?$ user/maintenance.php [L,QSA]
+RewriteRule ^panduan/?$     user/panduan.php     [L,QSA]
 
 # ── Console routes ─────────────────────────
 RewriteRule ^console/login/?$     console/login.php     [L,QSA]

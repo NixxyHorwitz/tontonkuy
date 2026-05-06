@@ -94,12 +94,32 @@ end_reg:
 $cap_ts  = time();
 $cap_tok = hash_hmac('sha256', (string)$cap_ts, 'TONTON_CAP_' . session_id());
 ?>
+<?php
+$_seo_title  = setting($pdo, 'seo_title', 'TontonKuy');
+$_seo_desc   = setting($pdo, 'seo_description', 'Daftar gratis dan mulai tonton video untuk dapat reward!');
+$_seo_kw     = setting($pdo, 'seo_keywords', '');
+$_seo_og     = setting($pdo, 'seo_og_image', '');
+$_seo_robots = setting($pdo, 'seo_robots', 'index,follow');
+$_seo_og_type = setting($pdo, 'seo_og_type', 'website');
+$_favicon    = setting($pdo, 'favicon_path', '');
+$_page_title = 'Daftar — ' . $_seo_title;
+?>
 <!DOCTYPE html>
 <html lang="id">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Daftar — TontonKuy</title>
+<meta name="theme-color" content="#FFE566">
+<title><?= htmlspecialchars($_page_title) ?></title>
+<?php if ($_seo_desc): ?><meta name="description" content="<?= htmlspecialchars($_seo_desc) ?>"><?php endif; ?>
+<?php if ($_seo_kw):   ?><meta name="keywords"    content="<?= htmlspecialchars($_seo_kw) ?>"><?php endif; ?>
+<meta name="robots" content="<?= htmlspecialchars($_seo_robots) ?>">
+<meta property="og:type"  content="<?= htmlspecialchars($_seo_og_type) ?>">
+<meta property="og:title" content="<?= htmlspecialchars($_page_title) ?>">
+<?php if ($_seo_desc): ?><meta property="og:description" content="<?= htmlspecialchars($_seo_desc) ?>"><?php endif; ?>
+<?php if ($_seo_og):   ?><meta property="og:image" content="<?= htmlspecialchars(preg_match('~^https?://~',$_seo_og)?$_seo_og:rtrim(base_url(''),'/').'/'  .ltrim($_seo_og,'/')) ?>"><?php endif; ?>
+<meta name="twitter:card" content="summary_large_image">
+<?php if ($_favicon): ?><link rel="icon" type="image/png" href="<?= htmlspecialchars($_favicon) ?>?v=<?= @filemtime(dirname(__DIR__).$_favicon)?:time() ?>"><?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css">
 <style>
 /* Extra neobrutalism decoration */
@@ -132,10 +152,16 @@ $cap_tok = hash_hmac('sha256', (string)$cap_ts, 'TONTON_CAP_' . session_id());
   <span class="reg-deco" style="bottom:20%;left:5%">💰</span>
   <span class="reg-deco" style="bottom:10%;right:3%">🎁</span>
 
-  <div class="auth-card">
+    <div class="auth-card">
     <div class="auth-logo">
+      <?php if ($_favicon): ?>
+      <div class="auth-logo__icon" style="background:none;border:none;box-shadow:none;padding:0">
+        <img src="<?= htmlspecialchars($_favicon) ?>" alt="" style="width:52px;height:52px;object-fit:contain;border-radius:12px;border:2px solid var(--ink)">
+      </div>
+      <?php else: ?>
       <div class="auth-logo__icon">🎬</div>
-      <div class="auth-logo__title">TontonKuy</div>
+      <?php endif; ?>
+      <div class="auth-logo__title"><?= htmlspecialchars($_seo_title) ?></div>
       <div class="auth-logo__sub">Daftar gratis &amp; langsung tonton!</div>
     </div>
 
