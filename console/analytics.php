@@ -109,7 +109,7 @@ require __DIR__ . '/partials/header.php';
         <div class="c-stat__lbl">Avg/Hari</div>
         <div class="c-stat__icon" style="background:rgba(255,107,53,.15)">📊</div>
       </div>
-      <div class="c-stat__val"><?= $range > 0 ? number_format(round($total_pv / $range)) : 0 ?></div>
+      <div class="c-stat__val"><?= $range > 0 ? number_format((int)round($total_pv / $range)) : 0 ?></div>
       <div style="font-size:11px;color:#555;margin-top:3px">rata-rata</div>
     </div>
   </div>
@@ -151,7 +151,7 @@ require __DIR__ . '/partials/header.php';
               <div style="height:100%;background:var(--brand);border-radius:2px;width:<?= round(($p['cnt']/$max)*100) ?>%"></div>
             </div>
           </div>
-          <div style="font-size:13px;font-weight:700;color:#4CAF82;flex-shrink:0"><?= number_format($p['cnt']) ?></div>
+          <div style="font-size:13px;font-weight:700;color:#4CAF82;flex-shrink:0"><?= number_format((int)$p['cnt']) ?></div>
         </div>
         <?php endforeach; ?>
         <?php endif; ?>
@@ -178,7 +178,7 @@ require __DIR__ . '/partials/header.php';
               <div style="height:100%;background:#4E9BFF;border-radius:2px;width:<?= round(($r['cnt']/$maxr)*100) ?>%"></div>
             </div>
           </div>
-          <div style="font-size:13px;font-weight:700;color:#4E9BFF;flex-shrink:0"><?= number_format($r['cnt']) ?></div>
+          <div style="font-size:13px;font-weight:700;color:#4E9BFF;flex-shrink:0"><?= number_format((int)$r['cnt']) ?></div>
         </div>
         <?php endforeach; ?>
         <?php endif; ?>

@@ -234,7 +234,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
     <div style="display:flex;flex-wrap:wrap;gap:8px">
       <span class="badge badge--brand">🎁 <?= format_rp((float)$video['reward_amount']) ?></span>
       <span class="badge badge--neutral">⏱ <?= $video['watch_duration'] ?>s minimum</span>
-      <span class="badge badge--neutral">👁 <?= number_format($video['total_watches']) ?>× ditonton</span>
+      <span class="badge badge--neutral">👁 <?= number_format((int)$video['total_watches']) ?>× ditonton</span>
     </div>
     <?php if ($already_watched): ?>
     <div class="alert alert--success" style="margin-top:12px">✅ Kamu sudah menonton dan menerima reward hari ini!</div>

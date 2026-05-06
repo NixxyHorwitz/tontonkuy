@@ -191,11 +191,11 @@ require __DIR__ . '/partials/header.php';
       <div class="col-6 col-md-3"><span style="color:#666">Database</span><div style="font-weight:700"><?= $_ENV['DB_DATABASE'] ?? 'tonton' ?></div></div>
       <div class="col-6 col-md-3"><span style="color:#666">Server Time</span><div style="font-weight:700"><?= date('d M Y H:i') ?></div></div>
       <?php try {
-        $sz = $pdo->query("SELECT COUNT(*) FROM watch_history")->fetchColumn();
+        $sz = (int)$pdo->query("SELECT COUNT(*) FROM watch_history")->fetchColumn();
         echo "<div class='col-6 col-md-3'><span style='color:#666'>Watch History</span><div style='font-weight:700'>".number_format($sz)." baris</div></div>";
       } catch(\Throwable) {} ?>
       <?php try {
-        $ref_cnt = $pdo->query("SELECT COUNT(*) FROM referral_commissions")->fetchColumn();
+        $ref_cnt = (int)$pdo->query("SELECT COUNT(*) FROM referral_commissions")->fetchColumn();
         echo "<div class='col-6 col-md-3'><span style='color:#666'>Komisi Referral</span><div style='font-weight:700'>".number_format($ref_cnt)." transaksi</div></div>";
       } catch(\Throwable) {} ?>
     </div>

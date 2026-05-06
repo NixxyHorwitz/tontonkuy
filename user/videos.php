@@ -79,7 +79,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <div class="video-card__reward" style="<?= $done?'background:var(--green-soft);color:var(--green)':'' ?>">
           <?= $done ? '✓ Reward diterima' : format_rp((float)$v['reward_amount']) ?>
         </div>
-        <div class="video-card__duration">⏱ <?= $v['watch_duration'] ?>s · 👁 <?= number_format($v['total_watches']) ?>x</div>
+        <div class="video-card__duration">⏱ <?= $v['watch_duration'] ?>s · 👁 <?= number_format((int)$v['total_watches']) ?>x</div>
       </div>
     </div>
   </a>
