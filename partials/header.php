@@ -41,14 +41,22 @@ $_favicon    = setting($pdo, 'favicon_path', '');
     </a>
     <div class="topbar__right">
       <?php if (!empty($user)): ?>
+      <?php
+      // Compact number for topbar: 1.234.567 → 1,2jt | 50.000 → 50rb
+      function fmt_short(float $n): string {
+        if ($n >= 1_000_000) return number_format($n/1_000_000, 1, '.', '') . 'jt';
+        if ($n >= 1_000)     return number_format($n/1_000, 1, '.', '') . 'rb';
+        return (string)(int)$n;
+      }
+      ?>
       <div class="topbar__balances">
-        <div class="topbar__bal-item topbar__bal-item--wd" title="Saldo Penarikan">
+        <div class="topbar__bal-item topbar__bal-item--wd" title="Saldo Penarikan: <?= format_rp((float)$user['balance_wd']) ?>">
           <span class="topbar__bal-label">WD</span>
-          <span class="topbar__bal-val"><?= format_rp((float)$user['balance_wd']) ?></span>
+          <span class="topbar__bal-val"><?= fmt_short((float)$user['balance_wd']) ?></span>
         </div>
-        <div class="topbar__bal-item topbar__bal-item--dep" title="Saldo Deposit">
+        <div class="topbar__bal-item topbar__bal-item--dep" title="Saldo Deposit: <?= format_rp((float)$user['balance_dep']) ?>">
           <span class="topbar__bal-label">DEP</span>
-          <span class="topbar__bal-val"><?= format_rp((float)$user['balance_dep']) ?></span>
+          <span class="topbar__bal-val"><?= fmt_short((float)$user['balance_dep']) ?></span>
         </div>
       </div>
       <a href="/history" class="topbar__avatar" title="Riwayat"
