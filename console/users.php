@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$total  = $pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
+$total  = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
 $stmt   = $pdo->query("SELECT u.*, m.name as membership_name FROM users u LEFT JOIN memberships m ON m.id=u.membership_id ORDER BY u.created_at DESC");
 $users  = $stmt->fetchAll();
 
