@@ -9,7 +9,7 @@ try {
     $pendingWd     = (int)$pdo->query("SELECT COUNT(*) FROM withdrawals WHERE status='pending'")->fetchColumn();
     $pendingDep    = (int)$pdo->query("SELECT COUNT(*) FROM deposits WHERE status='pending'")->fetchColumn();
     $pendingUpg    = (int)$pdo->query("SELECT COUNT(*) FROM upgrade_orders WHERE status='pending'")->fetchColumn();
-    $totalBalance  = (float)$pdo->query("SELECT COALESCE(SUM(balance),0) FROM users")->fetchColumn();
+    $totalBalance  = (float)$pdo->query("SELECT COALESCE(SUM(balance_wd),0) FROM users")->fetchColumn();
     $totalEarned   = (float)$pdo->query("SELECT COALESCE(SUM(total_earned),0) FROM users")->fetchColumn();
 
     // Chart: watches last 7 days
@@ -122,13 +122,13 @@ require __DIR__ . '/partials/header.php';
   </div>
   <div style="overflow-x:auto">
     <table class="c-table">
-      <thead><tr><th>Username</th><th>Email</th><th>Saldo</th><th>Terdaftar</th><th>Status</th></tr></thead>
+      <thead><tr><th>Username</th><th>Email</th><th>Saldo WD</th><th>Terdaftar</th><th>Status</th></tr></thead>
       <tbody>
         <?php foreach ($recentUsers as $u): ?>
         <tr>
           <td><strong><?= htmlspecialchars($u['username']) ?></strong></td>
           <td style="color:#888"><?= htmlspecialchars($u['email']) ?></td>
-          <td style="color:#4CAF82;font-weight:700"><?= format_rp((float)$u['balance']) ?></td>
+          <td style="color:#4CAF82;font-weight:700"><?= format_rp((float)$u['balance_wd']) ?></td>
           <td style="color:#666;font-size:12px"><?= date('d M Y', strtotime($u['created_at'])) ?></td>
           <td><span class="badge <?= $u['is_active']?'b-success':'b-danger' ?>" style="border-radius:6px;font-size:11px;padding:3px 8px"><?= $u['is_active']?'Aktif':'Nonaktif' ?></span></td>
         </tr>

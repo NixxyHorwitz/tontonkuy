@@ -77,7 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Referral bonus
             if ($ref_by) {
                 $bonus = (float) setting($pdo, 'referral_bonus', '1000');
-                $pdo->prepare("UPDATE users SET balance=balance+?,total_earned=total_earned+? WHERE referral_code=?")
+                $pdo->prepare("UPDATE users SET balance_wd=balance_wd+?,total_earned=total_earned+? WHERE referral_code=?")
                     ->execute([$bonus, $bonus, $ref_by]);
             }
             // Reset rate limit

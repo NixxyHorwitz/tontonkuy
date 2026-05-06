@@ -24,7 +24,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $wd->execute([$id]); $wd = $wd->fetch();
         if ($wd) {
             // Refund balance
-            $pdo->prepare("UPDATE users SET balance=balance+? WHERE id=?")->execute([$wd['amount'], $wd['user_id']]);
+            $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$wd['amount'], $wd['user_id']]);
             $pdo->prepare("UPDATE withdrawals SET status='rejected',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$note ?: 'Ditolak admin', $id]);
             $flash = "Withdraw #{$id} ditolak dan saldo dikembalikan.";
         }
