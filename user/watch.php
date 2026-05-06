@@ -263,19 +263,14 @@ let playerReady = false;
 let ytPlayer    = null;
 
 // ── YouTube IFrame API ───────────────────────────────
-// Load API script
-const tag = document.createElement('script');
-tag.src = 'https://www.youtube.com/iframe_api';
-document.head.appendChild(tag);
-
 window.onYouTubeIframeAPIReady = function() {
   ytPlayer = new YT.Player('yt-player', {
     videoId: '<?= htmlspecialchars($video['youtube_id']) ?>',
     playerVars: {
       rel: 0,
       modestbranding: 1,
-      // TIDAK autoplay — user harus tekan play sendiri agar YT API
-      // bisa detect state change
+      playsinline: 1,
+      origin: window.location.origin
     },
     events: {
       onReady:       onPlayerReady,
@@ -283,6 +278,11 @@ window.onYouTubeIframeAPIReady = function() {
     }
   });
 };
+
+// Load API script
+const tag = document.createElement('script');
+tag.src = 'https://www.youtube.com/iframe_api';
+document.head.appendChild(tag);
 
 function onPlayerReady(e) {
   playerReady = true;

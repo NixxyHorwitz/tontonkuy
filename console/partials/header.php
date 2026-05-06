@@ -133,8 +133,8 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
 
 /* ── Badges ── */
 .b-success { background: rgba(76,175,130,.15); color: #4CAF82; }
-.b-warn    { background: rgba(255,193,7,.15);  color: #FFC107; }
-.b-danger  { background: rgba(244,78,59,.15);  color: #F44E3B; }
+.b-warn    { background: rgba(242,153,0,.15); color: #F29900; }
+.b-danger  { background: rgba(244,78,59,.15); color: #F44E3B; }
 .b-neutral { background: rgba(255,255,255,.07); color: #888; }
 
 /* ── Forms ── */
