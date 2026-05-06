@@ -4,6 +4,7 @@ require_once __DIR__ . '/auth.php';
 csrf_enforce();
 
 $flash = $flashType = '';
+global $pdo;
 $s = fn($k,$d='') => setting($pdo,$k,$d);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {

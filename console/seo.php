@@ -4,6 +4,7 @@ require_once __DIR__ . '/auth.php';
 csrf_enforce();
 
 $flash = $flashType = '';
+global $pdo;
 $s = fn($k,$d='') => setting($pdo,$k,$d);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -21,6 +22,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $flash = '❌ File terlalu besar. Maksimal 5MB.'; $flashType = 'error';
         } elseif (!in_array($ext, ['png','jpg','jpeg','webp','gif','ico'])) {
             $flash = '❌ Format tidak didukung. Gunakan PNG/JPG/WEBP.'; $flashType = 'error';
+        } elseif ($ext === 'ico') {
+            $favDir  = dirname(__DIR__) . '/assets/';
+            $favPath = $favDir . 'favicon.ico';
+            if (move_uploaded_file($tmpFile, $favPath)) {
+                setting_set($pdo, 'favicon_path', '/assets/favicon.ico');
+                $flash = '✅ Favicon (.ico) berhasil diupload!';
+            } else {
+                $flash = '❌ Gagal menyimpan favicon ke /assets/. Cek permission folder.';
+                $flashType = 'error';
+            }
         } elseif (!function_exists('imagecreatefrompng')) {
             $flash = '❌ GD extension tidak tersedia di server.'; $flashType = 'error';
         } else {
@@ -36,11 +47,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     default        => null,
                 };
             }
-            // Extension-based fallback (handles .ico and mis-detected types)
+            // Extension-based fallback (handles mis-detected types)
             if (!$src) {
                 $src = match($ext) {
                     'jpg','jpeg' => @imagecreatefromjpeg($tmpFile),
-                    'png','ico'  => @imagecreatefrompng($tmpFile),
+                    'png'        => @imagecreatefrompng($tmpFile),
                     'webp'       => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($tmpFile) : null,
                     'gif'        => @imagecreatefromgif($tmpFile),
                     default      => null,
@@ -58,16 +69,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $transparent = imagecolorallocatealpha($out, 255, 255, 255, 127);
                 imagefill($out, 0, 0, $transparent);
                 imagecopyresampled($out, $src, 0, 0, 0, 0, 64, 64, imagesx($src), imagesy($src));
-                imagedestroy($src);
 
                 $favDir  = dirname(__DIR__) . '/assets/';
                 $favPath = $favDir . 'favicon.png';
                 if (@imagepng($out, $favPath, 7)) {
-                    imagedestroy($out);
                     setting_set($pdo, 'favicon_path', '/assets/favicon.png');
                     $flash = '✅ Favicon berhasil diupload dan dikompres ke 64×64px!';
                 } else {
-                    imagedestroy($out);
                     $flash = '❌ Gagal menyimpan favicon ke /assets/. Cek permission folder.';
                     $flashType = 'error';
                 }
