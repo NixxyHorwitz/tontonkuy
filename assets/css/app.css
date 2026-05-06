@@ -70,12 +70,14 @@ body {
   display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
 .topbar__logo {
-  display: flex; align-items: center; gap: 8px;
-  font-weight: 900; font-size: 19px; color: var(--ink);
-  text-decoration: none;
+  display: flex; align-items: center; gap: 6px;
+  font-weight: 900; font-size: 17px; color: var(--ink);
+  text-decoration: none; flex-shrink: 0; min-width: 0;
+  overflow: hidden;
 }
+.topbar__logo span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .topbar__logo strong { color: var(--brand); }
-.topbar__right { display: flex; align-items: center; gap: 8px; }
+.topbar__right { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
 .topbar__balance {
   background: var(--yellow);
   border: var(--border);

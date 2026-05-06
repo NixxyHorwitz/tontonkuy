@@ -3,7 +3,6 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
 // Referral stats
-$ref_count = (int)$pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by=?")->execute([$user['referral_code']]) ?: 0;
 $s = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by=?");
 $s->execute([$user['referral_code']]);
 $ref_count = (int)$s->fetchColumn();

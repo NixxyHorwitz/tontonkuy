@@ -25,14 +25,19 @@ $_favicon    = setting($pdo, 'favicon_path', '');
 <meta property="og:title" content="<?= htmlspecialchars($pageTitle ?? $_seo_title) ?>">
 <?php if ($_seo_desc): ?><meta property="og:description" content="<?= htmlspecialchars($_seo_desc) ?>"><?php endif; ?>
 <meta name="twitter:card" content="<?= htmlspecialchars($_seo_twcard) ?>">
-<?php if ($_favicon): ?><link rel="icon" type="image/png" href="<?= htmlspecialchars($_favicon) ?>?v=<?= filemtime(dirname(__DIR__) . $_favicon) ?: time() ?>"><?php endif; ?>
+<?php if ($_favicon): ?><link rel="icon" type="image/png" href="<?= htmlspecialchars($_favicon) ?>?v=<?= @filemtime(dirname(__DIR__) . $_favicon) ?: time() ?>"><?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body>
 <div class="app-shell">
   <header class="topbar">
     <a href="/home" class="topbar__logo">
-      🎬 Tonton<strong>Kuy</strong>
+      <?php if ($_favicon): ?>
+        <img src="<?= htmlspecialchars($_favicon) ?>" alt="" style="width:28px;height:28px;object-fit:contain;border-radius:6px;border:1.5px solid #1A1A1A;flex-shrink:0">
+      <?php else: ?>
+        <span style="font-size:20px;line-height:1">🎬</span>
+      <?php endif; ?>
+      <span style="white-space:nowrap">Tonton<strong>Kuy</strong></span>
     </a>
     <div class="topbar__right">
       <?php if (!empty($user)): ?>
