@@ -182,9 +182,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
   flex-shrink:0;
 }
 .watch-status__hint { color:#666;font-size:12px; }
+/* ── Page loader ── */
+#page-loader{
+  position:fixed;inset:0;z-index:9999;
+  background:var(--white,#fff);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  transition:opacity .35s;
+}
+#page-loader.hidden{opacity:0;pointer-events:none}
+.loader-spinner{
+  width:48px;height:48px;
+  border:4px solid #e0e0e0;
+  border-top-color:#1A1A1A;
+  border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loader-label{font-size:13px;font-weight:800;color:#555}
 </style>
 </head>
 <body>
+<!-- Page loader -->
+<div id="page-loader">
+  <div class="loader-spinner"></div>
+  <div class="loader-label">⏳ Memuat video...</div>
+</div>
 <div class="app-shell">
 
   <!-- Topbar -->
@@ -355,6 +377,12 @@ document.head.appendChild(tag);
 
 function onPlayerReady(e) {
   playerReady = true;
+  // Hide the page loader once the player is ready
+  const loader = document.getElementById('page-loader');
+  if (loader) {
+    loader.classList.add('hidden');
+    setTimeout(() => loader.remove(), 400);
+  }
   console.log('[DEBUG] Player is actually ready now.');
 }
 
