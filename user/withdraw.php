@@ -136,10 +136,8 @@ require dirname(__DIR__) . '/partials/header.php';
 
       <?php if ((float)$user['balance_wd'] < $min_withdraw): ?>
         <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px">💸 Saldo Belum Cukup</button>
-      <?php elseif ($level_blocked || $wd_locked): ?>
-        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px">
-          <?= $wd_locked ? '⏰ Sedang Ditutup' : '🔒 Akun Belum Memenuhi Syarat' ?>
-        </button>
+      <?php elseif ($wd_locked): ?>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px">⏰ Sedang Ditutup</button>
       <?php else: ?>
         <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full" style="font-size:13px">💸 Ajukan Penarikan</button>
       <?php endif; ?>
