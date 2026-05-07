@@ -88,10 +88,10 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 <?php endif; ?>
 
-<!-- Level block notice -->
+<!-- Level block notice — hidden, revealed by JS on submit attempt only when balance is sufficient -->
 <?php if ($level_blocked): ?>
-<div class="alert alert--warn" style="margin-bottom:10px;font-size:12px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap">
-  <span>🔒 Upgrade ke <strong><?= htmlspecialchars($min_level_name) ?></strong> untuk WD.</span>
+<div id="level-blocked-notice" class="alert alert--warn" style="display:none;margin-bottom:10px;font-size:12px;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap">
+  <span>🔒 Kamu perlu upgrade ke <strong><?= htmlspecialchars($min_level_name) ?></strong> untuk bisa menarik saldo.</span>
   <a href="/upgrade" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:11px;padding:4px 10px;flex-shrink:0">Upgrade →</a>
 </div>
 <?php endif; ?>
@@ -149,14 +149,30 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <script>
 (function(){
-  const form = document.getElementById('wd-form');
-  const btn  = document.getElementById('wd-submit-btn');
-  if (!form || !btn) return;
+  const form    = document.getElementById('wd-form');
+  const btn     = document.getElementById('wd-submit-btn');
+  const notice  = document.getElementById('level-blocked-notice');
+  const minWd   = <?= (int)$min_withdraw ?>;
+  const balWd   = <?= (float)$user['balance_wd'] ?>;
+  const levelBlocked = <?= $level_blocked ? 'true' : 'false' ?>;
+
+  if (!form) return;
+
   form.addEventListener('submit', function(e) {
-    if (!form.dataset.confirmed) {
+    const amtInput = document.querySelector('[name=amount]');
+    const amt = amtInput ? parseFloat(amtInput.value) : 0;
+
+    // Show level-blocked notice only when user has enough balance and tries to submit
+    if (levelBlocked && balWd >= minWd) {
       e.preventDefault();
-      const amt = document.querySelector('[name=amount]');
-      const display = amt && amt.value ? ' Rp ' + Number(amt.value).toLocaleString('id-ID') : '';
+      if (notice) { notice.style.display = 'flex'; notice.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+      return;
+    }
+
+    // Standard double-click confirmation
+    if (btn && !form.dataset.confirmed) {
+      e.preventDefault();
+      const display = amt ? ' Rp ' + amt.toLocaleString('id-ID') : '';
       nToast('Klik Ajukan lagi untuk konfirmasi penarikan' + display, 'warn', 3500);
       form.dataset.confirmed = '1';
       setTimeout(() => delete form.dataset.confirmed, 4000);
