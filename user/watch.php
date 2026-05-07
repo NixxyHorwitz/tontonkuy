@@ -45,17 +45,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
     header('Content-Type: application/json');
     if (!csrf_verify()) { echo json_encode(['ok'=>false,'msg'=>'Invalid CSRF']); exit; }
 
-    // Reload state langsung dari DB (tidak percaya client-side state)
-    $chk2 = $pdo->prepare("SELECT id FROM watch_history WHERE user_id=? AND video_id=? AND DATE(watched_at)=CURDATE()");
-    $chk2->execute([$user['id'], $vid_id]);
-    if ($chk2->fetch()) { echo json_encode(['ok'=>false,'msg'=>'Sudah ditonton hari ini.']); exit; }
-
-    $wt = $pdo->prepare("SELECT COUNT(*) FROM watch_history WHERE user_id=? AND DATE(watched_at)=CURDATE()");
-    $wt->execute([$user['id']]);
-    if ((int)$wt->fetchColumn() >= $watch_limit) {
-        echo json_encode(['ok'=>false,'msg'=>'Limit tonton habis!']); exit;
-    }
-
     // Verifikasi watch_token
     $raw_token = $_POST['watch_token'] ?? '';
     if (empty($raw_token)) {
@@ -94,6 +83,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
     $reward = (float)$video['reward_amount'];
     try {
         $pdo->beginTransaction();
+        
+        // Lock baris user untuk mencegah race condition (concurrent claims)
+        $pdo->prepare("SELECT id FROM users WHERE id=? FOR UPDATE")->execute([$user['id']]);
+        
+        // Cek lagi setelah dilock (atomic)
+        $chk2 = $pdo->prepare("SELECT id FROM watch_history WHERE user_id=? AND video_id=? AND DATE(watched_at)=CURDATE()");
+        $chk2->execute([$user['id'], $vid_id]);
+        if ($chk2->fetch()) { 
+            $pdo->rollBack();
+            echo json_encode(['ok'=>false,'msg'=>'Sudah ditonton hari ini.']); exit; 
+        }
+
+        $wt = $pdo->prepare("SELECT COUNT(*) FROM watch_history WHERE user_id=? AND DATE(watched_at)=CURDATE()");
+        $wt->execute([$user['id']]);
+        if ((int)$wt->fetchColumn() >= $watch_limit) {
+            $pdo->rollBack();
+            echo json_encode(['ok'=>false,'msg'=>'Limit tonton habis!']); exit;
+        }
+
         $pdo->prepare("INSERT INTO watch_history (user_id,video_id,reward_given) VALUES (?,?,?)")
             ->execute([$user['id'], $vid_id, $reward]);
         $pdo->prepare("UPDATE users SET balance_wd=balance_wd+?,total_earned=total_earned+? WHERE id=?")

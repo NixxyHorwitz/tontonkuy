@@ -28,22 +28,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         try {
             $pdo->beginTransaction();
-            // Deduct from balance_dep
-            $pdo->prepare("UPDATE users SET balance_dep=balance_dep-? WHERE id=?")
-                ->execute([$chosen['price'], $user['id']]);
-            // Insert upgrade order (auto-confirmed via balance)
-            $pdo->prepare("INSERT INTO upgrade_orders (user_id,membership_id,amount,status,confirmed_at) VALUES (?,?,?,'confirmed',NOW())")
-                ->execute([$user['id'], $mid, $chosen['price']]);
-            // Activate membership
-            $new_expires = date('Y-m-d H:i:s', strtotime("+{$chosen['duration_days']} days"));
-            $pdo->prepare("UPDATE users SET membership_id=?, membership_expires_at=? WHERE id=?")
-                ->execute([$mid, $new_expires, $user['id']]);
-            $pdo->commit();
-            // Refresh user
-            $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
-            $flash = '🎉 Upgrade ke ' . htmlspecialchars($chosen['name']) . ' berhasil! Berlaku hingga ' . date('d M Y', strtotime($new_expires)) . '.';
-            // Refresh active membership
-            $active_membership = $chosen;
+            // Deduct from balance_dep (with atomic check to prevent race conditions)
+            $stmt = $pdo->prepare("UPDATE users SET balance_dep=balance_dep-? WHERE id=? AND balance_dep >= ?");
+            $stmt->execute([$chosen['price'], $user['id'], $chosen['price']]);
+            
+            if ($stmt->rowCount() > 0) {
+                // Insert upgrade order (auto-confirmed via balance)
+                $pdo->prepare("INSERT INTO upgrade_orders (user_id,membership_id,amount,status,confirmed_at) VALUES (?,?,?,'confirmed',NOW())")
+                    ->execute([$user['id'], $mid, $chosen['price']]);
+                // Activate membership
+                $new_expires = date('Y-m-d H:i:s', strtotime("+{$chosen['duration_days']} days"));
+                $pdo->prepare("UPDATE users SET membership_id=?, membership_expires_at=? WHERE id=?")
+                    ->execute([$mid, $new_expires, $user['id']]);
+                $pdo->commit();
+                // Refresh user
+                $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
+                $flash = '🎉 Upgrade ke ' . htmlspecialchars($chosen['name']) . ' berhasil! Berlaku hingga ' . date('d M Y', strtotime($new_expires)) . '.';
+                // Refresh active membership
+                $active_membership = $chosen;
+            } else {
+                $pdo->rollBack();
+                $flash = 'Saldo Deposit tidak mencukupi. Transaksi digagalkan.'; $flashType = 'error';
+            }
         } catch (\Throwable $e) {
             $pdo->rollBack();
             $flash = 'Terjadi kesalahan. Silakan coba lagi.'; $flashType = 'error';

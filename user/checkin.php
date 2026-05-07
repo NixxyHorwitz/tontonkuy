@@ -31,14 +31,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check
     } else {
         try {
             $pdo->beginTransaction();
-            $pdo->prepare("UPDATE users SET balance_dep=balance_dep+?, last_checkin=CURDATE() WHERE id=?")
-                ->execute([$checkin_reward, $user['id']]);
-            $pdo->commit();
-            // Refresh user
-            $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
-            $already = true;
-            $flash = '🎉 Check-in berhasil! +' . format_rp($checkin_reward) . ' masuk ke Saldo Deposit.';
-            $flashType = 'success';
+            $stmt = $pdo->prepare("UPDATE users SET balance_dep=balance_dep+?, last_checkin=CURDATE() WHERE id=? AND (last_checkin IS NULL OR last_checkin < CURDATE())");
+            $stmt->execute([$checkin_reward, $user['id']]);
+            
+            if ($stmt->rowCount() > 0) {
+                $pdo->commit();
+                $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
+                $already = true;
+                $flash = '🎉 Check-in berhasil! +' . format_rp($checkin_reward) . ' masuk ke Saldo Deposit.';
+                $flashType = 'success';
+            } else {
+                $pdo->rollBack();
+                $flash = 'Kamu sudah check-in hari ini. Kembali besok!';
+                $flashType = 'warn';
+                $already = true;
+            }
         } catch (\Throwable) {
             $pdo->rollBack();
             $flash = 'Terjadi kesalahan.'; $flashType = 'error';
