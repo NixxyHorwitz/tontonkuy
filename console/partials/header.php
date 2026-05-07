@@ -250,6 +250,10 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
       Panduan &amp; Popup
     </a>
+    <a href="/console/contacts" class="c-nav-link <?= $activePage==='contacts'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      Tombol Kontak
+    </a>
     <a href="/console/analytics.php" class="c-nav-link <?= $activePage==='analytics'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Traffic Analytics
