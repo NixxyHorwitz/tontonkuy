@@ -24,16 +24,28 @@ $_favicon    = setting($pdo, 'favicon_path', '');
 <?php if ($_seo_kw):   ?><meta name="keywords"    content="<?= htmlspecialchars($_seo_kw) ?>"><?php endif; ?>
 <?php if ($_seo_author):?><meta name="author"     content="<?= htmlspecialchars($_seo_author) ?>"><?php endif; ?>
 <meta name="robots" content="<?= htmlspecialchars($_seo_robots) ?>">
+<?php
+$absolute_og = $_seo_og ? (preg_match('~^https?://~', $_seo_og) ? $_seo_og : base_url(ltrim($_seo_og, '/'))) : '';
+$absolute_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : base_url(ltrim($_favicon, '/'))) : '';
+$current_url = base_url(ltrim($_SERVER['REQUEST_URI'] ?? '', '/'));
+$final_og_desc = $_seo_og_desc ?: $_seo_desc;
+?>
+<meta property="og:url" content="<?= htmlspecialchars($current_url) ?>">
 <meta property="og:type" content="<?= htmlspecialchars($_seo_og_type) ?>">
-<?php if ($_seo_og): ?>
-<meta property="og:image" content="<?= htmlspecialchars(preg_match('~^https?://~', $_seo_og) ? $_seo_og : rtrim(base_url(''), '/') . '/' . ltrim($_seo_og, '/')) ?>">
+<?php if ($absolute_og): ?>
+<meta property="og:image" content="<?= htmlspecialchars($absolute_og) ?>">
+<meta property="og:image:secure_url" content="<?= htmlspecialchars($absolute_og) ?>">
+<meta property="og:image:alt" content="<?= htmlspecialchars($_seo_title) ?>">
 <?php endif; ?>
 <meta property="og:title" content="<?= htmlspecialchars($_seo_og_title ?: (($pageTitle ?? '') ? $pageTitle . ' — ' . $_seo_title : $_seo_title)) ?>">
-<?php $final_og_desc = $_seo_og_desc ?: $_seo_desc; if ($final_og_desc): ?>
+<?php if ($final_og_desc): ?>
 <meta property="og:description" content="<?= htmlspecialchars($final_og_desc) ?>">
 <?php endif; ?>
 <meta name="twitter:card" content="<?= htmlspecialchars($_seo_twcard) ?>">
-<?php if ($_favicon): ?><link rel="icon" type="image/png" href="<?= htmlspecialchars($_favicon) ?>?v=<?= @filemtime(dirname(__DIR__) . $_favicon) ?: time() ?>"><?php endif; ?>
+<?php if ($absolute_fav): ?>
+<link rel="icon" type="image/png" href="<?= htmlspecialchars($absolute_fav) ?>?v=<?= @filemtime(dirname(__DIR__) . $_favicon) ?: time() ?>">
+<link rel="apple-touch-icon" href="<?= htmlspecialchars($absolute_fav) ?>?v=<?= @filemtime(dirname(__DIR__) . $_favicon) ?: time() ?>">
+<?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body>
