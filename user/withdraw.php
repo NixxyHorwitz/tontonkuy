@@ -3,23 +3,34 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
 $flash = $flashType = '';
-$wd_lock_notice= setting($pdo, 'wd_lock_notice', 'Penarikan hanya bisa dilakukan pada jam tertentu.');
+$wd_lock_notice = setting($pdo, 'wd_lock_notice', 'Penarikan hanya bisa dilakukan pada jam tertentu.');
+$wd_lock_start  = setting($pdo, 'wd_lock_start', '');
+$wd_lock_end    = setting($pdo, 'wd_lock_end', '');
 
+// Fetch membership min/max WD — only if membership is still active (not expired)
 $user_mem = null;
-if ($user['membership_id']) {
-    $stmt = $pdo->prepare("SELECT min_wd, max_wd FROM memberships WHERE id = ?");
+$membership_active = $user['membership_id']
+    && $user['membership_expires_at']
+    && strtotime((string)$user['membership_expires_at']) > time();
+
+if ($membership_active) {
+    $stmt = $pdo->prepare("SELECT min_wd, max_wd FROM memberships WHERE id = ? AND is_active = 1");
     $stmt->execute([$user['membership_id']]);
-    $user_mem = $stmt->fetch();
+    $user_mem = $stmt->fetch() ?: null;
 }
-$min_withdraw = $user_mem ? (float)$user_mem['min_wd'] : 0;
-$max_withdraw = $user_mem ? (float)$user_mem['max_wd'] : 0;
+
+$min_withdraw  = $user_mem ? (float)$user_mem['min_wd'] : 0;
+$max_withdraw  = $user_mem ? (float)$user_mem['max_wd'] : 0;
 $max_available = min((float)$user['balance_wd'], $max_withdraw > 0 ? $max_withdraw : (float)$user['balance_wd']);
 
 $has_bank = !empty($user['bank_name']) && !empty($user['account_number']) && !empty($user['account_name']);
 
-$wd_locked    = is_wd_locked($pdo);
-$user_level   = user_membership_level($pdo, $user);
-$level_blocked= $wd_min_level > 0 && $user_level < $wd_min_level;
+$wd_locked = is_wd_locked($pdo);
+
+// Level block still uses global admin setting
+$wd_min_level  = (int) setting($pdo, 'wd_min_level', '0');
+$user_level    = user_membership_level($pdo, $user);
+$level_blocked = $wd_min_level > 0 && $user_level < $wd_min_level;
 
 $min_level_name = '';
 if ($wd_min_level > 0) {
