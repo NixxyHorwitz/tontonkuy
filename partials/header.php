@@ -79,10 +79,46 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
           <span class="topbar__bal-val"><?= fmt_short((float)$user['balance_dep']) ?></span>
         </div>
       </div>
-      <a href="/history" class="topbar__avatar" title="Riwayat"
-         style="background:var(--mint);font-size:16px;text-decoration:none">📊</a>
+      <a href="/notifications" class="topbar__avatar" title="Notifikasi"
+         id="notif-bell-btn"
+         style="background:var(--lavender);font-size:16px;text-decoration:none;position:relative">
+        🔔
+        <span id="notif-badge" style="
+          display:none;position:absolute;top:-4px;right:-4px;
+          background:var(--brand);color:#fff;
+          font-size:9px;font-weight:900;min-width:16px;height:16px;
+          border-radius:10px;padding:0 3px;
+          border:1.5px solid var(--ink);
+          display:inline-flex;align-items:center;justify-content:center;
+          line-height:1
+        "></span>
+      </a>
       <a href="/profile" class="topbar__avatar"><?= strtoupper(substr($user['username'], 0, 1)) ?></a>
       <?php endif; ?>
     </div>
   </header>
   <main class="page-content">
+<?php if (!empty($user)): ?>
+<script>
+(function() {
+  function fetchNotifCount() {
+    fetch('/notif_action?action=count')
+      .then(r => r.json())
+      .then(data => {
+        const badge = document.getElementById('notif-badge');
+        if (!badge) return;
+        if (data.count > 0) {
+          badge.textContent = data.count > 9 ? '9+' : data.count;
+          badge.style.display = 'inline-flex';
+        } else {
+          badge.style.display = 'none';
+        }
+      })
+      .catch(() => {});
+  }
+  // Run on load + every 60s
+  fetchNotifCount();
+  setInterval(fetchNotifCount, 60000);
+})();
+</script>
+<?php endif; ?>

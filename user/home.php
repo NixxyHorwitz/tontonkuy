@@ -37,6 +37,33 @@ if ($user['membership_id'] && $user['membership_expires_at'] && strtotime($user[
     $membership_name = $ms->fetchColumn() ?: 'Free';
 }
 
+// Unread notifications preview (max 3)
+$notif_preview = [];
+$notif_unread  = 0;
+try {
+    $uid = $user['id'];
+    $np = $pdo->prepare(
+        "SELECT n.* FROM notifications n
+         LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
+         WHERE nr.id IS NULL
+           AND (n.target_type='all' OR (n.target_user_ids IS NOT NULL AND JSON_CONTAINS(n.target_user_ids, CAST(? AS JSON))))
+           AND (n.expires_at IS NULL OR n.expires_at > NOW())
+         ORDER BY n.created_at DESC LIMIT 3"
+    );
+    $np->execute([$uid, $uid]);
+    $notif_preview = $np->fetchAll();
+    // Total unread count
+    $nc = $pdo->prepare(
+        "SELECT COUNT(*) FROM notifications n
+         LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
+         WHERE nr.id IS NULL
+           AND (n.target_type='all' OR (n.target_user_ids IS NOT NULL AND JSON_CONTAINS(n.target_user_ids, CAST(? AS JSON))))
+           AND (n.expires_at IS NULL OR n.expires_at > NOW())"
+    );
+    $nc->execute([$uid, $uid]);
+    $notif_unread = (int)$nc->fetchColumn();
+} catch (\Throwable) {}
+
 $pageTitle  = 'Beranda — TontonKuy';
 $activePage = 'home';
 require dirname(__DIR__) . '/partials/header.php';
@@ -59,29 +86,99 @@ require dirname(__DIR__) . '/partials/header.php';
     </div>
   </div>
   <div class="hero-card__actions" style="margin-top:10px;gap:6px">
-    <a href="/deposit"  class="hero-card__btn">⬆️ Deposit</a>
-    <a href="/withdraw" class="hero-card__btn">⬇️ WD</a>
-    <a href="/upgrade"  class="hero-card__btn">👑 Upgrade</a>
-    <a href="/checkin"  class="hero-card__btn">📅 Check-in</a>
+    <a href="/deposit"      class="hero-card__btn">⬆️ Topup</a>
+    <a href="/withdraw"     class="hero-card__btn">⬇️ Tarik</a>
+    <a href="/upgrade"      class="hero-card__btn">👑 Upgrade</a>
+    <a href="/checkin"      class="hero-card__btn">📅 Absen</a>
   </div>
 </div>
 
-<!-- Stats row (compact) -->
+<!-- Stats row -->
 <div class="stat-row" style="margin-top:10px">
-  <div class="stat-mini">
-    <div class="stat-mini__val"><?= $watch_today ?><span style="font-size:11px;color:var(--text3)">/<?= $watch_limit ?></span></div>
-    <div class="stat-mini__lbl">Tonton</div>
+  <!-- Video tonton hari ini -->
+  <a href="/videos" class="stat-mini" style="text-decoration:none;cursor:pointer" title="Klik untuk tonton video">
+    <div style="display:flex;align-items:center;justify-content:center;gap:2px;margin-bottom:2px">
+      <div class="stat-mini__val"><?= $watch_today ?></div>
+      <div style="font-size:11px;color:#666;font-weight:700;align-self:flex-end;padding-bottom:1px">/<?= $watch_limit ?></div>
+    </div>
+    <?php $pct = $watch_limit > 0 ? min(100, round(($watch_today / $watch_limit) * 100)) : 0; ?>
+    <div style="width:100%;height:4px;background:#ddd;border-radius:3px;margin:3px 0;border:1px solid var(--ink);overflow:hidden">
+      <div style="width:<?= $pct ?>%;height:100%;background:<?= $pct >= 100 ? 'var(--salmon)' : 'var(--green)' ?>;border-radius:3px;transition:width .3s"></div>
+    </div>
+    <div class="stat-mini__lbl">🎬 Video Tonton</div>
+  </a>
+  <!-- Video tersedia -->
+  <a href="/videos" class="stat-mini" style="text-decoration:none;cursor:pointer">
+    <div class="stat-mini__val" style="font-size:16px"><?= count($videos) ?></div>
+    <div style="font-size:10px;color:#888;font-weight:700;margin-top:1px">video tersisa</div>
+    <div class="stat-mini__lbl">📺 Tersedia</div>
+  </a>
+  <!-- Referral code -->
+  <div class="stat-mini" style="cursor:pointer" onclick="copyRef('<?= htmlspecialchars($user['referral_code']) ?>')" title="Tap untuk salin kode">
+    <div class="stat-mini__val" style="font-size:11px;letter-spacing:2px;font-family:monospace"><?= $user['referral_code'] ?></div>
+    <div style="font-size:9px;color:#888;margin-top:1px">tap untuk salin</div>
+    <div class="stat-mini__lbl">🔗 Referral</div>
   </div>
-  <div class="stat-mini">
-    <div class="stat-mini__val" style="font-size:14px"><?= count($videos) ?></div>
-    <div class="stat-mini__lbl">Tersedia</div>
-  </div>
-  <div class="stat-mini">
-    <div class="stat-mini__val" style="font-size:12px;letter-spacing:2px"><?= $user['referral_code'] ?></div>
-    <div class="stat-mini__lbl">Referral</div>
-  </div>
-
 </div>
+<div id="ref-toast" style="display:none;text-align:center;font-size:11px;font-weight:800;color:var(--green);margin-top:4px">✓ Kode disalin!</div>
+
+<?php if (!empty($notif_preview)): ?>
+<!-- Notification Preview -->
+<div style="margin-top:10px">
+  <div class="section-header" style="margin-bottom:6px">
+    <div class="section-title" style="font-size:14px">
+      🔔 Notifikasi
+      <?php if ($notif_unread > 0): ?>
+      <span style="display:inline-flex;align-items:center;justify-content:center;
+             width:18px;height:18px;background:var(--brand);color:#fff;
+             font-size:10px;font-weight:900;border-radius:50%;
+             border:1.5px solid var(--ink);margin-left:2px">
+        <?= $notif_unread > 9 ? '9+' : $notif_unread ?>
+      </span>
+      <?php endif; ?>
+    </div>
+    <a href="/notifications" class="section-link">Lihat semua →</a>
+  </div>
+  <?php
+  $notif_colors = [
+    'info'     => ['bg' => 'var(--sky)',     'icon' => 'ℹ️'],
+    'success'  => ['bg' => 'var(--lime)',    'icon' => '✅'],
+    'warning'  => ['bg' => 'var(--peach)',   'icon' => '⚠️'],
+    'alert'    => ['bg' => 'var(--salmon)',  'icon' => '🚨'],
+    'congrats' => ['bg' => 'var(--yellow)', 'icon' => '🎉'],
+  ];
+  foreach ($notif_preview as $nf):
+    $nc = $notif_colors[$nf['type']] ?? $notif_colors['info'];
+    $ni = $nf['icon'] ?: $nc['icon'];
+  ?>
+  <div style="
+    display:flex;align-items:flex-start;gap:10px;
+    background:<?= $nc['bg'] ?>;
+    border:2.5px solid var(--ink);
+    border-radius:12px;
+    box-shadow:3px 3px 0 var(--ink);
+    padding:10px 12px;
+    margin-bottom:6px;
+  ">
+    <span style="font-size:20px;flex-shrink:0;line-height:1.2"><?= $ni ?></span>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+        <?= htmlspecialchars($nf['title']) ?>
+      </div>
+      <div style="font-size:11px;color:#555;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+        <?= htmlspecialchars($nf['message']) ?>
+      </div>
+    </div>
+    <span style="width:8px;height:8px;background:var(--brand);border-radius:50%;flex-shrink:0;border:1.5px solid var(--ink);margin-top:4px"></span>
+  </div>
+  <?php endforeach; ?>
+  <?php if ($notif_unread > 3): ?>
+  <a href="/notifications" style="display:block;text-align:center;font-size:12px;font-weight:800;color:var(--brand);padding:4px 0">
+    +<?= $notif_unread - 3 ?> notifikasi lainnya
+  </a>
+  <?php endif; ?>
+</div>
+<?php endif; ?>
 
 <?php if ($watch_today >= $watch_limit): ?>
 <div class="alert alert--warn" style="margin-top:10px;font-size:12px;padding:8px 12px">
@@ -233,3 +330,14 @@ if (popup) popup.addEventListener('click', function(e){ if (e.target===this) clo
 <?php endif; ?>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
+
+<script>
+function copyRef(code) {
+  navigator.clipboard.writeText(code).then(function() {
+    const t = document.getElementById('ref-toast');
+    if (!t) return;
+    t.style.display = 'block';
+    setTimeout(function(){ t.style.display = 'none'; }, 2000);
+  });
+}
+</script>
