@@ -92,7 +92,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
             
             $msg = "<b>💸 WITHDRAW BARU</b>\nUser: {$user['username']}\nAmount: " . format_rp((float)$amount) . "\nBank: {$bank} - {$accnum}\na/n: {$accname}\nStatus: Pending";
-            $kb = [[['text'=>'✅ Approve', 'callback_data'=>'wd_approve_'.$wd_id], ['text'=>'❌ Reject', 'callback_data'=>'wd_reject_'.$wd_id]]];
+            $kb = [
+                [['text'=>'✅ Approve', 'callback_data'=>'wd_approve_'.$wd_id], ['text'=>'❌ Reject', 'callback_data'=>'wd_reject_'.$wd_id]],
+                [['text'=>'🔄 Refresh Status', 'callback_data'=>'refresh_wd_'.$wd_id]]
+            ];
             send_telegram_notif($pdo, $msg, $kb);
             
             $flash = '✅ Permintaan withdraw dikirim! Proses 1-3 hari kerja.';

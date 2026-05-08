@@ -2,101 +2,273 @@
 declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 
-$json = file_get_contents('php://input');
+$json   = file_get_contents('php://input');
 $update = json_decode($json, true);
 
-if (!$update) {
-    http_response_code(200);
-    exit;
-}
+if (!$update) { http_response_code(200); exit; }
 
 $token = setting($pdo, 'tg_bot_token', '');
-if (!$token) {
-    http_response_code(200);
-    exit;
+if (!$token) { http_response_code(200); exit; }
+
+$admin_chat_id = setting($pdo, 'tg_chat_id', '');
+
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function tg_api(string $token, string $method, array $post): ?array {
+    $ch = curl_init("https://api.telegram.org/bot{$token}/{$method}");
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $post,
+    ]);
+    $res = curl_exec($ch);
+    curl_close($ch);
+    return json_decode($res ?: '{}', true);
 }
 
-if (isset($update['callback_query'])) {
-    $cb = $update['callback_query'];
-    $data = $cb['data'] ?? '';
-    $chat_id = $cb['message']['chat']['id'] ?? '';
-    $msg_id = $cb['message']['message_id'] ?? '';
-    $cb_id = $cb['id'] ?? '';
+function tg_api_json(string $token, string $method, array $body): void {
+    $ch = curl_init("https://api.telegram.org/bot{$token}/{$method}");
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS     => json_encode($body),
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+}
 
-    // Only allow configured admin chat id
-    $admin_chat_id = setting($pdo, 'tg_chat_id', '');
+function answer_cb(string $token, string $cb_id, string $text): void {
+    tg_api($token, 'answerCallbackQuery', ['callback_query_id' => $cb_id, 'text' => $text, 'show_alert' => false]);
+}
+
+function edit_msg(string $token, $chat_id, $msg_id, string $text, ?array $kb = null): void {
+    $body = ['chat_id' => $chat_id, 'message_id' => $msg_id, 'text' => $text, 'parse_mode' => 'HTML'];
+    if ($kb !== null) $body['reply_markup'] = ['inline_keyboard' => $kb];
+    tg_api_json($token, 'editMessageText', $body);
+}
+
+function send_msg(string $token, $chat_id, string $text, ?array $kb = null): void {
+    $body = ['chat_id' => $chat_id, 'text' => $text, 'parse_mode' => 'HTML'];
+    if ($kb !== null) $body['reply_markup'] = ['inline_keyboard' => $kb];
+    tg_api_json($token, 'sendMessage', $body);
+}
+
+/** Save pending reject state to settings table */
+function set_tg_state(PDO $pdo, $chat_id, string $state): void {
+    $key = 'tg_state_' . $chat_id;
+    $pdo->prepare("INSERT INTO settings (`key`,`value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `value`=?")
+        ->execute([$key, $state, $state]);
+}
+
+/** Get and clear pending state */
+function get_tg_state(PDO $pdo, $chat_id): string {
+    $key = 'tg_state_' . $chat_id;
+    $s = $pdo->prepare("SELECT `value` FROM settings WHERE `key`=?");
+    $s->execute([$key]);
+    return (string)($s->fetchColumn() ?: '');
+}
+
+function clear_tg_state(PDO $pdo, $chat_id): void {
+    $pdo->prepare("DELETE FROM settings WHERE `key`=?")->execute(['tg_state_' . $chat_id]);
+}
+
+/** Do the actual deposit reject */
+function do_depo_reject(PDO $pdo, int $id, string $reason): string {
+    $pdo->beginTransaction();
+    $dep = $pdo->prepare("SELECT * FROM deposits WHERE id=? FOR UPDATE");
+    $dep->execute([$id]);
+    $dep = $dep->fetch();
+    if (!$dep || $dep['status'] !== 'pending') {
+        $pdo->rollBack();
+        return 'Deposit tidak ditemukan atau bukan pending.';
+    }
+    $note = $reason ?: 'Rejected via Bot';
+    $pdo->prepare("UPDATE deposits SET status='rejected', admin_note=? WHERE id=?")->execute([$note, $id]);
+    $pdo->commit();
+    return 'ok';
+}
+
+/** Do the actual withdraw reject */
+function do_wd_reject(PDO $pdo, int $id, string $reason): string {
+    $pdo->beginTransaction();
+    $wd = $pdo->prepare("SELECT * FROM withdrawals WHERE id=? FOR UPDATE");
+    $wd->execute([$id]);
+    $wd = $wd->fetch();
+    if (!$wd || $wd['status'] !== 'pending') {
+        $pdo->rollBack();
+        return 'WD tidak ditemukan atau bukan pending.';
+    }
+    $note = $reason ?: 'Rejected via Bot';
+    $pdo->prepare("UPDATE withdrawals SET status='rejected', admin_note=? WHERE id=?")->execute([$note, $id]);
+    $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$wd['amount'], $wd['user_id']]);
+    $pdo->commit();
+    return 'ok';
+}
+
+// ── Callback Query Handler ───────────────────────────────────────────────────
+
+if (isset($update['callback_query'])) {
+    $cb      = $update['callback_query'];
+    $data    = $cb['data'] ?? '';
+    $chat_id = $cb['message']['chat']['id'] ?? '';
+    $msg_id  = $cb['message']['message_id'] ?? '';
+    $cb_id   = $cb['id'] ?? '';
+    $orig    = $cb['message']['text'] ?? '';
+
     if ((string)$chat_id !== (string)$admin_chat_id) {
-        http_response_code(200);
-        exit;
+        http_response_code(200); exit;
     }
 
-    $answerText = 'Action processed';
-    $newMsgText = $cb['message']['text'] ?? '';
+    // ── REFRESH ──────────────────────────────────────────────────────────────
+    if (preg_match('/^refresh_(depo|wd)_(\d+)$/', $data, $m)) {
+        $type = $m[1];
+        $id   = (int)$m[2];
+        answer_cb($token, $cb_id, '🔄 Mengecek status...');
 
-    if (preg_match('/^depo_(approve|reject)_(\d+)$/', $data, $m)) {
-        $action = $m[1];
-        $id = (int)$m[2];
-        
+        if ($type === 'depo') {
+            $row = $pdo->prepare("SELECT d.*, u.username FROM deposits d JOIN users u ON u.id=d.user_id WHERE d.id=?");
+            $row->execute([$id]); $row = $row->fetch();
+            if (!$row) { send_msg($token, $chat_id, "Deposit #{$id} tidak ditemukan."); }
+            elseif ($row['status'] !== 'pending') {
+                $icon = $row['status'] === 'confirmed' ? '✅' : '❌';
+                edit_msg($token, $chat_id, $msg_id,
+                    str_replace('Status: Pending', "Status: {$icon} " . ucfirst($row['status']), $orig));
+                send_msg($token, $chat_id, "ℹ️ Deposit #{$id} sudah di-handle: <b>{$row['status']}</b>");
+            } else {
+                send_msg($token, $chat_id, "⏳ Deposit #{$id} masih <b>pending</b>, belum diproses.");
+            }
+        } else {
+            $row = $pdo->prepare("SELECT w.*, u.username FROM withdrawals w JOIN users u ON u.id=w.user_id WHERE w.id=?");
+            $row->execute([$id]); $row = $row->fetch();
+            if (!$row) { send_msg($token, $chat_id, "WD #{$id} tidak ditemukan."); }
+            elseif ($row['status'] !== 'pending') {
+                $icon = $row['status'] === 'approved' ? '✅' : '❌';
+                edit_msg($token, $chat_id, $msg_id,
+                    str_replace('Status: Pending', "Status: {$icon} " . ucfirst($row['status']), $orig));
+                send_msg($token, $chat_id, "ℹ️ WD #{$id} sudah di-handle: <b>{$row['status']}</b>");
+            } else {
+                send_msg($token, $chat_id, "⏳ WD #{$id} masih <b>pending</b>, belum diproses.");
+            }
+        }
+        http_response_code(200); exit;
+    }
+
+    // ── APPROVE ──────────────────────────────────────────────────────────────
+    if (preg_match('/^depo_approve_(\d+)$/', $data, $m)) {
+        $id = (int)$m[1];
         $pdo->beginTransaction();
         $dep = $pdo->prepare("SELECT * FROM deposits WHERE id=? FOR UPDATE");
-        $dep->execute([$id]);
-        $dep = $dep->fetch();
-
+        $dep->execute([$id]); $dep = $dep->fetch();
         if ($dep && $dep['status'] === 'pending') {
-            if ($action === 'approve') {
-                $pdo->prepare("UPDATE deposits SET status='confirmed', confirmed_at=NOW() WHERE id=?")->execute([$id]);
-                $pdo->prepare("UPDATE users SET balance_dep=balance_dep+? WHERE id=?")->execute([$dep['amount'], $dep['user_id']]);
-                $answerText = "Deposit Approved!";
-                $newMsgText = str_replace('Status: Pending', 'Status: ✅ Approved', $newMsgText);
-            } else {
-                $pdo->prepare("UPDATE deposits SET status='rejected', admin_note='Rejected via Bot' WHERE id=?")->execute([$id]);
-                $answerText = "Deposit Rejected!";
-                $newMsgText = str_replace('Status: Pending', 'Status: ❌ Rejected', $newMsgText);
-            }
+            $pdo->prepare("UPDATE deposits SET status='confirmed', confirmed_at=NOW() WHERE id=?")->execute([$id]);
+            $pdo->prepare("UPDATE users SET balance_dep=balance_dep+? WHERE id=?")->execute([$dep['amount'], $dep['user_id']]);
+            $pdo->commit();
+            answer_cb($token, $cb_id, '✅ Deposit Approved!');
+            edit_msg($token, $chat_id, $msg_id, str_replace('Status: Pending', 'Status: ✅ Approved', $orig));
         } else {
-            $answerText = "Deposit is not pending or not found.";
+            $pdo->rollBack();
+            answer_cb($token, $cb_id, '⚠️ Sudah diproses atau tidak ditemukan.');
         }
-        $pdo->commit();
-    } elseif (preg_match('/^wd_(approve|reject)_(\d+)$/', $data, $m)) {
-        $action = $m[1];
-        $id = (int)$m[2];
-
-        $pdo->beginTransaction();
-        $wd = $pdo->prepare("SELECT * FROM withdrawals WHERE id=? FOR UPDATE");
-        $wd->execute([$id]);
-        $wd = $wd->fetch();
-
-        if ($wd && $wd['status'] === 'pending') {
-            if ($action === 'approve') {
-                $pdo->prepare("UPDATE withdrawals SET status='approved', processed_at=NOW() WHERE id=?")->execute([$id]);
-                $answerText = "Withdraw Approved!";
-                $newMsgText = str_replace('Status: Pending', 'Status: ✅ Approved', $newMsgText);
-            } else {
-                // refund
-                $pdo->prepare("UPDATE withdrawals SET status='rejected', admin_note='Rejected via Bot' WHERE id=?")->execute([$id]);
-                $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$wd['amount'], $wd['user_id']]);
-                $answerText = "Withdraw Rejected & Refunded!";
-                $newMsgText = str_replace('Status: Pending', 'Status: ❌ Rejected', $newMsgText);
-            }
-        } else {
-            $answerText = "Withdraw is not pending or not found.";
-        }
-        $pdo->commit();
+        http_response_code(200); exit;
     }
 
-    // Answer callback
-    $url = "https://api.telegram.org/bot{$token}/answerCallbackQuery";
-    $post = ['callback_query_id' => $cb_id, 'text' => $answerText];
-    $ch = curl_init($url); curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); curl_setopt($ch, CURLOPT_POSTFIELDS, $post); curl_exec($ch); curl_close($ch);
+    if (preg_match('/^wd_approve_(\d+)$/', $data, $m)) {
+        $id = (int)$m[1];
+        $pdo->beginTransaction();
+        $wd = $pdo->prepare("SELECT * FROM withdrawals WHERE id=? FOR UPDATE");
+        $wd->execute([$id]); $wd = $wd->fetch();
+        if ($wd && $wd['status'] === 'pending') {
+            $pdo->prepare("UPDATE withdrawals SET status='approved', processed_at=NOW() WHERE id=?")->execute([$id]);
+            $pdo->commit();
+            answer_cb($token, $cb_id, '✅ Withdraw Approved!');
+            edit_msg($token, $chat_id, $msg_id, str_replace('Status: Pending', 'Status: ✅ Approved', $orig));
+        } else {
+            $pdo->rollBack();
+            answer_cb($token, $cb_id, '⚠️ Sudah diproses atau tidak ditemukan.');
+        }
+        http_response_code(200); exit;
+    }
 
-    // Edit message to remove inline keyboard and update text
-    $url = "https://api.telegram.org/bot{$token}/editMessageText";
-    $post = [
-        'chat_id' => $chat_id,
-        'message_id' => $msg_id,
-        'text' => $newMsgText
-    ];
-    $ch = curl_init($url); curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); curl_setopt($ch, CURLOPT_POSTFIELDS, $post); curl_exec($ch); curl_close($ch);
+    // ── REJECT (ask for reason) ───────────────────────────────────────────────
+    if (preg_match('/^(depo|wd)_reject_(\d+)$/', $data, $m)) {
+        $type = $m[1];
+        $id   = (int)$m[2];
+        answer_cb($token, $cb_id, '📝 Ketik alasan penolakan...');
+        // Save state: awaiting_reason|type|id|chat_msg_id|orig_text
+        $state = implode('|', ['awaiting_reason', $type, $id, $msg_id, base64_encode($orig)]);
+        set_tg_state($pdo, $chat_id, $state);
+        send_msg($token, $chat_id,
+            "📝 <b>Ketik alasan penolakan</b> untuk {$type} #{$id} dan kirim sebagai pesan.\n\nAtau tekan tombol di bawah untuk langsung tolak tanpa alasan.",
+            [[['text' => '⏭ Skip (Tanpa Alasan)', 'callback_data' => "{$type}_reject_skip_{$id}"]]]
+        );
+        http_response_code(200); exit;
+    }
+
+    // ── REJECT SKIP (no reason) ───────────────────────────────────────────────
+    if (preg_match('/^(depo|wd)_reject_skip_(\d+)$/', $data, $m)) {
+        $type = $m[1];
+        $id   = (int)$m[2];
+        clear_tg_state($pdo, $chat_id);
+
+        if ($type === 'depo') {
+            $res = do_depo_reject($pdo, $id, '');
+        } else {
+            $res = do_wd_reject($pdo, $id, '');
+        }
+
+        if ($res === 'ok') {
+            answer_cb($token, $cb_id, '❌ Ditolak tanpa alasan.');
+            edit_msg($token, $chat_id, $msg_id, str_replace('Status: Pending', 'Status: ❌ Rejected', $orig));
+        } else {
+            answer_cb($token, $cb_id, '⚠️ ' . $res);
+        }
+        http_response_code(200); exit;
+    }
+
+    http_response_code(200); exit;
+}
+
+// ── Message Handler (for reject reason text) ─────────────────────────────────
+
+if (isset($update['message'])) {
+    $msg     = $update['message'];
+    $chat_id = $msg['chat']['id'] ?? '';
+    $text    = trim($msg['text'] ?? '');
+
+    if ((string)$chat_id !== (string)$admin_chat_id || empty($text)) {
+        http_response_code(200); exit;
+    }
+
+    $state = get_tg_state($pdo, $chat_id);
+    if (!$state) { http_response_code(200); exit; }
+
+    $parts = explode('|', $state, 5);
+    if ($parts[0] !== 'awaiting_reason') { http_response_code(200); exit; }
+
+    [, $type, $id, $orig_msg_id, $orig_b64] = $parts;
+    $id       = (int)$id;
+    $orig_msg_id = (int)$orig_msg_id;
+    $orig_text   = base64_decode($orig_b64);
+    $reason   = $text;
+
+    clear_tg_state($pdo, $chat_id);
+
+    if ($type === 'depo') {
+        $res = do_depo_reject($pdo, $id, $reason);
+    } else {
+        $res = do_wd_reject($pdo, $id, $reason);
+    }
+
+    if ($res === 'ok') {
+        $new_text = str_replace('Status: Pending', "Status: ❌ Rejected\nAlasan: {$reason}", $orig_text);
+        edit_msg($token, $chat_id, $orig_msg_id, $new_text);
+        send_msg($token, $chat_id, "✅ " . strtoupper($type) . " #{$id} berhasil ditolak.\n📝 Alasan: <i>" . htmlspecialchars($reason) . "</i>");
+    } else {
+        send_msg($token, $chat_id, "⚠️ Gagal: {$res}");
+    }
+
+    http_response_code(200); exit;
 }
 
 http_response_code(200);
