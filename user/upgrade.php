@@ -138,8 +138,7 @@ require dirname(__DIR__) . '/partials/header.php';
       $can_afford = (float)$user['balance_dep'] >= (float)$m['price'];
     ?>
     <div class="membership-card" id="card-<?= $m['id'] ?>"
-         onclick="<?= $can_afford ? 'selectPlan('.$m['id'].','.$m['price'].')' : "nToast('Saldo deposit tidak cukup. Deposit dulu!','error')" ?>"
-         style="cursor:pointer;transition:all .2s<?= !$can_afford ? ';opacity:.65' : '' ?>">
+         style="transition:all .2s<?= !$can_afford ? ';opacity:.65' : '' ?>">
       <?php if ($i === 2): ?><div class="membership-card__badge">🔥 Populer</div><?php endif; ?>
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div>
@@ -164,14 +163,41 @@ require dirname(__DIR__) . '/partials/header.php';
         <div class="membership-card__feature">📤 Max. WD: <?= (float)$m['max_wd'] > 0 ? format_rp((float)$m['max_wd']) : '<span style="color:#4CAF82">Tanpa batas</span>' ?></div>
         <?php if ($m['description']): ?><div class="membership-card__feature">ℹ️ <?= htmlspecialchars($m['description']) ?></div><?php endif; ?>
       </div>
+      <div style="margin-top:12px">
+        <?php if ($can_afford): ?>
+        <button type="button" class="btn btn--primary btn--full" style="font-size:13px"
+          onclick="openConfirm(<?= $m['id'] ?>, '<?= htmlspecialchars($m['name'], ENT_QUOTES) ?>', <?= (float)$m['price'] ?>, <?= $m['duration_days'] ?>)">
+          🚀 Upgrade ke <?= htmlspecialchars($m['name']) ?>
+        </button>
+        <?php else: ?>
+        <button type="button" class="btn btn--full" disabled style="font-size:13px;opacity:.5">
+          💳 Saldo Kurang
+        </button>
+        <?php endif; ?>
+      </div>
     </div>
     <?php endforeach; ?>
   </div>
-
-  <button type="submit" id="upgrade-btn" class="btn btn--primary btn--full btn--lg" disabled>
-    Pilih Paket Dulu ↑
-  </button>
 </form>
+
+<!-- Confirmation Modal -->
+<div id="upgrade-modal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:flex-end;justify-content:center">
+  <div style="background:#fff;border-radius:20px 20px 0 0;border:2.5px solid var(--ink);padding:24px 20px 32px;width:100%;max-width:480px;box-shadow:0 -4px 0 var(--ink);animation:slideUp .25s ease">
+    <div style="font-size:18px;font-weight:900;margin-bottom:6px">🚀 Konfirmasi Upgrade</div>
+    <div style="font-size:13px;color:#555;margin-bottom:16px">Pastikan kamu yakin sebelum melanjutkan.</div>
+    <div style="background:var(--yellow);border:2px solid var(--ink);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+      <div style="font-size:12px;color:#666;font-weight:700">Paket dipilih</div>
+      <div style="font-size:18px;font-weight:900" id="modal-name">—</div>
+      <div style="font-size:13px;font-weight:700;margin-top:4px">Harga: <span id="modal-price">—</span></div>
+      <div style="font-size:12px;color:#666">Berlaku <span id="modal-days">—</span> hari setelah aktivasi</div>
+    </div>
+    <div style="font-size:12px;color:#888;margin-bottom:16px">⚠️ Saldo Deposit akan dipotong langsung. Aksi ini tidak bisa dibatalkan.</div>
+    <div style="display:flex;gap:8px">
+      <button type="button" class="btn btn--full" style="flex:1;font-size:13px" onclick="closeConfirm()">✖ Batal</button>
+      <button type="button" id="modal-confirm-btn" class="btn btn--primary btn--full" style="flex:1;font-size:13px;font-weight:900" onclick="submitUpgrade()">✅ Ya, Upgrade!</button>
+    </div>
+  </div>
+</div>
 
 <!-- FAQ / Notes -->
 <div class="card" style="margin-top:14px;margin-bottom:8px">
@@ -187,32 +213,33 @@ require dirname(__DIR__) . '/partials/header.php';
   </div>
 </div>
 
+<style>
+@keyframes slideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
+</style>
 <script>
-let selectedId = 0, selectedPrice = 0;
-function selectPlan(id, price) {
-  document.querySelectorAll('.membership-card').forEach(c => c.classList.remove('active'));
-  document.getElementById('card-'+id).classList.add('active');
+function openConfirm(id, name, price, days) {
   document.getElementById('chosen-id').value = id;
-  selectedId = id; selectedPrice = price;
-  const btn = document.getElementById('upgrade-btn');
-  btn.disabled = false;
-  btn.textContent = '🚀 Upgrade — Rp ' + price.toLocaleString('id-ID');
+  document.getElementById('modal-name').textContent  = name;
+  document.getElementById('modal-price').textContent = 'Rp ' + price.toLocaleString('id-ID');
+  document.getElementById('modal-days').textContent  = days;
+  const m = document.getElementById('upgrade-modal');
+  m.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
 }
-document.getElementById('upgrade-form').onsubmit = function(e) {
-  if (!selectedId) {
-    e.preventDefault();
-    nToast('Pilih paket terlebih dahulu!', 'warn');
-    return;
-  }
-  // Ganti confirm() native dengan form data-confirm sederhana
-  if (!this.dataset.confirmed) {
-    e.preventDefault();
-    nToast('Klik Upgrade lagi untuk konfirmasi — Rp ' + selectedPrice.toLocaleString('id-ID') + ' akan dipotong', 'warn', 3500);
-    this.dataset.confirmed = '1';
-    setTimeout(() => { delete this.dataset.confirmed; }, 4000);
-    return;
-  }
-};
+function closeConfirm() {
+  document.getElementById('upgrade-modal').style.display = 'none';
+  document.body.style.overflow = '';
+}
+function submitUpgrade() {
+  const btn = document.getElementById('modal-confirm-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Memproses...';
+  document.getElementById('upgrade-form').submit();
+}
+// Close on backdrop click
+document.getElementById('upgrade-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeConfirm();
+});
 </script>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
