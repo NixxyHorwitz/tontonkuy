@@ -19,6 +19,13 @@ if ($membership_active) {
     $user_mem = $stmt->fetch() ?: null;
 }
 
+// Fallback ke paket gratis jika tidak ada membership aktif
+if (!$user_mem) {
+    $stmt = $pdo->prepare("SELECT min_wd, max_wd FROM memberships WHERE price = 0 AND is_active = 1 ORDER BY sort_order ASC LIMIT 1");
+    $stmt->execute();
+    $user_mem = $stmt->fetch() ?: null;
+}
+
 $min_withdraw  = $user_mem ? (float)$user_mem['min_wd'] : 0;
 $max_withdraw  = $user_mem ? (float)$user_mem['max_wd'] : 0;
 $max_available = min((float)$user['balance_wd'], $max_withdraw > 0 ? $max_withdraw : (float)$user['balance_wd']);
