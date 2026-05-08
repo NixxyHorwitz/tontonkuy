@@ -47,9 +47,17 @@ if ($wd_require_level && $wd_min_level > 0) {
     $min_level_name = $lv->fetchColumn() ?: "Level {$wd_min_level}";
 }
 
+// Cek apakah ada WD pending
+$pending_wd = $pdo->prepare("SELECT id FROM withdrawals WHERE user_id=? AND status='pending' LIMIT 1");
+$pending_wd->execute([$user['id']]);
+$has_pending_wd = (bool)$pending_wd->fetchColumn();
+
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($wd_locked) {
         $flash = '⏰ ' . $wd_lock_notice; $flashType = 'error';
+    } elseif ($has_pending_wd) {
+        $flash = '⏳ Kamu masih memiliki WD yang sedang diproses. Tunggu hingga selesai sebelum mengajukan yang baru.'; $flashType = 'error';
     } elseif ($level_blocked) {
         $flash = "Upgrade ke {$min_level_name} untuk bisa menarik saldo."; $flashType = 'error';
     } else {
@@ -191,7 +199,12 @@ require dirname(__DIR__) . '/partials/header.php';
       </div>
       <?php endif; ?>
 
-      <?php if ((float)$user['balance_wd'] < $min_withdraw): ?>
+      <?php if ($has_pending_wd): ?>
+        <div class="alert alert--warn" style="margin-bottom:10px;font-size:12px">
+          ⏳ <strong>Ada WD pending.</strong> Kamu masih memiliki penarikan yang sedang diproses. Tunggu hingga selesai sebelum mengajukan yang baru.
+        </div>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px">⏳ WD Pending — Tunggu Dulu</button>
+      <?php elseif ((float)$user['balance_wd'] < $min_withdraw): ?>
         <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px">💸 Saldo Belum Cukup</button>
       <?php elseif ($wd_locked): ?>
         <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px">⏰ Sedang Ditutup</button>
