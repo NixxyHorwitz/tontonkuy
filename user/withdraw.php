@@ -34,13 +34,14 @@ $has_bank = !empty($user['bank_name']) && !empty($user['account_number']) && !em
 
 $wd_locked = is_wd_locked($pdo);
 
-// Level block still uses global admin setting
+// Level block — only enforced if admin enables the toggle
+$wd_require_level = setting($pdo, 'wd_require_level', '0') === '1';
 $wd_min_level  = (int) setting($pdo, 'wd_min_level', '0');
 $user_level    = user_membership_level($pdo, $user);
-$level_blocked = $wd_min_level > 0 && $user_level < $wd_min_level;
+$level_blocked = $wd_require_level && $wd_min_level > 0 && $user_level < $wd_min_level;
 
 $min_level_name = '';
-if ($wd_min_level > 0) {
+if ($wd_require_level && $wd_min_level > 0) {
     $lv = $pdo->prepare("SELECT name FROM memberships WHERE sort_order=? AND is_active=1 LIMIT 1");
     $lv->execute([$wd_min_level]);
     $min_level_name = $lv->fetchColumn() ?: "Level {$wd_min_level}";

@@ -10,11 +10,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'save_general') {
-        $keys = ['site_name','site_tagline','min_withdraw','free_watch_limit','referral_bonus',
+        $keys = ['site_name','site_tagline','free_watch_limit','referral_bonus',
                  'referral_commission_percent','checkin_reward','min_deposit','wd_min_level'];
         foreach ($keys as $k) {
             if (isset($_POST[$k])) setting_set($pdo, $k, trim($_POST[$k]));
         }
+        // Toggle checkbox
+        setting_set($pdo, 'wd_require_level', isset($_POST['wd_require_level']) ? '1' : '0');
         $flash = 'Pengaturan umum berhasil disimpan!';
     }
 
@@ -114,7 +116,18 @@ require __DIR__ . '/partials/header.php';
           <div class="c-form-group"><label class="c-label">Minimum Withdraw (Rp)</label>
             <input type="number" name="min_withdraw" class="c-form-control" value="<?= $s('min_withdraw','50000') ?>" min="0"></div>
           <div class="c-form-group"><label class="c-label">Level Minimum WD <small style="color:#888">(0=semua bisa, 1=Silver+, dll)</small></label>
-            <input type="number" name="wd_min_level" class="c-form-control" value="<?= $s('wd_min_level','0') ?>" min="0" max="10"></div>
+            <input type="number" name="wd_min_level" class="c-form-control" value="<?= $s('wd_min_level','0') ?>" min="0" max="10">
+          </div>
+          <div class="c-form-group">
+            <label class="c-label">Paksa Level Minimum untuk WD</label>
+            <div class="form-check ms-1">
+              <input class="form-check-input" type="checkbox" name="wd_require_level" id="wd_require_level_chk" value="1" <?= $s('wd_require_level','0')==='1'?'checked':'' ?>>
+              <label class="form-check-label text-secondary" for="wd_require_level_chk" style="font-size:13px">
+                Aktifkan syarat level minimum sebelum bisa WD
+              </label>
+            </div>
+            <small style="color:#888;font-size:11px">Jika dimatikan, semua user bisa WD tanpa syarat level.</small>
+          </div>
           <div class="c-form-group"><label class="c-label">% Komisi Referral</label>
             <input type="number" name="referral_commission_percent" class="c-form-control" value="<?= $s('referral_commission_percent','5') ?>" min="0" max="100" step="0.1"></div>
           <div class="c-form-group"><label class="c-label">Reward Check-in Harian (Rp)</label>
