@@ -46,21 +46,21 @@ try {
         "SELECT n.* FROM notifications n
          LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
          WHERE nr.id IS NULL
-           AND (n.target_type='all' OR (n.target_user_ids IS NOT NULL AND JSON_CONTAINS(n.target_user_ids, CAST(? AS JSON))))
+           AND (n.target_type='all' OR (n.target_user_ids IS NOT NULL AND JSON_CONTAINS(n.target_user_ids, JSON_QUOTE(?))))
            AND (n.expires_at IS NULL OR n.expires_at > NOW())
          ORDER BY n.created_at DESC LIMIT 3"
     );
-    $np->execute([$uid, $uid]);
+    $np->execute([$uid, (string)$uid]);
     $notif_preview = $np->fetchAll();
     // Total unread count
     $nc = $pdo->prepare(
         "SELECT COUNT(*) FROM notifications n
          LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
          WHERE nr.id IS NULL
-           AND (n.target_type='all' OR (n.target_user_ids IS NOT NULL AND JSON_CONTAINS(n.target_user_ids, CAST(? AS JSON))))
+           AND (n.target_type='all' OR (n.target_user_ids IS NOT NULL AND JSON_CONTAINS(n.target_user_ids, JSON_QUOTE(?))))
            AND (n.expires_at IS NULL OR n.expires_at > NOW())"
     );
-    $nc->execute([$uid, $uid]);
+    $nc->execute([$uid, (string)$uid]);
     $notif_unread = (int)$nc->fetchColumn();
 } catch (\Throwable) {}
 

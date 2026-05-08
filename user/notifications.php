@@ -3,17 +3,34 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
 // ── Fetch notifications for this user ────────────────────────────────────────
-$notifications = $pdo->prepare(
-    "SELECT n.*, IF(nr.id IS NOT NULL, 1, 0) as is_read
-     FROM notifications n
-     LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
-     WHERE (n.target_type='all' OR (n.target_user_ids IS NOT NULL AND JSON_CONTAINS(n.target_user_ids, CAST(? AS JSON))))
-       AND (n.expires_at IS NULL OR n.expires_at > NOW())
-     ORDER BY n.created_at DESC
-     LIMIT 50"
-);
-$notifications->execute([$user['id'], $user['id']]);
-$notifications = $notifications->fetchAll();
+$notifications = [];
+try {
+    $stmt = $pdo->prepare(
+        "SELECT n.*, IF(nr.id IS NOT NULL, 1, 0) as is_read
+         FROM notifications n
+         LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
+         WHERE (n.target_type='all' OR (n.target_user_ids IS NOT NULL AND JSON_CONTAINS(n.target_user_ids, JSON_QUOTE(?))))
+           AND (n.expires_at IS NULL OR n.expires_at > NOW())
+         ORDER BY n.created_at DESC
+         LIMIT 50"
+    );
+    $stmt->execute([$user['id'], (string)$user['id']]);
+    $notifications = $stmt->fetchAll();
+} catch (\Throwable $e) {
+    // Fallback: hanya ambil notif 'all' jika JSON_CONTAINS error
+    try {
+        $stmt = $pdo->prepare(
+            "SELECT n.*, IF(nr.id IS NOT NULL, 1, 0) as is_read
+             FROM notifications n
+             LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
+             WHERE n.target_type='all'
+               AND (n.expires_at IS NULL OR n.expires_at > NOW())
+             ORDER BY n.created_at DESC LIMIT 50"
+        );
+        $stmt->execute([$user['id']]);
+        $notifications = $stmt->fetchAll();
+    } catch (\Throwable) {}
+}
 
 $unread_count = 0;
 foreach ($notifications as $n) {
