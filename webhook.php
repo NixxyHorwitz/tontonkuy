@@ -48,10 +48,19 @@ function edit_msg(string $token, $chat_id, $msg_id, string $text, ?array $kb = n
     tg_api_json($token, 'editMessageText', $body);
 }
 
-function send_msg(string $token, $chat_id, string $text, ?array $kb = null): void {
+function send_msg(string $token, $chat_id, string $text, ?array $kb = null): ?int {
     $body = ['chat_id' => $chat_id, 'text' => $text, 'parse_mode' => 'HTML'];
     if ($kb !== null) $body['reply_markup'] = ['inline_keyboard' => $kb];
-    tg_api_json($token, 'sendMessage', $body);
+    $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS     => json_encode($body),
+    ]);
+    $res = json_decode(curl_exec($ch) ?: '{}', true);
+    curl_close($ch);
+    return $res['result']['message_id'] ?? null;
 }
 
 /** Save pending reject state to settings table */
@@ -195,13 +204,14 @@ if (isset($update['callback_query'])) {
         $type = $m[1];
         $id   = (int)$m[2];
         answer_cb($token, $cb_id, '📝 Ketik alasan penolakan...');
-        // Save state: awaiting_reason|type|id|chat_msg_id|orig_text
-        $state = implode('|', ['awaiting_reason', $type, $id, $msg_id, base64_encode($orig)]);
-        set_tg_state($pdo, $chat_id, $state);
-        send_msg($token, $chat_id,
+        // Send prompt and capture its message_id
+        $prompt_msg_id = send_msg($token, $chat_id,
             "📝 <b>Ketik alasan penolakan</b> untuk {$type} #{$id} dan kirim sebagai pesan.\n\nAtau tekan tombol di bawah untuk langsung tolak tanpa alasan.",
             [[['text' => '⏭ Skip (Tanpa Alasan)', 'callback_data' => "{$type}_reject_skip_{$id}"]]]
         );
+        // Save state: awaiting_reason|type|id|orig_msg_id|orig_b64|prompt_msg_id
+        $state = implode('|', ['awaiting_reason', $type, $id, $msg_id, base64_encode($orig), (int)$prompt_msg_id]);
+        set_tg_state($pdo, $chat_id, $state);
         http_response_code(200); exit;
     }
 
@@ -243,14 +253,15 @@ if (isset($update['message'])) {
     $state = get_tg_state($pdo, $chat_id);
     if (!$state) { http_response_code(200); exit; }
 
-    $parts = explode('|', $state, 5);
+    $parts = explode('|', $state, 6);
     if ($parts[0] !== 'awaiting_reason') { http_response_code(200); exit; }
 
-    [, $type, $id, $orig_msg_id, $orig_b64] = $parts;
-    $id       = (int)$id;
-    $orig_msg_id = (int)$orig_msg_id;
-    $orig_text   = base64_decode($orig_b64);
-    $reason   = $text;
+    [, $type, $id, $orig_msg_id, $orig_b64, $prompt_msg_id] = array_pad($parts, 6, 0);
+    $id            = (int)$id;
+    $orig_msg_id   = (int)$orig_msg_id;
+    $prompt_msg_id = (int)$prompt_msg_id;
+    $orig_text     = base64_decode($orig_b64);
+    $reason        = $text;
 
     clear_tg_state($pdo, $chat_id);
 
@@ -263,7 +274,11 @@ if (isset($update['message'])) {
     if ($res === 'ok') {
         $new_text = str_replace('Status: Pending', "Status: ❌ Rejected\nAlasan: {$reason}", $orig_text);
         edit_msg($token, $chat_id, $orig_msg_id, $new_text);
-        send_msg($token, $chat_id, "✅ " . strtoupper($type) . " #{$id} berhasil ditolak.\n📝 Alasan: <i>" . htmlspecialchars($reason) . "</i>");
+        // Edit the prompt message to confirm the reason was received
+        if ($prompt_msg_id) {
+            edit_msg($token, $chat_id, $prompt_msg_id,
+                "❌ <b>" . strtoupper($type) . " #{$id} ditolak</b>\n📝 Alasan: <i>" . htmlspecialchars($reason) . "</i>");
+        }
     } else {
         send_msg($token, $chat_id, "⚠️ Gagal: {$res}");
     }
