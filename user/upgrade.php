@@ -67,6 +67,42 @@ require dirname(__DIR__) . '/partials/header.php';
   <p>Tonton lebih banyak, earn lebih besar!</p>
 </div>
 
+<!-- How it works -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid var(--yellow)">
+  <div class="card__body" style="padding:14px 16px">
+    <div style="font-size:13px;font-weight:800;margin-bottom:10px">📖 Cara Kerja Upgrade</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:#555">
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <span style="background:var(--yellow);border:1.5px solid var(--ink);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0">1</span>
+        <span><strong>Deposit saldo</strong> terlebih dahulu melalui menu Deposit (transfer bank atau QRIS). Saldo Deposit dipakai khusus untuk pembelian paket.</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <span style="background:var(--yellow);border:1.5px solid var(--ink);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0">2</span>
+        <span><strong>Pilih paket</strong> membership yang sesuai budget & kebutuhanmu di bawah ini.</span>
+      </div>
+      <div style="display:flex;gap:10px;align-items:flex-start">
+        <span style="background:var(--yellow);border:1.5px solid var(--ink);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0">3</span>
+        <span><strong>Konfirmasi upgrade</strong> — harga paket langsung dipotong dari Saldo Deposit, membership aktif seketika!</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Benefits info -->
+<div class="card" style="margin-bottom:14px;border-left:4px solid var(--mint)">
+  <div class="card__body" style="padding:14px 16px">
+    <div style="font-size:13px;font-weight:800;margin-bottom:8px">✅ Keuntungan Paket Berbayar</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 10px;font-size:12px;color:#555">
+      <div>📹 Limit tonton lebih banyak/hari</div>
+      <div>💸 Min. WD lebih rendah</div>
+      <div>📈 Potensi earn lebih besar</div>
+      <div>💰 Max. WD lebih tinggi</div>
+      <div>⚡ Akses fitur eksklusif</div>
+      <div>🎯 Prioritas dukungan admin</div>
+    </div>
+  </div>
+</div>
+
 <?php if ($flash): ?>
 <div class="alert alert--<?= $flashType === 'error' ? 'error' : 'success' ?>"><?= htmlspecialchars($flash) ?></div>
 <?php endif; ?>
@@ -120,9 +156,13 @@ require dirname(__DIR__) . '/partials/header.php';
         </div>
       </div>
       <div class="membership-card__features" style="margin-top:10px">
-        <div class="membership-card__feature"><?= $m['watch_limit'] ?>× video per hari</div>
-        <div class="membership-card__feature">Berlaku <?= $m['duration_days'] ?> hari</div>
-        <?php if ($m['description']): ?><div class="membership-card__feature"><?= htmlspecialchars($m['description']) ?></div><?php endif; ?>
+        <div class="membership-card__feature">📹 <?= $m['watch_limit'] ?>× video per hari</div>
+        <div class="membership-card__feature">⏳ Berlaku <?= $m['duration_days'] ?> hari</div>
+        <?php if ((float)$m['min_wd'] > 0): ?>
+        <div class="membership-card__feature">💸 Min. WD: <?= format_rp((float)$m['min_wd']) ?></div>
+        <?php endif; ?>
+        <div class="membership-card__feature">📤 Max. WD: <?= (float)$m['max_wd'] > 0 ? format_rp((float)$m['max_wd']) : '<span style="color:#4CAF82">Tanpa batas</span>' ?></div>
+        <?php if ($m['description']): ?><div class="membership-card__feature">ℹ️ <?= htmlspecialchars($m['description']) ?></div><?php endif; ?>
       </div>
     </div>
     <?php endforeach; ?>
@@ -132,6 +172,20 @@ require dirname(__DIR__) . '/partials/header.php';
     Pilih Paket Dulu ↑
   </button>
 </form>
+
+<!-- FAQ / Notes -->
+<div class="card" style="margin-top:14px;margin-bottom:8px">
+  <div class="card__body" style="padding:14px 16px">
+    <div style="font-size:13px;font-weight:800;margin-bottom:8px">❓ Yang Perlu Kamu Tahu</div>
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:#555">
+      <div>🔄 <strong>Upgrade saat masih aktif</strong> akan <em>mengganti</em> paket yang berjalan. Durasi dimulai ulang dari sekarang.</div>
+      <div>💳 <strong>Saldo Deposit ≠ Saldo WD.</strong> Saldo Deposit hanya bisa dipakai beli paket, bukan ditarik langsung.</div>
+      <div>💸 <strong>Limit Withdraw</strong> (Min & Max) mengikuti paket aktifmu. Upgrade untuk memperbesar limit withdraw.</div>
+      <div>⚡ <strong>Aktivasi instan</strong> — tidak perlu menunggu konfirmasi admin. Paket langsung aktif begitu kamu klik upgrade.</div>
+      <div>📅 <strong>Paket expired</strong> berarti kamu kembali ke limit free. Pastikan selalu perpanjang sebelum habis!</div>
+    </div>
+  </div>
+</div>
 
 <script>
 let selectedId = 0, selectedPrice = 0;
