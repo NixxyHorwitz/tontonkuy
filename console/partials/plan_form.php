@@ -22,6 +22,17 @@
     <input type="number" name="sort_order" class="c-form-control" value="0">
   </div>
 </div>
+<div class="row g-2 mb-3">
+  <div class="col-6">
+    <label class="c-label">Min. Withdraw (Rp)</label>
+    <input type="number" name="min_wd" class="c-form-control" value="50000" min="0" step="1000">
+  </div>
+  <div class="col-6">
+    <label class="c-label">Max. Withdraw (Rp)</label>
+    <input type="number" name="max_wd" class="c-form-control" value="0" min="0" step="1000">
+    <small style="font-size:10px;color:#888">0 = Tanpa batas max</small>
+  </div>
+</div>
 <div class="c-form-group mb-3">
   <label class="c-label">Deskripsi Singkat</label>
   <input type="text" name="description" class="c-form-control" placeholder="Opsional">

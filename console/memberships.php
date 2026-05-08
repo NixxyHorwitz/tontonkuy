@@ -17,16 +17,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $desc     = trim($_POST['description'] ?? '');
         $active   = isset($_POST['is_active']) ? 1 : 0;
         $sort     = (int)($_POST['sort_order'] ?? 0);
+        $min_wd   = (float)preg_replace('/[^\d.]/', '', $_POST['min_wd'] ?? '50000');
+        $max_wd   = (float)preg_replace('/[^\d.]/', '', $_POST['max_wd'] ?? '0');
 
         if (!$name) { $flash = 'Nama paket wajib diisi.'; $flashType = 'error'; }
         else {
             if ($action === 'add') {
-                $pdo->prepare("INSERT INTO memberships (name,price,watch_limit,duration_days,description,is_active,sort_order) VALUES (?,?,?,?,?,?,?)")
-                    ->execute([$name, $price, $limit, $days, $desc, $active, $sort]);
+                $pdo->prepare("INSERT INTO memberships (name,price,watch_limit,duration_days,description,is_active,sort_order,min_wd,max_wd) VALUES (?,?,?,?,?,?,?,?,?)")
+                    ->execute([$name, $price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd]);
                 $flash = "Paket {$name} ditambahkan.";
             } else {
-                $pdo->prepare("UPDATE memberships SET name=?,price=?,watch_limit=?,duration_days=?,description=?,is_active=?,sort_order=? WHERE id=?")
-                    ->execute([$name, $price, $limit, $days, $desc, $active, $sort, $id]);
+                $pdo->prepare("UPDATE memberships SET name=?,price=?,watch_limit=?,duration_days=?,description=?,is_active=?,sort_order=?,min_wd=?,max_wd=? WHERE id=?")
+                    ->execute([$name, $price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd, $id]);
                 $flash = "Paket berhasil diperbarui.";
             }
         }
@@ -82,6 +84,8 @@ require __DIR__ . '/partials/header.php';
         <div style="font-size:12px;color:#666;margin-bottom:12px"><?= (float)$p['price']>0?'/ '.$p['duration_days'].' hari':'' ?></div>
         <div style="font-size:13px;color:#888;display:flex;flex-direction:column;gap:4px">
           <div>📹 <?= $p['watch_limit'] ?>× video/hari</div>
+          <div>💸 Min WD: <?= format_rp((float)$p['min_wd']) ?></div>
+          <div>💸 Max WD: <?= (float)$p['max_wd']>0 ? format_rp((float)$p['max_wd']) : '<i>Tanpa batas</i>' ?></div>
           <?php if ($p['description']): ?><div>ℹ️ <?= htmlspecialchars($p['description']) ?></div><?php endif; ?>
         </div>
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid #1f2235;font-size:12px;color:#666">
@@ -143,6 +147,13 @@ function editPlan(p) {
         <input type="number" name="duration_days" class="c-form-control" value="${p.duration_days}" min="1"></div>
       <div class="col-6"><label class="c-label">Urutan</label>
         <input type="number" name="sort_order" class="c-form-control" value="${p.sort_order}"></div>
+    </div>
+    <div class="row g-2 mb-3">
+      <div class="col-6"><label class="c-label">Min. WD (Rp)</label>
+        <input type="number" name="min_wd" class="c-form-control" value="${p.min_wd}" min="0" step="1000"></div>
+      <div class="col-6"><label class="c-label">Max. WD (Rp)</label>
+        <input type="number" name="max_wd" class="c-form-control" value="${p.max_wd}" min="0" step="1000">
+        <small style="font-size:10px;color:#888">0 = Tanpa batas</small></div>
     </div>
     <div class="c-form-group mb-3"><label class="c-label">Deskripsi</label>
       <input type="text" name="description" class="c-form-control" value="${escH(p.description||'')}"></div>
