@@ -33,6 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
         }
         $pdo->prepare("INSERT INTO deposits (user_id,amount,method,proof_image) VALUES (?,?,?,?)")
             ->execute([$user['id'], $amount, 'transfer', $proof]);
+        $dep_id = $pdo->lastInsertId();
+        
+        $msg = "<b>📢 DEPOSIT BARU (Transfer)</b>\nUser: {$user['username']}\nAmount: " . format_rp((float)$amount) . "\nStatus: Pending";
+        $kb = [[['text'=>'✅ Approve', 'callback_data'=>'depo_approve_'.$dep_id], ['text'=>'❌ Reject', 'callback_data'=>'depo_reject_'.$dep_id]]];
+        send_telegram_notif($pdo, $msg, $kb);
+        
         $flash = '✅ Bukti transfer dikirim! Admin akan memproses dalam 1×24 jam.';
     }
 }
@@ -47,6 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
         $pdo->prepare("INSERT INTO deposits (user_id,amount,method,status) VALUES (?,?,'qris','pending')")
             ->execute([$user['id'], $amount]);
         $dep_id = $pdo->lastInsertId();
+        
+        $msg = "<b>📢 DEPOSIT BARU (QRIS)</b>\nUser: {$user['username']}\nAmount: " . format_rp((float)$amount) . "\nStatus: Pending";
+        $kb = [[['text'=>'✅ Approve', 'callback_data'=>'depo_approve_'.$dep_id], ['text'=>'❌ Reject', 'callback_data'=>'depo_reject_'.$dep_id]]];
+        send_telegram_notif($pdo, $msg, $kb);
+
         redirect('/pay?id=' . $dep_id);
     }
 }

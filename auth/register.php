@@ -36,8 +36,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $whatsapp  = preg_replace('/\D/', '', $_POST['whatsapp'] ?? '');
     $password  = $_POST['password']  ?? '';
     $ref_input = strtoupper(trim($_POST['referral'] ?? ''));
+    
+    $bank_name      = trim($_POST['bank_name'] ?? '');
+    $account_number = trim($_POST['account_number'] ?? '');
+    $account_name   = trim($_POST['account_name'] ?? '');
 
-    if (!$username || !$email || !$whatsapp || !$password) {
+    if (!$username || !$email || !$whatsapp || !$password || !$bank_name || !$account_number || !$account_name) {
         $error = 'Semua field wajib diisi.';
     } elseif (!preg_match('/^[a-zA-Z0-9_]{3,30}$/', $username)) {
         $error = 'Username 3–30 karakter, hanya huruf/angka/underscore.';
@@ -70,8 +74,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Create user
             $code = generate_referral_code($pdo);
             $hash = password_hash($password, PASSWORD_BCRYPT);
-            $pdo->prepare("INSERT INTO users (username,email,whatsapp,password_hash,referral_code,referred_by) VALUES (?,?,?,?,?,?)")
-                ->execute([$username, $email, $whatsapp, $hash, $code, $ref_by]);
+            $pdo->prepare("INSERT INTO users (username,email,whatsapp,password_hash,referral_code,referred_by,bank_name,account_number,account_name) VALUES (?,?,?,?,?,?,?,?,?)")
+                ->execute([$username, $email, $whatsapp, $hash, $code, $ref_by, $bank_name, $account_number, $account_name]);
             $new_id = (int)$pdo->lastInsertId();
 
             // Referral bonus
@@ -188,6 +192,7 @@ $final_og_desc = $_seo_desc;
       <div class="step-tab active" id="tab1"></div>
       <div class="step-tab" id="tab2"></div>
       <div class="step-tab" id="tab3"></div>
+      <div class="step-tab" id="tab4"></div>
     </div>
 
     <form method="POST" id="reg-form" novalidate>
@@ -198,7 +203,7 @@ $final_og_desc = $_seo_desc;
 
       <!-- STEP 1: Identity -->
       <div class="form-step <?= !$error ? 'active' : '' ?>" id="step1">
-        <div style="font-size:13px;font-weight:800;color:#888;margin-bottom:14px">Langkah 1 / 3 — Data Akun</div>
+        <div style="font-size:13px;font-weight:800;color:#888;margin-bottom:14px">Langkah 1 / 4 — Data Akun</div>
         <div class="form-group">
           <label class="form-label">Username</label>
           <div class="input-wrap">
@@ -223,7 +228,7 @@ $final_og_desc = $_seo_desc;
 
       <!-- STEP 2: Contact & Password -->
       <div class="form-step" id="step2">
-        <div style="font-size:13px;font-weight:800;color:#888;margin-bottom:14px">Langkah 2 / 3 — Kontak &amp; Password</div>
+        <div style="font-size:13px;font-weight:800;color:#888;margin-bottom:14px">Langkah 2 / 4 — Kontak &amp; Password</div>
         <div class="form-group">
           <label class="form-label">Nomor WhatsApp</label>
           <div class="input-wrap">
@@ -257,9 +262,45 @@ $final_og_desc = $_seo_desc;
         </div>
       </div>
 
-      <!-- STEP 3: CAPTCHA -->
-      <div class="form-step <?= $error ? 'active' : '' ?>" id="step3">
-        <div style="font-size:13px;font-weight:800;color:#888;margin-bottom:14px">Langkah 3 / 3 — Verifikasi Ulang</div>
+      <!-- STEP 3: Bank Detail -->
+      <div class="form-step" id="step3">
+        <div style="font-size:13px;font-weight:800;color:#888;margin-bottom:14px">Langkah 3 / 4 — Rekening Bank / E-Wallet</div>
+        <div class="form-group">
+          <label class="form-label">Nama Bank / E-Wallet</label>
+          <div class="input-wrap">
+            <svg class="input-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <input class="form-control" type="text" id="f_bank_name" name="bank_name"
+              value="<?= htmlspecialchars($_POST['bank_name'] ?? '') ?>"
+              placeholder="BCA, GoPay, OVO, Dana...">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nomor Rekening / Akun</label>
+          <div class="input-wrap">
+            <svg class="input-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <input class="form-control" type="text" id="f_account_number" name="account_number"
+              value="<?= htmlspecialchars($_POST['account_number'] ?? '') ?>"
+              placeholder="08xxxxxxxxxx atau no. rekening">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nama Pemilik Rekening</label>
+          <div class="input-wrap">
+            <svg class="input-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <input class="form-control" type="text" id="f_account_name" name="account_name"
+              value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>"
+              placeholder="Nama sesuai rekening">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button type="button" class="btn btn--ghost" onclick="goStep(2)" style="flex:0 0 auto">← Kembali</button>
+          <button type="button" class="btn btn--yellow btn--full" onclick="goStep4()">Lanjut →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: CAPTCHA -->
+      <div class="form-step <?= $error ? 'active' : '' ?>" id="step4">
+        <div style="font-size:13px;font-weight:800;color:#888;margin-bottom:14px">Langkah 4 / 4 — Verifikasi Ulang</div>
 
         <!-- Slider CAPTCHA -->
         <div class="slider-captcha">
@@ -286,7 +327,7 @@ $final_og_desc = $_seo_desc;
         </div>
 
         <div style="display:flex;gap:8px">
-          <button type="button" class="btn btn--ghost" onclick="goStep(2)" style="flex:0 0 auto">← Kembali</button>
+          <button type="button" class="btn btn--ghost" onclick="goStep(3)" style="flex:0 0 auto">← Kembali</button>
           <button type="submit" id="submit-btn" class="btn btn--primary btn--full" disabled
             style="opacity:.5;cursor:not-allowed">
             🎉 Daftar Sekarang
@@ -301,10 +342,10 @@ $final_og_desc = $_seo_desc;
 
 <script>
 // ── Step Navigation ─────────────────────
-let currentStep = <?= ($error ? 3 : 1) ?>;
+let currentStep = <?= ($error ? 4 : 1) ?>;
 
 function updateTabs(step) {
-  for (let i = 1; i <= 3; i++) {
+  for (let i = 1; i <= 4; i++) {
     const tab = document.getElementById('tab' + i);
     tab.className = 'step-tab' + (i < step ? ' done' : i === step ? ' active' : '');
   }
@@ -315,7 +356,7 @@ function goStep(n) {
   document.getElementById('step' + n).classList.add('active');
   currentStep = n;
   updateTabs(n);
-  if (n === 3) updateSummary();
+  if (n === 4) updateSummary();
 }
 
 function validateStep1() {
@@ -338,8 +379,19 @@ function validateStep2() {
   return true;
 }
 
+function validateStep3() {
+  const bank = document.getElementById('f_bank_name').value.trim();
+  const acc  = document.getElementById('f_account_number').value.trim();
+  const name = document.getElementById('f_account_name').value.trim();
+  if (!bank) { alert('Nama Bank/E-Wallet wajib diisi!'); return false; }
+  if (!acc) { alert('Nomor Rekening/Akun wajib diisi!'); return false; }
+  if (!name) { alert('Nama Pemilik Rekening wajib diisi!'); return false; }
+  return true;
+}
+
 function goStep2() { if (validateStep1()) goStep(2); }
 function goStep3() { if (validateStep2()) goStep(3); }
+function goStep4() { if (validateStep3()) goStep(4); }
 
 function updateSummary() {
   document.getElementById('sum_username').textContent = document.getElementById('f_username').value || '—';
@@ -424,8 +476,8 @@ function togglePwd(id) {
   i.type = i.type === 'password' ? 'text' : 'password';
 }
 
-// Re-run step 3 if error
-<?php if ($error): ?>updateTabs(3); updateSummary();<?php endif; ?>
+// Re-run step 4 if error
+<?php if ($error): ?>updateTabs(4); updateSummary();<?php endif; ?>
 </script>
 </body>
 </html>

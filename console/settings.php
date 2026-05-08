@@ -40,6 +40,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flash = 'Pengaturan jam lock WD disimpan!';
     }
 
+    if ($action === 'save_telegram') {
+        setting_set($pdo, 'tg_bot_token', trim($_POST['tg_bot_token'] ?? ''));
+        setting_set($pdo, 'tg_chat_id',   trim($_POST['tg_chat_id'] ?? ''));
+        $flash = 'Pengaturan Telegram Bot disimpan!';
+    }
+
+    if ($action === 'sync_tg_webhook') {
+        $token = setting($pdo, 'tg_bot_token', '');
+        if (!$token) {
+            $flash = 'Isi Token Bot terlebih dahulu!'; $flashType = 'error';
+        } else {
+            $webhook_url = base_url('webhook.php');
+            $url = "https://api.telegram.org/bot{$token}/setWebhook?url=" . urlencode($webhook_url);
+            $response = @file_get_contents($url);
+            if ($response) {
+                $res = json_decode($response, true);
+                if (isset($res['ok']) && $res['ok']) {
+                    $flash = 'Webhook berhasil di-sync ke: ' . $webhook_url;
+                } else {
+                    $flash = 'Gagal sync webhook: ' . ($res['description'] ?? 'Unknown error'); $flashType = 'error';
+                }
+            } else {
+                $flash = 'Gagal memanggil API Telegram.'; $flashType = 'error';
+            }
+        }
+    }
+
     if ($action === 'change_password') {
         $admin = $_SESSION['admin'];
         $cur   = $pdo->prepare("SELECT password_hash FROM admins WHERE id=?"); $cur->execute([$admin['id']]); $cur = $cur->fetchColumn();
@@ -161,6 +188,25 @@ require __DIR__ . '/partials/header.php';
           <div class="c-form-group"><label class="c-label">Pesan saat WD dikunci</label>
             <input type="text" name="wd_lock_notice" class="c-form-control" value="<?= htmlspecialchars($s('wd_lock_notice','Penarikan hanya bisa dilakukan pada jam tertentu.')) ?>"></div>
           <button type="submit" class="btn btn-sm text-white" style="background:var(--brand)">Simpan Jam Lock WD</button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Telegram Bot Settings -->
+    <div class="c-card mb-3">
+      <div class="c-card-header"><span class="c-card-title">🤖 Telegram Bot Notifikasi</span></div>
+      <div class="c-card-body">
+        <form method="POST" class="mb-3">
+          <?= csrf_field() ?><input type="hidden" name="action" value="save_telegram">
+          <div class="c-form-group"><label class="c-label">Bot Token <small style="color:#888">(dari @BotFather)</small></label>
+            <input type="text" name="tg_bot_token" class="c-form-control" value="<?= htmlspecialchars($s('tg_bot_token')) ?>" placeholder="123456789:ABCdefGHI..."></div>
+          <div class="c-form-group"><label class="c-label">Chat ID Admin <small style="color:#888">(ID grup atau ID admin)</small></label>
+            <input type="text" name="tg_chat_id" class="c-form-control" value="<?= htmlspecialchars($s('tg_chat_id')) ?>" placeholder="-100123456789"></div>
+          <button type="submit" class="btn btn-sm text-white" style="background:var(--brand)">Simpan Telegram</button>
+        </form>
+        <form method="POST">
+          <?= csrf_field() ?><input type="hidden" name="action" value="sync_tg_webhook">
+          <button type="submit" class="btn btn-sm btn-info text-white">🔄 Sync Webhook</button>
         </form>
       </div>
     </div>

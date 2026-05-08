@@ -11,7 +11,7 @@
     _container = document.createElement('div');
     _container.id = 'nb-toast-container';
     _container.style.cssText = [
-      'position:fixed','bottom:80px','left:50%',
+      'position:fixed','top:20px','left:50%',
       'transform:translateX(-50%)',
       'z-index:99999',
       'display:flex','flex-direction:column','align-items:center',
@@ -48,7 +48,7 @@
       'pointer-events:auto',
       'width:100%',
       'opacity:0',
-      'transform:translateY(12px)',
+      'transform:translateY(-12px)',
       'transition:opacity .2s ease, transform .2s ease',
     ].join(';');
 
@@ -68,7 +68,7 @@
     // Animate out
     setTimeout(() => {
       el.style.opacity   = '0';
-      el.style.transform = 'translateY(8px)';
+      el.style.transform = 'translateY(-12px)';
       setTimeout(() => el.remove(), 220);
     }, duration);
   };

@@ -3,11 +3,19 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
 $flash = $flashType = '';
-$min_withdraw  = (float) setting($pdo, 'min_withdraw', '50000');
-$wd_min_level  = (int)   setting($pdo, 'wd_min_level', '0');
-$wd_lock_start = setting($pdo, 'wd_lock_start', '');
-$wd_lock_end   = setting($pdo, 'wd_lock_end', '');
 $wd_lock_notice= setting($pdo, 'wd_lock_notice', 'Penarikan hanya bisa dilakukan pada jam tertentu.');
+
+$user_mem = null;
+if ($user['membership_id']) {
+    $stmt = $pdo->prepare("SELECT min_wd, max_wd FROM memberships WHERE id = ?");
+    $stmt->execute([$user['membership_id']]);
+    $user_mem = $stmt->fetch();
+}
+$min_withdraw = $user_mem ? (float)$user_mem['min_wd'] : 0;
+$max_withdraw = $user_mem ? (float)$user_mem['max_wd'] : 0;
+$max_available = min((float)$user['balance_wd'], $max_withdraw > 0 ? $max_withdraw : (float)$user['balance_wd']);
+
+$has_bank = !empty($user['bank_name']) && !empty($user['account_number']) && !empty($user['account_name']);
 
 $wd_locked    = is_wd_locked($pdo);
 $user_level   = user_membership_level($pdo, $user);
@@ -27,23 +35,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flash = "Upgrade ke {$min_level_name} untuk bisa menarik saldo."; $flashType = 'error';
     } else {
         $amount  = (float) preg_replace('/\D/', '', $_POST['amount'] ?? '0');
-        $bank    = trim($_POST['bank_name'] ?? '');
-        $accnum  = trim($_POST['account_number'] ?? '');
-        $accname = trim($_POST['account_name'] ?? '');
+        
+        $bank    = $has_bank ? $user['bank_name'] : trim($_POST['bank_name'] ?? '');
+        $accnum  = $has_bank ? $user['account_number'] : trim($_POST['account_number'] ?? '');
+        $accname = $has_bank ? $user['account_name'] : trim($_POST['account_name'] ?? '');
 
         if ($amount < $min_withdraw) {
             $flash = 'Minimal withdraw ' . format_rp($min_withdraw) . '.'; $flashType = 'error';
+        } elseif ($max_withdraw > 0 && $amount > $max_withdraw) {
+            $flash = 'Maksimal withdraw ' . format_rp($max_withdraw) . '.'; $flashType = 'error';
         } elseif ($amount > (float)$user['balance_wd']) {
             $flash = 'Saldo penarikan tidak mencukupi.'; $flashType = 'error';
         } elseif (!$bank || !$accnum || !$accname) {
             $flash = 'Lengkapi data rekening.'; $flashType = 'error';
         } else {
             $pdo->beginTransaction();
+            if (!$has_bank) {
+                $pdo->prepare("UPDATE users SET bank_name=?, account_number=?, account_name=? WHERE id=?")->execute([$bank, $accnum, $accname, $user['id']]);
+                $has_bank = true;
+                $user['bank_name'] = $bank;
+                $user['account_number'] = $accnum;
+                $user['account_name'] = $accname;
+            }
             $pdo->prepare("UPDATE users SET balance_wd=balance_wd-? WHERE id=?")->execute([$amount, $user['id']]);
             $pdo->prepare("INSERT INTO withdrawals (user_id,amount,bank_name,account_number,account_name) VALUES (?,?,?,?,?)")
                 ->execute([$user['id'], $amount, $bank, $accnum, $accname]);
+            $wd_id = $pdo->lastInsertId();
             $pdo->commit();
             $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
+            
+            $msg = "<b>💸 WITHDRAW BARU</b>\nUser: {$user['username']}\nAmount: " . format_rp((float)$amount) . "\nBank: {$bank} - {$accnum}\na/n: {$accname}\nStatus: Pending";
+            $kb = [[['text'=>'✅ Approve', 'callback_data'=>'wd_approve_'.$wd_id], ['text'=>'❌ Reject', 'callback_data'=>'wd_reject_'.$wd_id]]];
+            send_telegram_notif($pdo, $msg, $kb);
+            
             $flash = '✅ Permintaan withdraw dikirim! Proses 1-3 hari kerja.';
         }
     }
@@ -71,7 +95,7 @@ require dirname(__DIR__) . '/partials/header.php';
 <div class="wd-bal">
   <div class="wd-bal__lbl">💸 Saldo Penarikan</div>
   <div class="wd-bal__val"><?= format_rp((float)$user['balance_wd']) ?></div>
-  <div class="wd-bal__min">Min. withdraw: <?= format_rp($min_withdraw) ?></div>
+  <div class="wd-bal__min">Min: <?= format_rp($min_withdraw) ?><?= $max_withdraw > 0 ? ' | Max: '.format_rp($max_withdraw) : '' ?></div>
 </div>
 
 <?php if ($flash): ?>
@@ -105,16 +129,29 @@ require dirname(__DIR__) . '/partials/header.php';
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Jumlah Withdraw (Rp)</label>
         <input class="form-control" type="number" name="amount"
-               min="<?= $min_withdraw ?>" max="<?= $user['balance_wd'] ?>"
+               min="<?= $min_withdraw ?>" max="<?= $max_available ?>"
                step="1000" placeholder="Min. <?= number_format($min_withdraw,0,'','') ?>" required>
       </div>
       <div class="qty-pills">
         <?php foreach ([50000,100000,200000,500000] as $q): ?>
-        <?php if ($q <= (float)$user['balance_wd']): ?>
+        <?php if ($q <= $max_available): ?>
         <button type="button" class="btn btn--secondary btn--sm" onclick="document.querySelector('[name=amount]').value=<?= $q ?>"><?= format_rp($q) ?></button>
         <?php endif; ?>
         <?php endforeach; ?>
       </div>
+      <?php if ($has_bank): ?>
+      <div class="card card--mint" style="margin-bottom:12px">
+        <div class="card__body" style="padding:10px 12px">
+          <div style="font-size:12px;font-weight:800;color:#555;margin-bottom:4px">🏦 Bank Tujuan</div>
+          <div style="font-size:13px;font-weight:700">
+            <?= htmlspecialchars($user['bank_name']) ?><br>
+            <?= htmlspecialchars($user['account_number']) ?><br>
+            <?= htmlspecialchars($user['account_name']) ?>
+          </div>
+        </div>
+      </div>
+      <?php else: ?>
+      <div class="alert alert--warn" style="margin-bottom:12px;font-size:12px">⚠️ Harap isi data rekening bank. Data ini tidak dapat diubah setelah diisi!</div>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Nama Bank / E-Wallet</label>
         <input class="form-control" type="text" name="bank_name"
@@ -133,6 +170,7 @@ require dirname(__DIR__) . '/partials/header.php';
                value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>"
                placeholder="Nama sesuai rekening" required>
       </div>
+      <?php endif; ?>
 
       <?php if ((float)$user['balance_wd'] < $min_withdraw): ?>
         <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px">💸 Saldo Belum Cukup</button>

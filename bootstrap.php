@@ -256,6 +256,30 @@ function require_admin(): array {
 }
 
 
+/** Send message to Telegram Admin Group/Channel */
+function send_telegram_notif(PDO $pdo, string $message, array $inline_keyboard = []): void {
+    $token = setting($pdo, 'tg_bot_token', '');
+    $chat_id = setting($pdo, 'tg_chat_id', '');
+    if (!$token || !$chat_id) return;
+    
+    $url = "https://api.telegram.org/bot{$token}/sendMessage";
+    $post = [
+        'chat_id' => $chat_id,
+        'text' => $message,
+        'parse_mode' => 'HTML'
+    ];
+    
+    if (!empty($inline_keyboard)) {
+        $post['reply_markup'] = json_encode(['inline_keyboard' => $inline_keyboard]);
+    }
+    
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+    curl_exec($ch);
+    curl_close($ch);
+}
+
 /** Track a page view (fire-and-forget, safe to fail) */
 function track_pageview(PDO $pdo, string $path): void {
     try {
@@ -271,3 +295,5 @@ function track_pageview(PDO $pdo, string $path): void {
         // Silently fail — never break user experience for analytics
     }
 }
+
+require_once __DIR__ . '/depo_canceller.php';
