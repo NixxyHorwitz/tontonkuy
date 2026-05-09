@@ -107,6 +107,27 @@ $wds = $pdo->prepare("SELECT * FROM withdrawals WHERE user_id=? ORDER BY created
 $wds->execute([$user['id']]);
 $wds = $wds->fetchAll();
 
+$wd_estimation = '';
+if ($wd_lock_start && $wd_lock_end) {
+    $now_ts = time();
+    $s_ts = strtotime(date('Y-m-d ') . $wd_lock_start);
+    $e_ts = strtotime(date('Y-m-d ') . $wd_lock_end);
+    
+    if ($wd_locked) {
+        if ($e_ts <= $now_ts) $e_ts += 86400;
+        $diff = $e_ts - $now_ts;
+        $h = floor($diff / 3600);
+        $m = floor(($diff % 3600) / 60);
+        $wd_estimation = "⏳ Penarikan saat ini <strong>DITUTUP</strong>. Akan dibuka dalam <strong>{$h} jam {$m} menit</strong>.";
+    } else {
+        if ($s_ts <= $now_ts) $s_ts += 86400;
+        $diff = $s_ts - $now_ts;
+        $h = floor($diff / 3600);
+        $m = floor(($diff % 3600) / 60);
+        $wd_estimation = "✅ Penarikan saat ini <strong>DIBUKA</strong>. Akan ditutup dalam <strong>{$h} jam {$m} menit</strong>.";
+    }
+}
+
 $pageTitle  = 'Withdraw — TontonKuy';
 $activePage = 'withdraw';
 require dirname(__DIR__) . '/partials/header.php';
@@ -132,13 +153,14 @@ require dirname(__DIR__) . '/partials/header.php';
 <div class="alert alert--<?= $flashType === 'error' ? 'error' : 'success' ?>" style="margin-bottom:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
 <?php endif; ?>
 
-<!-- Lock notice -->
-<?php if ($wd_locked): ?>
-<div class="alert alert--warn" style="margin-bottom:10px;font-size:12px">
-  🔒 <strong>Penarikan Ditutup</strong> — <?= htmlspecialchars($wd_lock_notice) ?>
-  <?php if ($wd_lock_start && $wd_lock_end): ?>
-  <br><small>Jam lock: <?= date('h:i A', strtotime($wd_lock_start)) ?> – <?= date('h:i A', strtotime($wd_lock_end)) ?></small>
+<!-- Lock notice / Estimation -->
+<?php if ($wd_estimation): ?>
+<div class="alert <?= $wd_locked ? 'alert--error' : 'alert--success' ?>" style="margin-bottom:10px;font-size:12px;background:<?= $wd_locked ? 'rgba(255,59,48,0.1)' : 'rgba(52,199,89,0.1)' ?>;border:1px solid <?= $wd_locked ? 'rgba(255,59,48,0.3)' : 'rgba(52,199,89,0.3)' ?>">
+  <div style="margin-bottom:4px"><?= $wd_estimation ?></div>
+  <?php if ($wd_locked && $wd_lock_notice): ?>
+  <div style="margin-bottom:4px"><em>"<?= htmlspecialchars($wd_lock_notice) ?>"</em></div>
   <?php endif; ?>
+  <div style="font-size:11px;opacity:0.8">Jam operasional: <?= date('h:i A', strtotime($wd_lock_end)) ?> – <?= date('h:i A', strtotime($wd_lock_start)) ?></div>
 </div>
 <?php endif; ?>
 
