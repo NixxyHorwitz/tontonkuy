@@ -189,14 +189,28 @@ require __DIR__ . '/partials/header.php';
     <div class="c-card mb-3">
       <div class="c-card-header"><span class="c-card-title">🔒 Jam Lock Penarikan (WD)</span></div>
       <div class="c-card-body">
-        <form method="POST">
+        <form method="POST" id="form_wd_lock">
           <?= csrf_field() ?><input type="hidden" name="action" value="save_wd_lock">
-          <div style="display:flex;gap:12px">
-            <div class="c-form-group" style="flex:1"><label class="c-label">Mulai Lock</label>
-              <input type="time" name="wd_lock_start" class="c-form-control" value="<?= htmlspecialchars($s('wd_lock_start')) ?>">
-              <small style="color:#888">Kosongkan = tidak ada lock</small></div>
-            <div class="c-form-group" style="flex:1"><label class="c-label">Selesai Lock</label>
-              <input type="time" name="wd_lock_end" class="c-form-control" value="<?= htmlspecialchars($s('wd_lock_end')) ?>"></div>
+          <!-- Hidden inputs for backend -->
+          <input type="hidden" name="wd_lock_start" id="wd_lock_start" value="<?= htmlspecialchars($s('wd_lock_start')) ?>">
+          <input type="hidden" name="wd_lock_end" id="wd_lock_end" value="<?= htmlspecialchars($s('wd_lock_end')) ?>">
+          
+          <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+            <div class="c-form-group" style="flex:1;min-width:200px"><label class="c-label">Mulai Lock</label>
+              <div style="display:flex;gap:4px">
+                <select id="start_h" class="c-form-control" style="padding:4px"><option value="">--</option><?php for($i=1;$i<=12;$i++){ $v=str_pad((string)$i,2,'0',STR_PAD_LEFT); echo "<option value='$v'>$v</option>"; } ?></select>
+                <select id="start_m" class="c-form-control" style="padding:4px"><option value="">--</option><?php for($i=0;$i<60;$i++){ $v=str_pad((string)$i,2,'0',STR_PAD_LEFT); echo "<option value='$v'>$v</option>"; } ?></select>
+                <select id="start_p" class="c-form-control" style="padding:4px"><option value="">--</option><option value="AM">AM</option><option value="PM">PM</option></select>
+              </div>
+              <small style="color:#888">Kosongkan semua untuk hapus lock</small>
+            </div>
+            <div class="c-form-group" style="flex:1;min-width:200px"><label class="c-label">Selesai Lock</label>
+              <div style="display:flex;gap:4px">
+                <select id="end_h" class="c-form-control" style="padding:4px"><option value="">--</option><?php for($i=1;$i<=12;$i++){ $v=str_pad((string)$i,2,'0',STR_PAD_LEFT); echo "<option value='$v'>$v</option>"; } ?></select>
+                <select id="end_m" class="c-form-control" style="padding:4px"><option value="">--</option><?php for($i=0;$i<60;$i++){ $v=str_pad((string)$i,2,'0',STR_PAD_LEFT); echo "<option value='$v'>$v</option>"; } ?></select>
+                <select id="end_p" class="c-form-control" style="padding:4px"><option value="">--</option><option value="AM">AM</option><option value="PM">PM</option></select>
+              </div>
+            </div>
           </div>
           <div class="c-form-group"><label class="c-label">Pesan saat WD dikunci</label>
             <input type="text" name="wd_lock_notice" class="c-form-control" value="<?= htmlspecialchars($s('wd_lock_notice','Penarikan hanya bisa dilakukan pada jam tertentu.')) ?>"></div>
@@ -262,3 +276,50 @@ require __DIR__ . '/partials/header.php';
 </div>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
+<script>
+// Logic to populate and sync AM/PM select clock for WD lock
+function parseTime(val) {
+  if(!val) return {h:'', m:'', p:''};
+  let parts = val.split(':');
+  if(parts.length < 2) return {h:'', m:'', p:''};
+  let h = parseInt(parts[0], 10);
+  let m = parts[1];
+  let p = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if(h === 0) h = 12;
+  return { h: h.toString().padStart(2, '0'), m: m.padStart(2, '0'), p: p };
+}
+
+function initTimeSelects(id) {
+  let val = document.getElementById(id).value;
+  let parsed = parseTime(val);
+  let pfx = id === 'wd_lock_start' ? 'start_' : 'end_';
+  document.getElementById(pfx+'h').value = parsed.h;
+  document.getElementById(pfx+'m').value = parsed.m;
+  document.getElementById(pfx+'p').value = parsed.p;
+}
+
+function syncTime(id) {
+  let pfx = id === 'wd_lock_start' ? 'start_' : 'end_';
+  let h = document.getElementById(pfx+'h').value;
+  let m = document.getElementById(pfx+'m').value;
+  let p = document.getElementById(pfx+'p').value;
+  
+  if(!h || !m || !p) {
+    document.getElementById(id).value = '';
+    return;
+  }
+  
+  h = parseInt(h, 10);
+  if(p === 'PM' && h < 12) h += 12;
+  if(p === 'AM' && h === 12) h = 0;
+  
+  document.getElementById(id).value = h.toString().padStart(2, '0') + ':' + m;
+}
+
+initTimeSelects('wd_lock_start');
+initTimeSelects('wd_lock_end');
+
+['start_h','start_m','start_p'].forEach(x => document.getElementById(x).addEventListener('change', () => syncTime('wd_lock_start')));
+['end_h','end_m','end_p'].forEach(x => document.getElementById(x).addEventListener('change', () => syncTime('wd_lock_end')));
+</script>

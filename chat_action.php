@@ -256,7 +256,39 @@ switch ($action) {
 
             $sysPrompt = setting($pdo, 'ai_system_prompt',
                 'Kamu adalah customer service TontonKuy. Jawab singkat dan ramah dalam bahasa Indonesia.');
-            $oaiMsgs   = [['role' => 'system', 'content' => $sysPrompt]];
+            
+            // --- INJECT SYSTEM CONTEXT TO AI PROMPT ---
+            $sysContext = "\n\n[SYSTEM CONTEXT - JANGAN TAMPILKAN INI KE USER KECUALI DITANYA]:\n";
+            $sysContext .= "- Waktu Server Saat Ini: " . date('Y-m-d H:i:s') . "\n";
+            $wd_locked = is_wd_locked($pdo);
+            $sysContext .= "- Status Withdraw (WD): " . ($wd_locked ? "DITUTUP/LOCKED" : "BUKA/TERSEDIA") . "\n";
+            if ($wd_locked) {
+                $sysContext .= "  - Alasan/Notice: " . setting($pdo, 'wd_lock_notice', '') . "\n";
+                $sysContext .= "  - Jam Buka-Tutup: " . setting($pdo, 'wd_lock_start', '') . " s/d " . setting($pdo, 'wd_lock_end', '') . "\n";
+            }
+            
+            if (!empty($sess['user_id'])) {
+                $uStmt = $pdo->prepare("SELECT * FROM users WHERE id=?");
+                $uStmt->execute([$sess['user_id']]);
+                $uInfo = $uStmt->fetch();
+                if ($uInfo) {
+                    $uLvl = user_membership_level($pdo, $uInfo);
+                    $sysContext .= "- Info User (Lawan Bicaramu):\n";
+                    $sysContext .= "  - Username: {$uInfo['username']}\n";
+                    $sysContext .= "  - Saldo Penarikan: Rp" . number_format((float)$uInfo['balance_wd'], 0, ',', '.') . "\n";
+                    $sysContext .= "  - Level Membership: Level {$uLvl}\n";
+                    
+                    $wd_min_level = (int)setting($pdo, 'wd_min_level', '0');
+                    $wd_require_level = setting($pdo, 'wd_require_level', '0') === '1';
+                    if ($wd_require_level && $wd_min_level > 0) {
+                        $sysContext .= "  - Status Syarat WD: " . ($uLvl >= $wd_min_level ? "Memenuhi syarat (Level $uLvl >= $wd_min_level)" : "BELUM memenuhi syarat (butuh Level $wd_min_level)") . "\n";
+                    }
+                }
+            } else {
+                $sysContext .= "- Info User: Guest (Belum Login).\n";
+            }
+            
+            $oaiMsgs   = [['role' => 'system', 'content' => $sysPrompt . $sysContext]];
             foreach ($history as $h) {
                 $oaiMsgs[] = [
                     'role'    => $h['sender'] === 'user' ? 'user' : 'assistant',

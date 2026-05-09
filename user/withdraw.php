@@ -137,7 +137,7 @@ require dirname(__DIR__) . '/partials/header.php';
 <div class="alert alert--warn" style="margin-bottom:10px;font-size:12px">
   🔒 <strong>Penarikan Ditutup</strong> — <?= htmlspecialchars($wd_lock_notice) ?>
   <?php if ($wd_lock_start && $wd_lock_end): ?>
-  <br><small>Jam lock: <?= htmlspecialchars($wd_lock_start) ?> – <?= htmlspecialchars($wd_lock_end) ?></small>
+  <br><small>Jam lock: <?= date('h:i A', strtotime($wd_lock_start)) ?> – <?= date('h:i A', strtotime($wd_lock_end)) ?></small>
   <?php endif; ?>
 </div>
 <?php endif; ?>
