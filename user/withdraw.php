@@ -270,7 +270,7 @@ require dirname(__DIR__) . '/partials/header.php';
       <?php endif; ?>
     </div>
     <div class="list-item__right">
-      <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','rejected'=>'error'} ?>" style="font-size:10px">
+      <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','rejected'=>'error',default=>'error'} ?>" style="font-size:10px">
         <?= ucfirst($w['status']) ?>
       </span>
     </div>

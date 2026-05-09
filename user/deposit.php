@@ -220,7 +220,7 @@ require dirname(__DIR__) . '/partials/header.php';
       <div class="list-item__sub" style="font-size:10px"><?= strtoupper($d['method']) ?> · <?= date('d M H:i', strtotime($d['created_at'])) ?></div>
     </div>
     <div class="list-item__right" style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-      <span class="badge badge--<?= match($d['status']){'confirmed'=>'success','pending'=>'warn','rejected'=>'error'} ?>" style="font-size:10px">
+      <span class="badge badge--<?= match($d['status']){'confirmed'=>'success','pending'=>'warn','rejected'=>'error',default=>'error'} ?>" style="font-size:10px">
         <?= ucfirst($d['status']) ?>
       </span>
       <?php if ($d['status']==='pending' && $d['method']==='qris'): ?>

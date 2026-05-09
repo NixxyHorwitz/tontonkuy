@@ -103,7 +103,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <?php endif; ?>
       </div>
       <div class="list-item__right" style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-        <span class="badge badge--<?= match($d['status']){'confirmed'=>'success','pending'=>'warn','rejected'=>'error'} ?>">
+        <span class="badge badge--<?= match($d['status']){'confirmed'=>'success','pending'=>'warn','rejected'=>'error',default=>'error'} ?>">
           <?= ucfirst($d['status']) ?>
         </span>
         <?php if ($d['status']==='pending' && $d['method']==='qris'): ?>
@@ -134,7 +134,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <?php endif; ?>
       </div>
       <div class="list-item__right">
-        <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','rejected'=>'error'} ?>">
+        <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','rejected'=>'error',default=>'error'} ?>">
           <?= ucfirst($w['status']) ?>
         </span>
         <div class="list-item__amount list-item__amount--red" style="margin-top:4px">-<?= format_rp((float)$w['amount']) ?></div>
