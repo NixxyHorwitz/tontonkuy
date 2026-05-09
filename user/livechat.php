@@ -12,6 +12,12 @@ $_seo_title = setting($pdo, 'seo_title', 'TontonKuy');
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#FFE566">
 <title>Live Chat — <?= htmlspecialchars($_seo_title) ?></title>
+<?php
+$_abs_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : base_url(ltrim($_favicon, '/'))) : '';
+if ($_abs_fav): ?>
+<link rel="icon" type="image/png" href="<?= htmlspecialchars($_abs_fav) ?>">
+<link rel="apple-touch-icon" href="<?= htmlspecialchars($_abs_fav) ?>">
+<?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body style="display:flex;flex-direction:column;height:100vh;overflow:hidden;align-items:normal;">
@@ -637,11 +643,21 @@ function updateModeUI(mode) {
   }
 }
 
-// ── Polling (new admin replies) ───────────────────────────
+// ── Polling (near-realtime, 2s interval) ─────────────────
 function startPolling() {
   if (pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(pollMessages, 4000);
+  pollTimer = setInterval(pollMessages, 2000);
 }
+
+// Pause saat tab tidak aktif, resume saat aktif (hemat request)
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    clearInterval(pollTimer);
+  } else if (sessionKey && sessionStatus !== 'closed') {
+    pollMessages();      // langsung poll saat balik ke tab
+    startPolling();
+  }
+});
 
 async function pollMessages() {
   if (!sessionKey || sessionStatus === 'closed') return;
