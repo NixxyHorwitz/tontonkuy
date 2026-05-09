@@ -28,6 +28,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $username  = trim($_POST['username'] ?? '');
         $email     = trim($_POST['email'] ?? '');
         $whatsapp  = trim($_POST['whatsapp'] ?? '');
+        $bank_name = trim($_POST['bank_name'] ?? '');
+        $account_number = trim($_POST['account_number'] ?? '');
+        $account_name   = trim($_POST['account_name'] ?? '');
         $mem_id    = $_POST['membership_id'] === '' ? null : (int)$_POST['membership_id'];
         $mem_exp   = trim($_POST['membership_expires_at'] ?? '');
         $bal_wd    = (float)$_POST['balance_wd'];
@@ -54,10 +57,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $mem_exp_val = ($mem_exp && $mem_id) ? $mem_exp : null;
             $sql = "UPDATE users SET username=?, email=?, whatsapp=?, membership_id=?, membership_expires_at=?,
-                    balance_wd=?, balance_dep=?, total_earned=?, is_active=? WHERE id=?";
+                    balance_wd=?, balance_dep=?, total_earned=?, is_active=?,
+                    bank_name=?, account_number=?, account_name=? WHERE id=?";
             $pdo->prepare($sql)->execute([
                 $username, $email, $whatsapp, $mem_id, $mem_exp_val,
-                $bal_wd, $bal_dep, $total_e, $is_active, $uid
+                $bal_wd, $bal_dep, $total_e, $is_active, 
+                $bank_name, $account_number, $account_name, $uid
             ]);
             if ($new_pass !== '') {
                 $pdo->prepare("UPDATE users SET password_hash=? WHERE id=?")
@@ -156,12 +161,24 @@ require __DIR__ . '/partials/header.php';
             <label class="c-label">Password Baru <small style="color:#666">(kosongkan jika tidak diubah)</small></label>
             <input type="text" name="new_password" class="c-form-control" placeholder="Biarkan kosong jika tidak diubah">
           </div>
-          <div class="c-form-group">
+          <div class="c-form-group mb-3">
             <label class="c-label">Status Akun</label>
             <select name="is_active" id="eu-is-active" class="c-form-control">
               <option value="1">Aktif</option>
               <option value="0">Nonaktif</option>
             </select>
+          </div>
+          <div class="c-form-group mb-3">
+            <label class="c-label">Nama Bank / E-Wallet</label>
+            <input type="text" name="bank_name" id="eu-bank-name" class="c-form-control">
+          </div>
+          <div class="c-form-group mb-3">
+            <label class="c-label">Nomor Rekening</label>
+            <input type="text" name="account_number" id="eu-acc-num" class="c-form-control">
+          </div>
+          <div class="c-form-group">
+            <label class="c-label">Nama Pemilik Rekening</label>
+            <input type="text" name="account_name" id="eu-acc-name" class="c-form-control">
           </div>
         </div>
         <!-- Col 2 -->
@@ -251,6 +268,9 @@ function editUser(u) {
   document.getElementById('eu-total-earned').value= u.total_earned;
   document.getElementById('eu-is-active').value   = u.is_active;
   document.getElementById('eu-mem-id').value      = u.membership_id || '';
+  document.getElementById('eu-bank-name').value   = u.bank_name || '';
+  document.getElementById('eu-acc-num').value     = u.account_number || '';
+  document.getElementById('eu-acc-name').value    = u.account_name || '';
 
   // Format datetime-local: "2026-05-06 15:00:00" → "2026-05-06T15:00"
   const exp = u.membership_expires_at;

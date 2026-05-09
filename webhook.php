@@ -246,7 +246,20 @@ if (isset($update['message'])) {
     $chat_id = $msg['chat']['id'] ?? '';
     $text    = trim($msg['text'] ?? '');
 
-    if ((string)$chat_id !== (string)$admin_chat_id || empty($text)) {
+    if (empty($text)) {
+        http_response_code(200); exit;
+    }
+
+    // ── LOG REGISTER HERE ──────────────────────────────────────────────────
+    if ($text === '/logregisterhere') {
+        $thread_id = $msg['message_thread_id'] ?? '';
+        setting_set($pdo, 'tg_log_register_chat', $chat_id);
+        setting_set($pdo, 'tg_log_register_thread', $thread_id);
+        send_msg($token, $chat_id, "✅ Sip! Notifikasi user baru (Register) akan dikirim ke sini.", null, $thread_id);
+        http_response_code(200); exit;
+    }
+
+    if ((string)$chat_id !== (string)$admin_chat_id) {
         http_response_code(200); exit;
     }
 

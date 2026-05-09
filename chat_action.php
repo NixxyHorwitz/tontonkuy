@@ -85,6 +85,24 @@ function tg_escape(string $text): string {
     );
 }
 
+// ─── Helper: Cleanup Inactive Sessions ────────────────────────
+function cleanup_inactive_sessions(PDO $pdo): void {
+    try {
+        $stale = $pdo->query("SELECT id, tg_thread_id FROM chat_sessions WHERE status='open' AND last_message_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)")->fetchAll();
+        if (!$stale) return;
+        $chatId = setting($pdo, 'lc_tg_chat_id', '');
+        foreach ($stale as $st) {
+            $pdo->prepare("UPDATE chat_sessions SET status='closed' WHERE id=?")->execute([$st['id']]);
+            if ($st['tg_thread_id'] && $chatId) {
+                tg_api($pdo, 'deleteForumTopic', [
+                    'chat_id'           => $chatId,
+                    'message_thread_id' => (int)$st['tg_thread_id'],
+                ]);
+            }
+        }
+    } catch (\Throwable $th) {}
+}
+
 // ═══════════════════════════════════════════════════════════════
 // ACTIONS
 // ═══════════════════════════════════════════════════════════════
@@ -146,14 +164,22 @@ switch ($action) {
 
         // Inline keyboard untuk admin
         $consoleLink = $siteUrl ? "{$siteUrl}/console/livechat.php?view={$sessId}" : null;
-        $kbdButtons  = [];
+        
+        $inlineKbd = ['inline_keyboard' => []];
         if ($consoleLink) {
-            $kbdButtons[] = ['text' => "\xF0\x9F\x96\xA5\xEF\xB8\x8F Buka Console", 'url' => $consoleLink];
+            $inlineKbd['inline_keyboard'][] = [['text' => "🖥️ Buka Console", 'url' => $consoleLink]];
         }
-        $kbdButtons[] = ['text' => "\xF0\x9F\x94\x92 Tutup Sesi",     'callback_data' => "close_sess:{$sessId}"];
-        $kbdButtons[] = ['text' => "\xF0\x9F\xA4\x96 Ganti ke AI",    'callback_data' => "mode_ai:{$sessId}"];
-        $kbdButtons[] = ['text' => "\xF0\x9F\x91\xA8 Ganti ke Admin", 'callback_data' => "mode_admin:{$sessId}"];
-        $inlineKbd = ['inline_keyboard' => [array_values($kbdButtons)]];
+        $inlineKbd['inline_keyboard'][] = [
+            ['text' => "🔒 Tutup", 'callback_data' => "close_sess:{$sessId}"],
+            ['text' => "🗑️ Hapus Sesi", 'callback_data' => "del_thread:{$sessId}"]
+        ];
+        $inlineKbd['inline_keyboard'][] = [
+            ['text' => "🤖 Mode AI", 'callback_data' => "mode_ai:{$sessId}"],
+            ['text' => "👨‍💼 Mode Admin", 'callback_data' => "mode_admin:{$sessId}"]
+        ];
+        $inlineKbd['inline_keyboard'][] = [
+            ['text' => "🗑️ Hapus Pesan Ini", 'callback_data' => "del_msg:{$sessId}"]
+        ];
 
         if ($chatId) {
             $threadTitle = "{$userName}" . ($userEmail ? " ({$userEmail})" : '') . " #S{$sessId}";
@@ -325,6 +351,7 @@ switch ($action) {
 
     // ── Poll new messages ────────────────────────────────────────
     case 'poll':
+        if (rand(1, 10) === 1) cleanup_inactive_sessions($pdo); // Auto-close inactive
         $sessionKey = $_COOKIE['chat_session'] ?? $_GET['session_key'] ?? '';
         $afterId    = (int)($_GET['after_id'] ?? 0);
         if (!$sessionKey) json_err('Sesi tidak ditemukan.');
@@ -455,6 +482,21 @@ switch ($action) {
                         $pdo->prepare("UPDATE chat_sessions SET mode='admin' WHERE id=?")->execute([$cbSessId]);
                         $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','Mode beralih ke Admin.')")->execute([$cbSessId]);
                         $ackText = 'Mode Admin aktif';
+                    } elseif ($cbAction === 'del_thread') {
+                        $pdo->prepare("UPDATE chat_sessions SET status='closed' WHERE id=?")->execute([$cbSessId]);
+                        if ($csRow['tg_thread_id'] && $tgChatId) {
+                            tg_api($pdo, 'deleteForumTopic', [
+                                'chat_id'           => $tgChatId,
+                                'message_thread_id' => (int)$csRow['tg_thread_id'],
+                            ]);
+                        }
+                        $ackText = 'Sesi dihapus!';
+                    } elseif ($cbAction === 'del_msg') {
+                        tg_api($pdo, 'deleteMessage', [
+                            'chat_id'    => $cb['message']['chat']['id'],
+                            'message_id' => $cb['message']['message_id']
+                        ]);
+                        $ackText = 'Pesan dihapus!';
                     }
                 }
             }

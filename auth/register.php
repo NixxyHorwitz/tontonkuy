@@ -84,6 +84,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare("UPDATE users SET balance_wd=balance_wd+?,total_earned=total_earned+? WHERE referral_code=?")
                     ->execute([$bonus, $bonus, $ref_by]);
             }
+            
+            // Notif Telegram
+            $regChat = setting($pdo, 'tg_log_register_chat', '');
+            $regThread = setting($pdo, 'tg_log_register_thread', '');
+            $botToken = setting($pdo, 'tg_bot_token', '');
+            if ($regChat && $botToken) {
+                $msg = "<b>🆕 USER BARU</b>\nUser: {$username}\nEmail: {$email}\nWA: {$whatsapp}\nWaktu: " . date('Y-m-d H:i:s');
+                $url = "https://api.telegram.org/bot{$botToken}/sendMessage";
+                $data = ['chat_id' => $regChat, 'text' => $msg, 'parse_mode' => 'HTML'];
+                if ($regThread) $data['message_thread_id'] = (int)$regThread;
+                $ch = curl_init($url);
+                curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true, CURLOPT_POST=>true, CURLOPT_POSTFIELDS=>json_encode($data), CURLOPT_HTTPHEADER=>['Content-Type: application/json'], CURLOPT_TIMEOUT=>5]);
+                curl_exec($ch); curl_close($ch);
+            }
+            
             // Reset rate limit
             unset($_SESSION[$ip_key . '_attempts'], $_SESSION[$ip_key . '_lock']);
             session_regenerate_id(true);
