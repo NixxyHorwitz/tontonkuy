@@ -143,29 +143,48 @@ switch ($action) {
         $chatId     = setting($pdo, 'tg_chat_id', '');
         $isForum    = setting($pdo, 'tg_group_is_forum', '1') === '1';
         $tgThreadId = null;
-        if ($chatId && $isForum) {
-            $threadTitle = "💬 {$userName}" . ($userEmail ? " ({$userEmail})" : '') . " — #S{$sessId}";
-            $tgRes = tg_api($pdo, 'createForumTopic', [
-                'chat_id'    => $chatId,
-                'name'       => mb_substr($threadTitle, 0, 128),
-                'icon_color' => 0x6FB9F0,
-            ]);
-            if (!empty($tgRes['ok'])) {
-                $tgThreadId = $tgRes['result']['message_thread_id'] ?? null;
-                $pdo->prepare("UPDATE chat_sessions SET tg_thread_id=? WHERE id=?")
-                    ->execute([$tgThreadId, $sessId]);
+        $tgDebug    = null;
+        if ($chatId) {
+            $threadTitle = "💬 {$userName}" . ($userEmail ? " ({$userEmail})" : '') . " #S{$sessId}";
+            $intro = "🆕 Sesi Baru\n"
+                   . "👤 User: {$userName}"
+                   . ($userEmail ? "\n📧 Email: {$userEmail}" : '')
+                   . "\n🆔 Session: #{$sessId}\n🤖 Mode: AI";
 
-                // Kirim pesan pembuka di thread
-                $intro = "🆕 *Sesi Baru*\n👤 *User:* " . tg_escape($userName)
-                       . ($userEmail ? "\n📧 *Email:* " . tg_escape($userEmail) : '')
-                       . "\n🆔 *Session:* `{$newKey}`"
-                       . "\n🤖 *Mode:* AI";
-                tg_api($pdo, 'sendMessage', [
-                    'chat_id'           => $chatId,
-                    'message_thread_id' => $tgThreadId,
-                    'text'              => $intro,
-                    'parse_mode'        => 'MarkdownV2',
+            if ($isForum) {
+                // Coba buat Forum Topic (Supergroup dengan Topics aktif)
+                $tgRes = tg_api($pdo, 'createForumTopic', [
+                    'chat_id'    => $chatId,
+                    'name'       => mb_substr($threadTitle, 0, 128),
+                    'icon_color' => 7322096, // biru muda
                 ]);
+                $tgDebug = $tgRes; // simpan untuk debug
+
+                if (!empty($tgRes['ok'])) {
+                    $tgThreadId = $tgRes['result']['message_thread_id'] ?? null;
+                    $pdo->prepare("UPDATE chat_sessions SET tg_thread_id=? WHERE id=?")
+                        ->execute([$tgThreadId, $sessId]);
+                    // Kirim info sesi ke thread
+                    tg_api($pdo, 'sendMessage', [
+                        'chat_id'           => $chatId,
+                        'message_thread_id' => $tgThreadId,
+                        'text'              => $intro,
+                    ]);
+                } else {
+                    // Forum topic gagal — fallback kirim notif biasa ke group
+                    $errDesc = $tgRes['description'] ?? 'unknown error';
+                    tg_api($pdo, 'sendMessage', [
+                        'chat_id' => $chatId,
+                        'text'    => "⚠️ Gagal buat thread: {$errDesc}\n\n" . $intro,
+                    ]);
+                }
+            } else {
+                // Mode grup biasa (tanpa forum/topic)
+                $tgRes = tg_api($pdo, 'sendMessage', [
+                    'chat_id' => $chatId,
+                    'text'    => $intro,
+                ]);
+                $tgDebug = $tgRes;
             }
         }
 
@@ -178,6 +197,7 @@ switch ($action) {
             ],
             'last_msg_id' => $welcomeMsgId,
             'welcome'     => $welcome,
+            'tg_debug'    => $tgDebug, // bantu troubleshoot
         ]);
 
 
@@ -303,26 +323,33 @@ switch ($action) {
 
         $pdo->prepare("UPDATE chat_sessions SET mode=? WHERE id=?")->execute([$newMode, $sess['id']]);
 
+        // Simpan marker mode switch ke DB
+        $switchMsg = $newMode === 'admin'
+            ? '🔄 Beralih ke Mode Admin — tim kami akan segera membalas.'
+            : '🔄 Beralih ke Mode AI — Asisten AI siap membantu.';
+        $pdo->prepare(
+            "INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system',?)"
+        )->execute([$sess['id'], $switchMsg]);
+        $switchMsgId = (int)$pdo->lastInsertId();
+
         // Kirim notif ke Telegram jika switch ke admin
         $chatId = setting($pdo, 'tg_chat_id', '');
-        if ($newMode === 'admin' && $chatId && $sess['tg_thread_id']) {
-            tg_api($pdo, 'sendMessage', [
-                'chat_id'           => $chatId,
-                'message_thread_id' => (int)$sess['tg_thread_id'],
-                'text'              => "🔔 User meminta *Mode Admin*\\. Silakan balas di thread ini\\.",
-                'parse_mode'        => 'MarkdownV2',
-            ]);
-            // Simpan sistem notif
-            $pdo->prepare(
-                "INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','Permintaan diteruskan ke Admin. Harap tunggu...')"
-            )->execute([$sess['id']]);
-        } elseif ($newMode === 'ai') {
-            $pdo->prepare(
-                "INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','Mode beralih ke Asisten AI.')"
-            )->execute([$sess['id']]);
+        if ($newMode === 'admin' && $chatId) {
+            $tgParams = [
+                'chat_id' => $chatId,
+                'text'    => "🔔 [{$sess['user_name']}] beralih ke Mode Admin. Sesi #{$sess['id']}",
+            ];
+            if ($sess['tg_thread_id']) {
+                $tgParams['message_thread_id'] = (int)$sess['tg_thread_id'];
+            }
+            tg_api($pdo, 'sendMessage', $tgParams);
         }
 
-        json_ok(['mode' => $newMode]);
+        json_ok([
+            'mode'           => $newMode,
+            'switch_msg_id'  => $switchMsgId,
+            'switch_message' => $switchMsg,
+        ]);
 
 
     // ── Close session ───────────────────────────────────────────

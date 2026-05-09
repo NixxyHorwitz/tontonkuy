@@ -543,10 +543,12 @@ function appendBubble(sender, text, time, animate = true) {
 
   const timeStr = time ? new Date(time).toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'}) : '';
   const label   = sender !== 'system' && sender !== 'user' ? `<div class="bubble-sender-tag ${senderClass[sender]||''}">${senderLabels[sender]||sender}</div>` : '';
+  // AI dan admin pakai markdown, user dan system pakai plain text
+  const bodyHtml = (sender === 'ai' || sender === 'admin') ? renderMarkdown(text) : (sender === 'system' ? escHtml(text) : escHtml(text) + '');
 
   wrap.innerHTML = `
     ${label}
-    <div class="bubble">${escHtml(text)}</div>
+    <div class="bubble">${bodyHtml}</div>
     ${sender !== 'system' ? `<div class="bubble-meta">${timeStr}</div>` : ''}
   `;
   msgs.appendChild(wrap);
@@ -556,8 +558,31 @@ function appendBubble(sender, text, time, animate = true) {
 
 function escHtml(s) {
   return String(s)
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/\n/g,'<br>');
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── Markdown renderer (untuk bubble AI & Admin) ───────────
+function renderMarkdown(text) {
+  let s = escHtml(text);
+  // Headings: # Title
+  s = s.replace(/^###\s+(.+)$/gm, '<strong style="font-size:13px;">$1</strong>');
+  s = s.replace(/^##\s+(.+)$/gm,  '<strong style="font-size:14px;">$1</strong>');
+  s = s.replace(/^#\s+(.+)$/gm,   '<strong style="font-size:15px;">$1</strong>');
+  // Bold: **text** or __text__
+  s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/__(.+?)__/g,     '<strong>$1</strong>');
+  // Italic: *text* or _text_
+  s = s.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+  s = s.replace(/_([^_\n]+?)_/g,   '<em>$1</em>');
+  // Inline code
+  s = s.replace(/`([^`]+?)`/g, '<code style="background:rgba(0,0,0,.1);padding:1px 5px;border-radius:4px;font-size:12px;font-family:monospace;">$1</code>');
+  // Numbered list: 1. item
+  s = s.replace(/^(\d+)\.\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin:2px 0;"><span style="font-weight:800;min-width:16px;">$1.</span><span>$2</span></div>');
+  // Bullet list: - item or * item
+  s = s.replace(/^[-*]\s+(.+)$/gm, '<div style="display:flex;gap:6px;margin:2px 0;"><span style="font-weight:900;">•</span><span>$1</span></div>');
+  // Newlines
+  s = s.replace(/\n/g, '<br>');
+  return s;
 }
 
 function scrollBottom() {
@@ -621,9 +646,28 @@ async function switchMode(mode) {
     if (!data.ok) throw new Error(data.error);
     currentMode = data.mode;
     updateModeUI(currentMode);
+    // Update lastMsgId agar poll tidak re-render divider switch
+    if (data.switch_msg_id) lastMsgId = parseInt(data.switch_msg_id);
+    // Tampilkan divider visual mode switch
+    if (data.switch_message) appendModeDivider(data.mode, data.switch_message);
   } catch(e) {
     alert('Gagal beralih mode: ' + e.message);
   }
+}
+
+// ── Mode divider (pemisah visual antar section) ────────
+function appendModeDivider(mode, label) {
+  const msgs  = document.getElementById('chat-messages');
+  const el    = document.createElement('div');
+  const color = mode === 'ai' ? 'var(--lavender)' : 'var(--mint)';
+  el.style.cssText = 'display:flex;align-items:center;gap:8px;margin:10px 0;';
+  el.innerHTML = `
+    <div style="flex:1;height:2px;border-radius:2px;background:${color};border:1px solid var(--ink);"></div>
+    <span style="font-size:10px;font-weight:900;background:${color};border:1.5px solid var(--ink);padding:3px 10px;border-radius:20px;white-space:nowrap;box-shadow:2px 2px 0 var(--ink);">${escHtml(label)}</span>
+    <div style="flex:1;height:2px;border-radius:2px;background:${color};border:1px solid var(--ink);"></div>
+  `;
+  msgs.appendChild(el);
+  scrollBottom();
 }
 
 function updateModeUI(mode) {
