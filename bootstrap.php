@@ -16,6 +16,9 @@ if (file_exists($envFile)) {
     }
 }
 
+// Timezone — WIB (UTC+7)
+date_default_timezone_set('Asia/Jakarta');
+
 // Session
 if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', '1');
@@ -40,6 +43,7 @@ function createPdo(): PDO {
 
 try {
     $pdo = createPdo();
+    $pdo->exec("SET time_zone = '+07:00'");
 } catch (PDOException $e) {
     http_response_code(503);
     die('<h1 style="font-family:sans-serif">⚠️ Database Error</h1><p>Please start MySQL and check .env config</p><pre style="background:#f5f5f5;padding:12px;border-radius:6px">' . htmlspecialchars($e->getMessage()) . '</pre>');
