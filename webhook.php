@@ -250,7 +250,7 @@ if (isset($update['message'])) {
     }
 
     // ── LOG REGISTER HERE ──────────────────────────────────────────────────
-    if ($text === '/logregisterhere') {
+    if (str_starts_with($text, '/logregisterhere')) {
         $thread_id = $msg['message_thread_id'] ?? '';
         setting_set($pdo, 'tg_log_register_chat', $chat_id);
         setting_set($pdo, 'tg_log_register_thread', $thread_id);
