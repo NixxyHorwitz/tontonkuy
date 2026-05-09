@@ -14,7 +14,7 @@ if (!$_ai_enabled && !$_adm_enabled) $_lc_enabled = false;
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#FFE566">
 <title>Live Chat — <?= htmlspecialchars($_seo_title) ?></title>
 <?php
@@ -25,7 +25,7 @@ if ($_abs_fav): ?>
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>
-<body style="display:flex;flex-direction:column;height:100vh;overflow:hidden;align-items:normal;">
+<body style="display:flex;flex-direction:column;height:100dvh;height:100vh;overflow:hidden;align-items:stretch;">
 
 <?php if (!$_lc_enabled): ?>
 <!-- Live Chat Disabled -->
@@ -95,10 +95,11 @@ if ($_abs_fav): ?>
 .chat-page {
   display: flex;
   flex-direction: column;
-  flex: 1;
+  flex: 1 1 0;
   padding: 0;
   overflow: hidden;
   min-height: 0;
+  min-width: 0;
 }
 
 /* ── Mode switch bar ─────────────────── */
@@ -178,14 +179,17 @@ if ($_abs_fav): ?>
 
 /* ── Messages area ───────────────────── */
 .chat-messages {
-  flex: 1;
+  flex: 1 1 0;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 10px;
   background: var(--bg);
   scroll-behavior: smooth;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 .chat-messages::-webkit-scrollbar { width: 4px; }
 .chat-messages::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
@@ -384,7 +388,7 @@ if ($_abs_fav): ?>
 }
 </style>
 
-<div style="flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:0;">
+<div style="flex:1 1 0;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:0;min-width:0;">
 
   <!-- Start Overlay (shown until session created) -->
   <div class="chat-start-overlay" id="chat-start-overlay">
