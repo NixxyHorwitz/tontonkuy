@@ -508,9 +508,8 @@ async function startChat() {
       updateModeUI(currentMode);
     }
 
-    // Track last id
-    const allBubbles = msgs.querySelectorAll('[data-msg-id]');
-    if (allBubbles.length) lastMsgId = parseInt(allBubbles[allBubbles.length-1].dataset.msgId || '0');
+    // Track lastMsgId dari DB id yg dikembalikan server (cegah double render saat poll)
+    if (data.last_msg_id) lastMsgId = parseInt(data.last_msg_id);
 
     scrollBottom();
     startPolling();
@@ -585,6 +584,8 @@ async function sendMessage() {
     const data = await res.json();
     showTyping(false);
     if (!data.ok) throw new Error(data.error || 'Gagal mengirim.');
+    // Update lastMsgId dari DB agar poll tidak re-render pesan yg sudah tampil
+    if (data.last_msg_id) lastMsgId = parseInt(data.last_msg_id);
     if (data.reply) {
       appendBubble(data.reply.sender, data.reply.message, data.reply.created_at);
     }

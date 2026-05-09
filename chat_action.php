@@ -100,17 +100,19 @@ switch ($action) {
         if ($sessionKey) {
             $sess = get_chat_session($pdo, $sessionKey);
             if ($sess) {
-                // Load existing messages
+                // Load existing messages — sertakan id agar JS bisa track lastMsgId
                 $msgs = $pdo->prepare(
-                    "SELECT sender,message,created_at FROM chat_messages 
+                    "SELECT id,sender,message,created_at FROM chat_messages 
                      WHERE session_id=? ORDER BY id ASC LIMIT 100"
                 );
                 $msgs->execute([$sess['id']]);
+                $rows = $msgs->fetchAll();
                 json_ok([
                     'session_key' => $sess['session_key'],
                     'mode'        => $sess['mode'],
                     'status'      => $sess['status'],
-                    'messages'    => $msgs->fetchAll(),
+                    'messages'    => $rows,
+                    'last_msg_id' => !empty($rows) ? (int)end($rows)['id'] : 0,
                     'welcome'     => setting($pdo, 'chat_welcome_msg', 'Halo! Ada yang bisa dibantu?'),
                 ]);
             }
@@ -132,6 +134,7 @@ switch ($action) {
         $pdo->prepare(
             "INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system',?)"
         )->execute([$sessId, $welcome]);
+        $welcomeMsgId = (int)$pdo->lastInsertId();
 
         // Set cookie
         setcookie('chat_session', $newKey, time() + 86400 * 7, '/', '', false, true);
@@ -171,8 +174,9 @@ switch ($action) {
             'mode'        => 'ai',
             'status'      => 'open',
             'messages'    => [
-                ['sender' => 'system', 'message' => $welcome, 'created_at' => date('Y-m-d H:i:s')],
+                ['id' => $welcomeMsgId, 'sender' => 'system', 'message' => $welcome, 'created_at' => date('Y-m-d H:i:s')],
             ],
+            'last_msg_id' => $welcomeMsgId,
             'welcome'     => $welcome,
         ]);
 
@@ -254,11 +258,12 @@ switch ($action) {
                     ->execute([$tgAi['result']['message_id'] ?? null, $aiMsgId]);
             }
 
-            $replyMsg = ['sender' => 'ai', 'message' => $aiReply, 'created_at' => date('Y-m-d H:i:s')];
+            $replyMsg = ['id' => $aiMsgId, 'sender' => 'ai', 'message' => $aiReply, 'created_at' => date('Y-m-d H:i:s')];
         }
 
         json_ok([
-            'user_message' => ['sender' => 'user', 'message' => $text, 'created_at' => date('Y-m-d H:i:s')],
+            'user_message' => ['id' => $userMsgId, 'sender' => 'user', 'message' => $text, 'created_at' => date('Y-m-d H:i:s')],
+            'last_msg_id'  => $replyMsg ? (int)$replyMsg['id'] : $userMsgId,
             'reply'        => $replyMsg,
         ]);
 
