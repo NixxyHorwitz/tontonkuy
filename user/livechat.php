@@ -1,21 +1,80 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/../bootstrap.php';
-$user      = require_auth($pdo);
-$pageTitle = 'Live Chat';
-$activePage= 'chat';
-require_once __DIR__ . '/../partials/header.php';
+$user = require_auth($pdo);
+$_favicon = setting($pdo, 'favicon_path', '');
+$_seo_title = setting($pdo, 'seo_title', 'TontonKuy');
 ?>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#FFE566">
+<title>Live Chat — <?= htmlspecialchars($_seo_title) ?></title>
+<link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body style="display:flex;flex-direction:column;height:100vh;overflow:hidden;align-items:normal;">
+<!-- ── Custom Topbar (no navbar) ── -->
+<header class="chat-topbar" id="chat-topbar">
+  <a href="/home" class="chat-back-btn" title="Kembali ke Beranda">
+    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+  </a>
+  <div class="chat-topbar__info">
+    <span class="chat-topbar__title">💬 Live Support</span>
+    <span class="chat-topbar__sub" id="topbar-username"><?= htmlspecialchars($user['username']) ?></span>
+  </div>
+  <div class="chat-topbar__actions">
+    <div class="chat-status-badge online" id="chat-status-badge" style="border:1.5px solid var(--ink);">Online</div>
+  </div>
+</header>
+
 <style>
 /* ═══════════════════════════════════════
    LIVECHAT — Neobrutalism
 ═══════════════════════════════════════ */
+/* ── Custom topbar ──────────────────── */
+.chat-topbar {
+  height: 54px;
+  background: var(--white);
+  border-bottom: var(--border);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.chat-back-btn {
+  width: 36px; height: 36px;
+  border: var(--border);
+  border-radius: 10px;
+  box-shadow: var(--shadow-sm);
+  background: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--ink);
+  text-decoration: none;
+  transition: transform .12s, box-shadow .12s;
+}
+.chat-back-btn:hover { transform: translate(-2px,-2px); box-shadow: 4px 4px 0 var(--ink); }
+.chat-back-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--ink); }
+.chat-topbar__info { flex: 1; min-width: 0; }
+.chat-topbar__title { font-size: 14px; font-weight: 900; display: block; line-height: 1.2; }
+.chat-topbar__sub   { font-size: 11px; color: #888; font-weight: 600; }
+.chat-topbar__actions { flex-shrink: 0; }
+
 .chat-page {
   display: flex;
   flex-direction: column;
-  height: calc(100vh - 56px - var(--nav-h));
+  flex: 1;
   padding: 0;
   overflow: hidden;
+  min-height: 0;
 }
 
 /* ── Mode switch bar ─────────────────── */
@@ -262,7 +321,8 @@ require_once __DIR__ . '/../partials/header.php';
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: 20px;
+  overflow-y: auto;
 }
 .chat-start-card {
   width: 100%;
@@ -300,7 +360,7 @@ require_once __DIR__ . '/../partials/header.php';
 }
 </style>
 
-<div class="page-content" style="padding:0;position:relative;height:calc(100vh - 56px - var(--nav-h));overflow:hidden;">
+<div style="flex:1;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:0;">
 
   <!-- Start Overlay (shown until session created) -->
   <div class="chat-start-overlay" id="chat-start-overlay">
@@ -651,4 +711,6 @@ function handleKey(e) {
 }
 </style>
 
-<?php require_once __DIR__ . '/../partials/footer.php'; ?>
+<script src="/assets/js/toast.js"></script>
+</body>
+</html>
