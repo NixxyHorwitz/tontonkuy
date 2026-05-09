@@ -1,6 +1,6 @@
-<?php
+﻿<?php
 /**
- * chat_action.php — AJAX handler untuk LiveChat (Telegram + OpenAI)
+ * chat_action.php â€” AJAX handler untuk LiveChat (Telegram + OpenAI)
  * Endpoint: /chat_action?action=...
  */
 declare(strict_types=1);
@@ -10,7 +10,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 
-// ─── Helper: JSON response ────────────────────────────────────
+// â”€â”€â”€ Helper: JSON response â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function json_ok(array $data = []): never {
     echo json_encode(['ok' => true, ...$data]);
     exit;
@@ -21,16 +21,16 @@ function json_err(string $msg, int $code = 400): never {
     exit;
 }
 
-// ─── Helper: Get/create session ──────────────────────────────
+// â”€â”€â”€ Helper: Get/create session â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function get_chat_session(PDO $pdo, string $key): ?array {
     $s = $pdo->prepare("SELECT * FROM chat_sessions WHERE session_key=?");
     $s->execute([$key]);
     return $s->fetch() ?: null;
 }
 
-// ─── Helper: Telegram API call ───────────────────────────────
+// â”€â”€â”€ Helper: Telegram API call â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function tg_api(PDO $pdo, string $method, array $params): array {
-    $token = setting($pdo, 'tg_bot_token', '');
+    $token = setting($pdo, 'lc_tg_token', '');
     if (!$token) return ['ok' => false];
     $ch = curl_init("https://api.telegram.org/bot{$token}/{$method}");
     curl_setopt_array($ch, [
@@ -45,7 +45,7 @@ function tg_api(PDO $pdo, string $method, array $params): array {
     return json_decode($res ?: '{}', true) ?: [];
 }
 
-// ─── Helper: OpenAI chat completion ──────────────────────────
+// â”€â”€â”€ Helper: OpenAI chat completion â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function openai_chat(PDO $pdo, array $messages): string {
     $apiKey = setting($pdo, 'openai_api_key', '');
     $model  = setting($pdo, 'openai_model', 'gpt-4o-mini');
@@ -76,7 +76,7 @@ function openai_chat(PDO $pdo, array $messages): string {
     return trim($data['choices'][0]['message']['content'] ?? 'Maaf, AI tidak merespons.');
 }
 
-// ─── Helper: Format Telegram escaping (MarkdownV2) ────────────
+// â”€â”€â”€ Helper: Format Telegram escaping (MarkdownV2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function tg_escape(string $text): string {
     return str_replace(
         ['_','*','[',']','(',')','{','}','~','`','>','#','+','-','=','|','.',',','!','\\'],
@@ -85,13 +85,13 @@ function tg_escape(string $text): string {
     );
 }
 
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 // ACTIONS
-// ═══════════════════════════════════════════════════════════════
+// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 switch ($action) {
 
-    // ── Start / get session ─────────────────────────────────────
+    // â”€â”€ Start / get session â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'start':
         $user      = auth_user($pdo);
         $sessionKey = $_COOKIE['chat_session'] ?? '';
@@ -100,7 +100,7 @@ switch ($action) {
         if ($sessionKey) {
             $sess = get_chat_session($pdo, $sessionKey);
             if ($sess) {
-                // Load existing messages — sertakan id agar JS bisa track lastMsgId
+                // Load existing messages â€” sertakan id agar JS bisa track lastMsgId
                 $msgs = $pdo->prepare(
                     "SELECT id,sender,message,created_at FROM chat_messages 
                      WHERE session_id=? ORDER BY id ASC LIMIT 100"
@@ -130,7 +130,7 @@ switch ($action) {
         $sessId = (int)$pdo->lastInsertId();
 
         // Welcome message in DB
-        $welcome = setting($pdo, 'chat_welcome_msg', 'Halo! 👋 Ada yang bisa kami bantu?');
+        $welcome = setting($pdo, 'chat_welcome_msg', 'Halo! ðŸ‘‹ Ada yang bisa kami bantu?');
         $pdo->prepare(
             "INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system',?)"
         )->execute([$sessId, $welcome]);
@@ -140,49 +140,61 @@ switch ($action) {
         setcookie('chat_session', $newKey, time() + 86400 * 7, '/', '', false, true);
 
         // Buat thread di Telegram Forum group
-        $chatId     = setting($pdo, 'tg_chat_id', '');
-        $isForum    = setting($pdo, 'tg_group_is_forum', '1') === '1';
+        $chatId     = setting($pdo, 'lc_tg_chat_id', '');
+        $isForum    = setting($pdo, 'lc_tg_forum', '1') === '1';
+        $siteUrl    = rtrim(setting($pdo, 'lc_site_url', ''), '/');
         $tgThreadId = null;
         $tgDebug    = null;
+
+        // Inline keyboard untuk manajemen sesi
+        $consoleLink = $siteUrl ? $siteUrl . "/console/livechat.php?view={$sessId}" : null;
+        $inlineKbd = ['inline_keyboard' => [
+            array_filter([
+                $consoleLink ? ['text' => 'ðŸ–¥ï¸ Buka Console', 'url' => $consoleLink] : null,
+                ['text' => 'ðŸ”’ Tutup Sesi', 'callback_data' => "close_sess:{$sessId}"],
+                ['text' => 'ðŸ¤– Ganti ke AI', 'callback_data' => "mode_ai:{$sessId}"],
+                ['text' => 'ðŸ‘¨â€ðŸ’¼ Ganti ke Admin', 'callback_data' => "mode_admin:{$sessId}"],
+            ])
+        ]];
+
         if ($chatId) {
-            $threadTitle = "💬 {$userName}" . ($userEmail ? " ({$userEmail})" : '') . " #S{$sessId}";
-            $intro = "🆕 Sesi Baru\n"
-                   . "👤 User: {$userName}"
-                   . ($userEmail ? "\n📧 Email: {$userEmail}" : '')
-                   . "\n🆔 Session: #{$sessId}\n🤖 Mode: AI";
+            $threadTitle = "ðŸ’¬ {$userName}" . ($userEmail ? " ({$userEmail})" : '') . " #S{$sessId}";
+            $intro = "ðŸ†• Sesi Baru\n"
+                   . "ðŸ‘¤ User: {$userName}"
+                   . ($userEmail ? "\nðŸ“§ Email: {$userEmail}" : '')
+                   . "\nðŸ†” Session: #{$sessId}\nðŸ¤– Mode: AI";
 
             if ($isForum) {
-                // Coba buat Forum Topic (Supergroup dengan Topics aktif)
                 $tgRes = tg_api($pdo, 'createForumTopic', [
                     'chat_id'    => $chatId,
                     'name'       => mb_substr($threadTitle, 0, 128),
-                    'icon_color' => 7322096, // biru muda
+                    'icon_color' => 7322096,
                 ]);
-                $tgDebug = $tgRes; // simpan untuk debug
+                $tgDebug = $tgRes;
 
                 if (!empty($tgRes['ok'])) {
                     $tgThreadId = $tgRes['result']['message_thread_id'] ?? null;
                     $pdo->prepare("UPDATE chat_sessions SET tg_thread_id=? WHERE id=?")
                         ->execute([$tgThreadId, $sessId]);
-                    // Kirim info sesi ke thread
                     tg_api($pdo, 'sendMessage', [
                         'chat_id'           => $chatId,
                         'message_thread_id' => $tgThreadId,
                         'text'              => $intro,
+                        'reply_markup'      => $inlineKbd,
                     ]);
                 } else {
-                    // Forum topic gagal — fallback kirim notif biasa ke group
                     $errDesc = $tgRes['description'] ?? 'unknown error';
                     tg_api($pdo, 'sendMessage', [
-                        'chat_id' => $chatId,
-                        'text'    => "⚠️ Gagal buat thread: {$errDesc}\n\n" . $intro,
+                        'chat_id'      => $chatId,
+                        'text'         => "âš ï¸ Gagal buat thread: {$errDesc}\n\n" . $intro,
+                        'reply_markup' => $inlineKbd,
                     ]);
                 }
             } else {
-                // Mode grup biasa (tanpa forum/topic)
                 $tgRes = tg_api($pdo, 'sendMessage', [
-                    'chat_id' => $chatId,
-                    'text'    => $intro,
+                    'chat_id'      => $chatId,
+                    'text'         => $intro,
+                    'reply_markup' => $inlineKbd,
                 ]);
                 $tgDebug = $tgRes;
             }
@@ -201,7 +213,7 @@ switch ($action) {
         ]);
 
 
-    // ── Send message ────────────────────────────────────────────
+    // â”€â”€ Send message â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'send':
         $sessionKey = $_COOKIE['chat_session'] ?? $_POST['session_key'] ?? '';
         $text       = trim($_POST['message'] ?? '');
@@ -221,13 +233,13 @@ switch ($action) {
         $userMsgId = (int)$pdo->lastInsertId();
 
         // Kirim ke Telegram thread
-        $chatId     = setting($pdo, 'tg_chat_id', '');
+        $chatId     = setting($pdo, 'lc_tg_chat_id', '');
         $tgMsgId    = null;
         if ($chatId && $sess['tg_thread_id']) {
             $tgRes = tg_api($pdo, 'sendMessage', [
                 'chat_id'           => $chatId,
                 'message_thread_id' => (int)$sess['tg_thread_id'],
-                'text'              => "👤 *" . tg_escape($sess['user_name']) . "*\n" . tg_escape($text),
+                'text'              => "ðŸ‘¤ *" . tg_escape($sess['user_name']) . "*\n" . tg_escape($text),
                 'parse_mode'        => 'MarkdownV2',
             ]);
             $tgMsgId = $tgRes['result']['message_id'] ?? null;
@@ -237,7 +249,7 @@ switch ($action) {
 
         $replyMsg = null;
 
-        // Mode AI → auto reply dari OpenAI
+        // Mode AI â†’ auto reply dari OpenAI
         if ($sess['mode'] === 'ai' && setting($pdo, 'chat_ai_enabled', '1') === '1') {
             // Build message history for context
             $histStmt = $pdo->prepare(
@@ -271,7 +283,7 @@ switch ($action) {
                 $tgAi = tg_api($pdo, 'sendMessage', [
                     'chat_id'           => $chatId,
                     'message_thread_id' => (int)$sess['tg_thread_id'],
-                    'text'              => "🤖 *AI:* " . tg_escape($aiReply),
+                    'text'              => "ðŸ¤– *AI:* " . tg_escape($aiReply),
                     'parse_mode'        => 'MarkdownV2',
                 ]);
                 $pdo->prepare("UPDATE chat_messages SET tg_msg_id=? WHERE id=?")
@@ -288,7 +300,7 @@ switch ($action) {
         ]);
 
 
-    // ── Poll new messages (for admin reply via Telegram webhook) ─
+    // â”€â”€ Poll new messages (for admin reply via Telegram webhook) â”€
     case 'poll':
         $sessionKey = $_COOKIE['chat_session'] ?? $_GET['session_key'] ?? '';
         $afterId    = (int)($_GET['after_id'] ?? 0);
@@ -311,7 +323,7 @@ switch ($action) {
         ]);
 
 
-    // ── Switch mode (AI ↔ Admin) — user request ────────────────
+    // â”€â”€ Switch mode (AI â†” Admin) â€” user request â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'switch_mode':
         $sessionKey = $_COOKIE['chat_session'] ?? $_POST['session_key'] ?? '';
         $newMode    = $_POST['mode'] ?? '';
@@ -325,19 +337,21 @@ switch ($action) {
 
         // Simpan marker mode switch ke DB
         $switchMsg = $newMode === 'admin'
-            ? '🔄 Beralih ke Mode Admin — tim kami akan segera membalas.'
-            : '🔄 Beralih ke Mode AI — Asisten AI siap membantu.';
+            ? 'ðŸ”„ Beralih ke Mode Admin â€” tim kami akan segera membalas.'
+            : 'ðŸ”„ Beralih ke Mode AI â€” Asisten AI siap membantu.';
         $pdo->prepare(
             "INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system',?)"
         )->execute([$sess['id'], $switchMsg]);
         $switchMsgId = (int)$pdo->lastInsertId();
 
-        // Kirim notif ke Telegram jika switch ke admin
-        $chatId = setting($pdo, 'tg_chat_id', '');
-        if ($newMode === 'admin' && $chatId) {
-            $tgParams = [
+        // Kirim notif ke Telegram untuk semua mode switch
+        $chatId = setting($pdo, 'lc_tg_chat_id', '');
+        if ($chatId) {
+            $modeEmoji = $newMode === 'admin' ? 'ðŸ‘¨â€ðŸ’¼' : 'ðŸ¤–';
+            $modeLabel = $newMode === 'admin' ? 'Admin' : 'AI';
+            $tgParams  = [
                 'chat_id' => $chatId,
-                'text'    => "🔔 [{$sess['user_name']}] beralih ke Mode Admin. Sesi #{$sess['id']}",
+                'text'    => "{$modeEmoji} [{$sess['user_name']}] beralih ke Mode {$modeLabel}. Sesi #{$sess['id']}",
             ];
             if ($sess['tg_thread_id']) {
                 $tgParams['message_thread_id'] = (int)$sess['tg_thread_id'];
@@ -352,7 +366,7 @@ switch ($action) {
         ]);
 
 
-    // ── Close session ───────────────────────────────────────────
+    // â”€â”€ Close session â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'close':
         $sessionKey = $_COOKIE['chat_session'] ?? $_POST['session_key'] ?? '';
         if (!$sessionKey) json_err('Sesi tidak ditemukan.');
@@ -365,7 +379,7 @@ switch ($action) {
             "INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','Sesi chat telah ditutup.')"
         )->execute([$sess['id']]);
 
-        $chatId = setting($pdo, 'tg_chat_id', '');
+        $chatId = setting($pdo, 'lc_tg_chat_id', '');
         if ($chatId && $sess['tg_thread_id']) {
             tg_api($pdo, 'closeForumTopic', [
                 'chat_id'           => $chatId,
@@ -377,9 +391,61 @@ switch ($action) {
         json_ok(['closed' => true]);
 
 
-    // ── Webhook dari Telegram (admin reply → disimpan ke DB) ────
+    // â”€â”€ Webhook dari Telegram â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     case 'tg_webhook':
         $input = json_decode(file_get_contents('php://input'), true);
+
+        // â”€â”€ Handle callback_query (inline button) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        if (!empty($input['callback_query'])) {
+            $cb       = $input['callback_query'];
+            $cbId     = $cb['id'];
+            $cbData   = $cb['data'] ?? '';
+            $cbFrom   = $cb['from'] ?? [];
+            $cbName   = trim(($cbFrom['first_name']??'')." ".($cbFrom['last_name']??'')) ?: 'Admin';
+
+            [$cbAction, $cbSessId] = array_pad(explode(':', $cbData, 2), 2, '');
+            $cbSessId = (int)$cbSessId;
+
+            $ackText = 'âœ… Done';
+
+            if ($cbSessId) {
+                $csRow = $pdo->prepare("SELECT * FROM chat_sessions WHERE id=?");
+                $csRow->execute([$cbSessId]); $csRow = $csRow->fetch();
+
+                if ($csRow) {
+                    if ($cbAction === 'close_sess') {
+                        if ($csRow['status'] === 'open') {
+                            $pdo->prepare("UPDATE chat_sessions SET status='closed' WHERE id=?")->execute([$cbSessId]);
+                            $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','Sesi ditutup oleh Admin via Telegram.')")->execute([$cbSessId]);
+                            if ($csRow['tg_thread_id']) {
+                                tg_api($pdo, 'closeForumTopic', ['chat_id' => setting($pdo,'lc_tg_chat_id',''), 'message_thread_id' => (int)$csRow['tg_thread_id']]);
+                            }
+                            $ackText = 'ðŸ”’ Sesi ditutup!';
+                        } else {
+                            $ackText = 'âš ï¸ Sesi sudah ditutup.';
+                        }
+                    } elseif ($cbAction === 'mode_ai') {
+                        $pdo->prepare("UPDATE chat_sessions SET mode='ai' WHERE id=?")->execute([$cbSessId]);
+                        $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','ðŸ”„ Mode beralih ke Asisten AI oleh Admin.')")->execute([$cbSessId]);
+                        $ackText = 'ðŸ¤– Mode AI aktif';
+                    } elseif ($cbAction === 'mode_admin') {
+                        $pdo->prepare("UPDATE chat_sessions SET mode='admin' WHERE id=?")->execute([$cbSessId]);
+                        $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','ðŸ”„ Mode beralih ke Admin.')")->execute([$cbSessId]);
+                        $ackText = 'ðŸ‘¨â€ðŸ’¼ Mode Admin aktif';
+                    }
+                }
+            }
+
+            // Jawab callback agar tombol tidak loading
+            tg_api($pdo, 'answerCallbackQuery', [
+                'callback_query_id' => $cbId,
+                'text'              => $ackText,
+                'show_alert'        => false,
+            ]);
+            echo '{}'; exit;
+        }
+
+        // â”€â”€ Handle regular message (admin reply) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         if (empty($input['message'])) { echo '{}'; exit; }
 
         $msg       = $input['message'];
@@ -387,11 +453,9 @@ switch ($action) {
         $text      = $msg['text'] ?? '';
         $fromUser  = $msg['from'] ?? [];
 
-        // Cek apakah pesan dari bot sendiri (skip)
         if (!empty($fromUser['is_bot'])) { echo '{}'; exit; }
         if (!$threadId || !$text) { echo '{}'; exit; }
 
-        // Cari sesi berdasarkan tg_thread_id
         $s = $pdo->prepare("SELECT * FROM chat_sessions WHERE tg_thread_id=? AND status='open' LIMIT 1");
         $s->execute([$threadId]);
         $sess = $s->fetch();
@@ -404,7 +468,6 @@ switch ($action) {
             "INSERT INTO chat_messages (session_id,sender,message,tg_msg_id) VALUES (?,'admin',?,?)"
         )->execute([$sess['id'], $fullText, $msg['message_id']]);
 
-        // Jika mode AI, switch otomatis ke admin
         if ($sess['mode'] === 'ai') {
             $pdo->prepare("UPDATE chat_sessions SET mode='admin' WHERE id=?")->execute([$sess['id']]);
         }
@@ -416,3 +479,4 @@ switch ($action) {
     default:
         json_err('Action tidak dikenal.', 404);
 }
+

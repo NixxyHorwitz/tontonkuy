@@ -1,9 +1,14 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/../bootstrap.php';
-$user = require_auth($pdo);
-$_favicon = setting($pdo, 'favicon_path', '');
-$_seo_title = setting($pdo, 'seo_title', 'TontonKuy');
+$user         = require_auth($pdo);
+$_favicon     = setting($pdo, 'favicon_path', '');
+$_seo_title   = setting($pdo, 'seo_title', 'TontonKuy');
+$_lc_enabled  = setting($pdo, 'livechat_enabled', '1') === '1';
+$_ai_enabled  = setting($pdo, 'chat_ai_enabled', '1') === '1';
+$_adm_enabled = setting($pdo, 'chat_admin_enabled', '1') === '1';
+// Jika keduanya disabled, anggap livechat off
+if (!$_ai_enabled && !$_adm_enabled) $_lc_enabled = false;
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -21,6 +26,19 @@ if ($_abs_fav): ?>
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>
 <body style="display:flex;flex-direction:column;height:100vh;overflow:hidden;align-items:normal;">
+
+<?php if (!$_lc_enabled): ?>
+<!-- Live Chat Disabled -->
+<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;">
+  <div style="text-align:center;max-width:320px;">
+    <div style="font-size:52px;margin-bottom:12px;">🛠️</div>
+    <h2 style="font-weight:900;font-size:20px;margin-bottom:8px;">Live Chat Tidak Tersedia</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:20px;">Layanan live chat sedang offline. Silakan coba lagi nanti.</p>
+    <a href="/home" style="background:var(--brand);border:var(--border);box-shadow:var(--shadow);border-radius:10px;font-weight:800;padding:10px 24px;font-size:13px;text-decoration:none;color:var(--ink);display:inline-block;">← Kembali ke Beranda</a>
+  </div>
+</div>
+<?php else: ?>
+<!-- Live Chat Active -->
 <!-- ── Custom Topbar (no navbar) ── -->
 <header class="chat-topbar" id="chat-topbar">
   <a href="/home" class="chat-back-btn" title="Kembali ke Beranda">
@@ -406,13 +424,17 @@ if ($_abs_fav): ?>
     <!-- Mode Bar -->
     <div class="chat-modebar">
       <span class="chat-modebar__label">Mode:</span>
-      <div class="mode-pill">
+      <div class="mode-pill" id="mode-pill-wrap">
+        <?php if ($_ai_enabled): ?>
         <button class="mode-btn mode-ai" id="modebtn-ai" onclick="switchMode('ai')">
           🤖 AI
         </button>
+        <?php endif; ?>
+        <?php if ($_adm_enabled): ?>
         <button class="mode-btn mode-adm" id="modebtn-admin" onclick="switchMode('admin')">
           👨‍💼 Admin
         </button>
+        <?php endif; ?>
       </div>
       <div class="chat-status-badge online" id="chat-status-badge">Online</div>
     </div>
@@ -772,6 +794,16 @@ function handleKey(e) {
 }
 </style>
 
+<script>
+// PHP settings passed to JS
+const LC_AI_ENABLED  = <?= $_ai_enabled ? 'true' : 'false' ?>;
+const LC_ADM_ENABLED = <?= $_adm_enabled ? 'true' : 'false' ?>;
+// Force start mode if only one mode available
+if (!LC_AI_ENABLED)  startMode = 'admin';
+if (!LC_ADM_ENABLED) startMode = 'ai';
+</script>
+
 <script src="/assets/js/toast.js"></script>
+<?php endif; ?>
 </body>
 </html>

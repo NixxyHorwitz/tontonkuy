@@ -5,16 +5,16 @@ require_once __DIR__ . '/auth.php';
 $pageTitle  = 'Live Chat';
 $activePage = 'livechat';
 
-// ── Handle form saves ────────────────────────────────────────
+// â”€â”€ Handle form saves â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $saved = false; $err = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $tab = $_POST['tab'] ?? 'settings';
 
     if ($tab === 'settings') {
         $keys = [
-            'tg_bot_token','tg_chat_id','tg_group_is_forum',
+            'lc_tg_token','lc_tg_chat_id','lc_tg_forum',
             'openai_api_key','openai_model','ai_system_prompt',
-            'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled','chat_admin_name',
+            'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled','chat_admin_name','livechat_enabled','lc_site_url',
         ];
         foreach ($keys as $k) {
             $v = trim($_POST[$k] ?? '');
@@ -34,16 +34,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// ── Load settings ─────────────────────────────────────────────
+// â”€â”€ Load settings â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $cfg = [];
 foreach ([
-    'tg_bot_token','tg_chat_id','tg_group_is_forum',
+    'lc_tg_token','lc_tg_chat_id','lc_tg_forum',
     'openai_api_key','openai_model','ai_system_prompt',
-    'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled','chat_admin_name',
+    'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled','chat_admin_name','livechat_enabled','lc_site_url',
 ] as $k) { $cfg[$k] = setting($pdo, $k, ''); }
 if (empty($cfg['chat_admin_name'])) $cfg['chat_admin_name'] = 'Admin';
 
-// ── Load sessions ─────────────────────────────────────────────
+// â”€â”€ Load sessions â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $sessions = $pdo->query(
     "SELECT s.*, 
         (SELECT COUNT(*) FROM chat_messages m WHERE m.session_id=s.id) as msg_count,
@@ -51,7 +51,7 @@ $sessions = $pdo->query(
      FROM chat_sessions s ORDER BY s.last_message_at DESC LIMIT 60"
 )->fetchAll();
 
-// ── Active session detail ──────────────────────────────────────
+// â”€â”€ Active session detail â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 $viewId = (int)($_GET['view'] ?? 0);
 $viewMsgs = [];
 $viewSess = null;
@@ -66,7 +66,7 @@ if ($viewId) {
     }
 }
 
-// ── Admin reply via AJAX (dipanggil dari JS) ──────────────────
+// â”€â”€ Admin reply via AJAX (dipanggil dari JS) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['tab'] ?? '') === 'reply') {
     header('Content-Type: application/json');
     $sid      = (int)($_POST['session_id'] ?? 0);
@@ -80,10 +80,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['tab'] ?? '') === 'reply') 
     // Kirim ke Telegram
     $sess = $pdo->prepare("SELECT * FROM chat_sessions WHERE id=?");
     $sess->execute([$sid]); $sessRow = $sess->fetch();
-    $token = setting($pdo, 'tg_bot_token', '');
-    $chatId = setting($pdo, 'tg_chat_id', '');
+    $token = setting($pdo, 'lc_tg_token', '');
+    $chatId = setting($pdo, 'lc_tg_chat_id', '');
     if ($token && $chatId && $sessRow) {
-        $params = ['chat_id' => $chatId, 'text' => "🖥️ {$adminName}: {$msg}"];
+        $params = ['chat_id' => $chatId, 'text' => "ðŸ–¥ï¸ {$adminName}: {$msg}"];
         if ($sessRow['tg_thread_id']) $params['message_thread_id'] = (int)$sessRow['tg_thread_id'];
         $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
         curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['tab'] ?? '') === 'reply') 
     exit;
 }
 
-// ── Console poll new messages ──────────────────────────────────
+// â”€â”€ Console poll new messages â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'console_poll') {
     header('Content-Type: application/json');
     $sid     = (int)($_GET['session_id'] ?? 0);
@@ -148,19 +148,19 @@ require_once __DIR__ . '/partials/header.php';
 
 <?php if ($saved): ?>
 <div class="alert alert-success mb-3" style="background:rgba(76,175,130,.15);border:1px solid rgba(76,175,130,.3);color:#4CAF82;padding:10px 16px;border-radius:8px;font-size:13px;">
-  ✅ Pengaturan berhasil disimpan.
+  âœ… Pengaturan berhasil disimpan.
 </div>
 <?php endif; ?>
 <?php if (!empty($_GET['replied'])): ?>
 <div class="alert alert-success mb-3" style="background:rgba(76,175,130,.15);border:1px solid rgba(76,175,130,.3);color:#4CAF82;padding:10px 16px;border-radius:8px;font-size:13px;">
-  ✅ Balasan berhasil dikirim.
+  âœ… Balasan berhasil dikirim.
 </div>
 <?php endif; ?>
 
 <div class="lc-tabs">
-  <a href="/console/livechat.php" class="lc-tab <?= !$viewId && ($_GET['t']??'sessions')==='sessions' ? 'active':'' ?>">💬 Sesi Chat</a>
-  <a href="/console/livechat.php?t=settings" class="lc-tab <?= ($_GET['t']??'')==='settings' ? 'active':'' ?>">⚙️ Pengaturan</a>
-  <a href="/console/livechat.php?t=webhook" class="lc-tab <?= ($_GET['t']??'')==='webhook' ? 'active':'' ?>">🔗 Webhook Info</a>
+  <a href="/console/livechat.php" class="lc-tab <?= !$viewId && ($_GET['t']??'sessions')==='sessions' ? 'active':'' ?>">ðŸ’¬ Sesi Chat</a>
+  <a href="/console/livechat.php?t=settings" class="lc-tab <?= ($_GET['t']??'')==='settings' ? 'active':'' ?>">âš™ï¸ Pengaturan</a>
+  <a href="/console/livechat.php?t=webhook" class="lc-tab <?= ($_GET['t']??'')==='webhook' ? 'active':'' ?>">ðŸ”— Webhook Info</a>
 </div>
 
 <?php if (($viewId && $viewSess) || false): /* DETAIL VIEW */ ?>
@@ -169,7 +169,7 @@ require_once __DIR__ . '/partials/header.php';
 
 <?php $activeTab = $_GET['t'] ?? ($viewId ? 'view' : 'sessions'); ?>
 
-<!-- ═══ TAB: SESSIONS ══════════════════════════════════════ -->
+<!-- â•â•â• TAB: SESSIONS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <?php if ($activeTab === 'sessions' || $viewId): ?>
 <div class="row g-3">
   <!-- Session list -->
@@ -188,13 +188,13 @@ require_once __DIR__ . '/partials/header.php';
             <div class="sess-avatar"><?= strtoupper(substr($s['user_name'],0,1)) ?></div>
             <div class="sess-body">
               <div class="sess-name"><?= htmlspecialchars($s['user_name']) ?>
-                <?php if ($s['user_email']): ?><span style="color:#555;font-size:11px;font-weight:400;"> — <?= htmlspecialchars($s['user_email']) ?></span><?php endif; ?>
+                <?php if ($s['user_email']): ?><span style="color:#555;font-size:11px;font-weight:400;"> â€” <?= htmlspecialchars($s['user_email']) ?></span><?php endif; ?>
               </div>
               <div class="sess-last"><?= htmlspecialchars(mb_substr($s['last_msg']??'(kosong)',0,60)) ?></div>
             </div>
             <div class="sess-right">
               <span class="sess-badge <?= $s['status'] ?>"><?= $s['status'] ?></span>
-              <div class="sess-mode">🤖 <?= $s['mode'] ?> · <?= $s['msg_count'] ?> pesan</div>
+              <div class="sess-mode">ðŸ¤– <?= $s['mode'] ?> Â· <?= $s['msg_count'] ?> pesan</div>
               <div style="margin-top:5px;display:flex;gap:4px;justify-content:flex-end;">
                 <a href="/console/livechat.php?view=<?= $s['id'] ?>" class="btn btn-sm" style="background:#1f2235;border:1px solid #2a2d3e;color:#ccc;padding:3px 10px;font-size:11px;border-radius:6px;text-decoration:none;">Detail</a>
                 <?php if ($s['status']==='open'): ?>
@@ -257,7 +257,7 @@ require_once __DIR__ . '/partials/header.php';
         <p style="font-size:11px;color:#444;margin-top:5px;">Balas sebagai <strong style="color:#ccc;"><?= htmlspecialchars($cfg['chat_admin_name']) ?></strong> &mdash; juga dikirim ke Telegram.</p>
       </div>
       <?php else: ?>
-      <div style="padding:12px 18px;color:#555;font-size:12px;text-align:center;">🔒 Sesi sudah ditutup.</div>
+      <div style="padding:12px 18px;color:#555;font-size:12px;text-align:center;">ðŸ”’ Sesi sudah ditutup.</div>
       <?php endif; ?>
     </div>
   </div>
@@ -269,7 +269,7 @@ require_once __DIR__ . '/partials/header.php';
   let consolePollTimer = null;
   let consoleLastId    = <?= !empty($viewMsgs) ? (int)end($viewMsgs)['id'] : 0 ?>;
 
-  // ── Append bubble (console side) ──────────────────────────
+  // â”€â”€ Append bubble (console side) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function appendConsoleBubble(sender, message, time, id) {
     const row = document.createElement('div');
     row.className = `msg-row msg-${sender}`;
@@ -283,7 +283,7 @@ require_once __DIR__ . '/partials/header.php';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
   }
 
-  // ── Send reply via AJAX ────────────────────────────────────
+  // ── Send reply via AJAX ──────────────────────────────────────────────────
   async function sendConsoleReply() {
     const input = document.getElementById('console-reply-input');
     const btn   = document.getElementById('console-reply-btn');
@@ -306,7 +306,7 @@ require_once __DIR__ . '/partials/header.php';
     input.focus();
   }
 
-  // ── Poll new messages (user & AI) ─────────────────────────
+  // ── Poll new messages (user & AI) ──────────────────────────────────────
   async function consolePoll() {
     try {
       const res  = await fetch(`/console/livechat.php?action=console_poll&session_id=${CONSOLE_SESSION_ID}&after_id=${consoleLastId}`);
@@ -327,7 +327,7 @@ require_once __DIR__ . '/partials/header.php';
 <?php endif; ?>
 
 
-<!-- ═══ TAB: SETTINGS ══════════════════════════════════════ -->
+<!-- â•â•â• TAB: SETTINGS â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <?php if ($activeTab === 'settings'): ?>
 <form method="post">
   <input type="hidden" name="tab" value="settings">
@@ -336,7 +336,7 @@ require_once __DIR__ . '/partials/header.php';
     <!-- Telegram -->
     <div class="col-md-6">
       <div class="c-card h-100">
-        <div class="c-card-header"><span class="c-card-title">🤖 Telegram Bot</span></div>
+        <div class="c-card-header"><span class="c-card-title">ðŸ¤– Telegram Bot</span></div>
         <div class="c-card-body">
           <div class="c-form-group">
             <label class="c-label">Nama Admin (tampil di chat user)</label>
@@ -345,20 +345,25 @@ require_once __DIR__ . '/partials/header.php';
           </div>
           <div class="c-form-group">
             <label class="c-label">Bot Token</label>
-            <input type="text" name="tg_bot_token" class="c-form-control" value="<?= htmlspecialchars($cfg['tg_bot_token']) ?>" placeholder="1234567890:AAH...">
+            <input type="text" name="lc_tg_token" class="c-form-control" value="<?= htmlspecialchars($cfg['lc_tg_token']) ?>" placeholder="1234567890:AAH...">
             <small style="color:#444;font-size:11px;">Dari @BotFather di Telegram.</small>
           </div>
           <div class="c-form-group">
-            <label class="c-label">Group / Chat ID</label>
-            <input type="text" name="tg_chat_id" class="c-form-control" value="<?= htmlspecialchars($cfg['tg_chat_id']) ?>" placeholder="-100123456789">
-            <small style="color:#444;font-size:11px;">ID Supergroup forum tempat thread dibuat. Format: -100xxx</small>
+            <label class="c-label">Group / Chat ID <em style="color:#555;font-weight:400;">(Livechat)</em></label>
+            <input type="text" name="lc_tg_chat_id" class="c-form-control" value="<?= htmlspecialchars($cfg['lc_tg_chat_id']) ?>" placeholder="-100123456789">
+            <small style="color:#444;font-size:11px;">Supergroup forum khusus livechat. Beda dengan group notif depo/WD.</small>
           </div>
           <div class="c-form-group">
             <label class="c-label">Tipe Grup</label>
-            <select name="tg_group_is_forum" class="c-form-control">
-              <option value="1" <?= $cfg['tg_group_is_forum']==='1'?'selected':'' ?>>Forum / Supergroup (pakai Topics/Thread)</option>
-              <option value="0" <?= $cfg['tg_group_is_forum']==='0'?'selected':'' ?>>Grup biasa (tanpa thread)</option>
+            <select name="lc_tg_forum" class="c-form-control">
+              <option value="1" <?= $cfg['lc_tg_forum']==='1'?'selected':'' ?>>Forum / Supergroup (Topics)</option>
+              <option value="0" <?= $cfg['lc_tg_forum']==='0'?'selected':'' ?>>Grup biasa</option>
             </select>
+          </div>
+          <div class="c-form-group">
+            <label class="c-label">URL Website <em style="color:#555;font-weight:400;">(untuk link console di Telegram)</em></label>
+            <input type="text" name="lc_site_url" class="c-form-control" value="<?= htmlspecialchars($cfg['lc_site_url']??'') ?>" placeholder="https://domain.com">
+            <small style="color:#444;font-size:11px;">Digunakan untuk tombol "Buka Console" di pesan Telegram.</small>
           </div>
           <div class="c-form-group">
             <label class="c-label">Pesan Sambutan</label>
@@ -371,7 +376,7 @@ require_once __DIR__ . '/partials/header.php';
     <!-- OpenAI -->
     <div class="col-md-6">
       <div class="c-card h-100">
-        <div class="c-card-header"><span class="c-card-title">✨ OpenAI (Mode AI)</span></div>
+        <div class="c-card-header"><span class="c-card-title">âœ¨ OpenAI (Mode AI)</span></div>
         <div class="c-card-body">
           <div class="c-form-group">
             <label class="c-label">OpenAI API Key</label>
@@ -390,7 +395,13 @@ require_once __DIR__ . '/partials/header.php';
             <textarea name="ai_system_prompt" class="c-form-control" rows="5"><?= htmlspecialchars($cfg['ai_system_prompt']) ?></textarea>
             <small style="color:#444;font-size:11px;">Instruksi untuk AI tentang cara menjawab.</small>
           </div>
-          <div style="display:flex;gap:20px;">
+          <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
+              <input type="checkbox" name="livechat_enabled" value="1" <?= ($cfg['livechat_enabled']??'1')==='1'?'checked':'' ?>>
+              <strong style="color:#e0e0f0;">Livechat Aktif</strong>
+            </label>
+          </div>
+          <div style="display:flex;gap:20px;flex-wrap:wrap;">
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
               <input type="checkbox" name="chat_ai_enabled" value="1" <?= $cfg['chat_ai_enabled']==='1'?'checked':'' ?>>
               Aktifkan Mode AI
@@ -406,7 +417,7 @@ require_once __DIR__ . '/partials/header.php';
 
     <div class="col-12 text-end">
       <button type="submit" style="background:var(--brand);border:none;color:#fff;padding:10px 28px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
-        💾 Simpan Pengaturan
+        ðŸ’¾ Simpan Pengaturan
       </button>
     </div>
   </div>
@@ -414,13 +425,13 @@ require_once __DIR__ . '/partials/header.php';
 <?php endif; ?>
 
 
-<!-- ═══ TAB: WEBHOOK ══════════════════════════════════════ -->
+<!-- â•â•â• TAB: WEBHOOK â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
 <?php if ($activeTab === 'webhook'): ?>
 <?php
   $scheme     = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS']!=='off') ? 'https' : 'http';
   $host       = $_SERVER['HTTP_HOST'] ?? 'yourdomain.com';
   $webhookUrl = $scheme . '://' . $host . '/chat_action?action=tg_webhook';
-  $botToken   = $cfg['tg_bot_token'];
+  $botToken   = $cfg['lc_tg_token'];
   $setWebhookUrl = $botToken
     ? "https://api.telegram.org/bot{$botToken}/setWebhook?url=" . urlencode($webhookUrl)
     : '';
@@ -428,7 +439,7 @@ require_once __DIR__ . '/partials/header.php';
 <div class="row g-3">
   <div class="col-md-7">
     <div class="c-card">
-      <div class="c-card-header"><span class="c-card-title">🔗 Setup Telegram Webhook</span></div>
+      <div class="c-card-header"><span class="c-card-title">ðŸ”— Setup Telegram Webhook</span></div>
       <div class="c-card-body">
         <p style="font-size:13px;color:#888;margin-bottom:16px;">
           Agar balasan admin dari Telegram masuk ke chat user, set webhook ini ke bot kamu.
@@ -450,11 +461,11 @@ require_once __DIR__ . '/partials/header.php';
         </div>
         <a href="<?= htmlspecialchars($setWebhookUrl) ?>" target="_blank"
            style="display:inline-block;background:var(--brand);color:#fff;padding:9px 20px;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;margin-top:4px;">
-          🚀 Set Webhook Sekarang
+          ðŸš€ Set Webhook Sekarang
         </a>
         <?php else: ?>
         <div style="background:rgba(242,153,0,.1);border:1px solid rgba(242,153,0,.3);color:#F29900;padding:10px 14px;border-radius:8px;font-size:12px;">
-          ⚠️ Isi Bot Token di tab Pengaturan dulu.
+          âš ï¸ Isi Bot Token di tab Pengaturan dulu.
         </div>
         <?php endif; ?>
       </div>
@@ -462,7 +473,7 @@ require_once __DIR__ . '/partials/header.php';
   </div>
   <div class="col-md-5">
     <div class="c-card">
-      <div class="c-card-header"><span class="c-card-title">📋 Cara Kerja</span></div>
+      <div class="c-card-header"><span class="c-card-title">ðŸ“‹ Cara Kerja</span></div>
       <div class="c-card-body">
         <ol style="font-size:13px;color:#888;line-height:2;padding-left:18px;margin:0;">
           <li>Buat bot via <strong style="color:#ccc;">@BotFather</strong></li>
@@ -471,7 +482,7 @@ require_once __DIR__ . '/partials/header.php';
           <li>Isi <strong style="color:#ccc;">Bot Token</strong> &amp; <strong style="color:#ccc;">Chat ID</strong></li>
           <li>Set webhook dengan tombol di kiri</li>
           <li>Setiap sesi chat baru = 1 Thread baru di grup</li>
-          <li>Balas thread di Telegram → pesan masuk ke chat user</li>
+          <li>Balas thread di Telegram â†’ pesan masuk ke chat user</li>
         </ol>
       </div>
     </div>
@@ -480,3 +491,5 @@ require_once __DIR__ . '/partials/header.php';
 <?php endif; ?>
 
 <?php require_once __DIR__ . '/partials/footer.php'; ?>
+
+
