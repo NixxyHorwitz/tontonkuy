@@ -22,7 +22,6 @@ function tg_api(string $token, string $method, array $post): ?array {
         CURLOPT_POSTFIELDS     => $post,
     ]);
     $res = curl_exec($ch);
-    curl_close($ch);
     return json_decode($res ?: '{}', true);
 }
 
@@ -35,7 +34,6 @@ function tg_api_json(string $token, string $method, array $body): void {
         CURLOPT_POSTFIELDS     => json_encode($body),
     ]);
     curl_exec($ch);
-    curl_close($ch);
 }
 
 function answer_cb(string $token, string $cb_id, string $text): void {
@@ -48,9 +46,10 @@ function edit_msg(string $token, $chat_id, $msg_id, string $text, ?array $kb = n
     tg_api_json($token, 'editMessageText', $body);
 }
 
-function send_msg(string $token, $chat_id, string $text, ?array $kb = null): ?int {
+function send_msg(string $token, $chat_id, string $text, ?array $kb = null, $thread_id = null): ?int {
     $body = ['chat_id' => $chat_id, 'text' => $text, 'parse_mode' => 'HTML'];
     if ($kb !== null) $body['reply_markup'] = ['inline_keyboard' => $kb];
+    if ($thread_id) $body['message_thread_id'] = (int)$thread_id;
     $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -58,9 +57,9 @@ function send_msg(string $token, $chat_id, string $text, ?array $kb = null): ?in
         CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
         CURLOPT_POSTFIELDS     => json_encode($body),
     ]);
-    $res = json_decode(curl_exec($ch) ?: '{}', true);
-    curl_close($ch);
-    return $res['result']['message_id'] ?? null;
+    $res = curl_exec($ch);
+    $data = json_decode($res ?: '{}', true);
+    return $data['result']['message_id'] ?? null;
 }
 
 /** Save pending reject state to settings table */
