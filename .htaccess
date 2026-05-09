@@ -34,6 +34,8 @@ RewriteRule ^maintenance/?$ user/maintenance.php [L,QSA]
 RewriteRule ^panduan/?$     user/panduan.php     [L,QSA]
 RewriteRule ^notifications/?$ user/notifications.php [L,QSA]
 RewriteRule ^notif_action/?$  notif_action.php       [L,QSA]
+RewriteRule ^livechat/?$      user/livechat.php      [L,QSA]
+RewriteRule ^chat_action/?$   chat_action.php        [L,QSA]
 
 # ── Console routes ─────────────────────────
 RewriteRule ^console/login/?$         console/login.php         [L,QSA]
@@ -44,3 +46,7 @@ RewriteRule ^console/panduan/?$       console/panduan.php       [L,QSA]
 RewriteRule ^console/contacts/?$      console/contacts.php      [L,QSA]
 RewriteRule ^console/analytics/?$     console/analytics.php     [L,QSA]
 RewriteRule ^console/notifications/?$ console/notifications.php [L,QSA]
+RewriteRule ^console/livechat/?$      console/livechat.php      [L,QSA]
+
+# ── Custom error pages ─────────────────────
+ErrorDocument 404 /404.php
