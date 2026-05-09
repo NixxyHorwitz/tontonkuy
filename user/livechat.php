@@ -683,7 +683,7 @@ function updateModeUI(mode) {
     bannerText.innerHTML = '🤖 Mode AI aktif &mdash; Dijawab otomatis oleh Asisten AI.';
   } else {
     banner.className = 'mode-info-banner adm-mode';
-    bannerText.innerHTML = '👨‍💼 Mode Admin aktif &mdash; Menunggu balasan dari tim kami via Telegram.';
+    bannerText.innerHTML = '👨‍💼 Mode Admin aktif &mdash; Tim kami akan segera membalas.';
   }
 }
 
