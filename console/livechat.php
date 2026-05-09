@@ -14,7 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $keys = [
             'tg_bot_token','tg_chat_id','tg_group_is_forum',
             'openai_api_key','openai_model','ai_system_prompt',
-            'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled',
+            'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled','chat_admin_name',
         ];
         foreach ($keys as $k) {
             $v = trim($_POST[$k] ?? '');
@@ -39,8 +39,9 @@ $cfg = [];
 foreach ([
     'tg_bot_token','tg_chat_id','tg_group_is_forum',
     'openai_api_key','openai_model','ai_system_prompt',
-    'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled',
+    'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled','chat_admin_name',
 ] as $k) { $cfg[$k] = setting($pdo, $k, ''); }
+if (empty($cfg['chat_admin_name'])) $cfg['chat_admin_name'] = 'Admin';
 
 // ── Load sessions ─────────────────────────────────────────────
 $sessions = $pdo->query(
@@ -65,36 +66,44 @@ if ($viewId) {
     }
 }
 
-// ── Admin reply from console ───────────────────────────────────
+// ── Admin reply via AJAX (dipanggil dari JS) ──────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['tab'] ?? '') === 'reply') {
-    $sid  = (int)($_POST['session_id'] ?? 0);
-    $msg  = trim($_POST['reply_msg'] ?? '');
-    if ($sid && $msg) {
-        $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'admin',?)")
-            ->execute([$sid, '[Admin Console] ' . $msg]);
-        // Kirim ke Telegram
-        $sess = $pdo->prepare("SELECT * FROM chat_sessions WHERE id=?");
-        $sess->execute([$sid]);
-        $sessRow = $sess->fetch();
-        $token = setting($pdo, 'tg_bot_token', '');
-        $chatId = setting($pdo, 'tg_chat_id', '');
-        if ($token && $chatId && $sessRow && $sessRow['tg_thread_id']) {
-            $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST => true,
-                CURLOPT_POSTFIELDS => json_encode([
-                    'chat_id' => $chatId,
-                    'message_thread_id' => (int)$sessRow['tg_thread_id'],
-                    'text' => "🖥️ *Admin Console:* " . $msg,
-                    'parse_mode' => 'Markdown',
-                ]),
-                CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-            ]);
-            curl_exec($ch); curl_close($ch);
-        }
-        header("Location: /console/livechat.php?view={$sid}&replied=1"); exit;
+    header('Content-Type: application/json');
+    $sid      = (int)($_POST['session_id'] ?? 0);
+    $msg      = trim($_POST['reply_msg'] ?? '');
+    $adminName = setting($pdo, 'chat_admin_name', 'Admin') ?: 'Admin';
+    if (!$sid || !$msg) { echo json_encode(['ok'=>false,'error'=>'Invalid']); exit; }
+    $fullMsg = "[{$adminName}] {$msg}";
+    $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'admin',?)")
+        ->execute([$sid, $fullMsg]);
+    $newId = (int)$pdo->lastInsertId();
+    // Kirim ke Telegram
+    $sess = $pdo->prepare("SELECT * FROM chat_sessions WHERE id=?");
+    $sess->execute([$sid]); $sessRow = $sess->fetch();
+    $token = setting($pdo, 'tg_bot_token', '');
+    $chatId = setting($pdo, 'tg_chat_id', '');
+    if ($token && $chatId && $sessRow) {
+        $params = ['chat_id' => $chatId, 'text' => "🖥️ {$adminName}: {$msg}"];
+        if ($sessRow['tg_thread_id']) $params['message_thread_id'] = (int)$sessRow['tg_thread_id'];
+        $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
+        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,
+            CURLOPT_POSTFIELDS=>json_encode($params),CURLOPT_HTTPHEADER=>['Content-Type: application/json']]);
+        curl_exec($ch); curl_close($ch);
     }
+    echo json_encode(['ok'=>true,'id'=>$newId,'message'=>$fullMsg,'created_at'=>date('Y-m-d H:i:s')]);
+    exit;
+}
+
+// ── Console poll new messages ──────────────────────────────────
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'console_poll') {
+    header('Content-Type: application/json');
+    $sid     = (int)($_GET['session_id'] ?? 0);
+    $afterId = (int)($_GET['after_id'] ?? 0);
+    if (!$sid) { echo json_encode(['ok'=>false]); exit; }
+    $rows = $pdo->prepare("SELECT id,sender,message,created_at FROM chat_messages WHERE session_id=? AND id>? ORDER BY id ASC LIMIT 50");
+    $rows->execute([$sid, $afterId]);
+    echo json_encode(['ok'=>true,'messages'=>$rows->fetchAll(PDO::FETCH_ASSOC)]);
+    exit;
 }
 
 require_once __DIR__ . '/partials/header.php';
@@ -117,15 +126,16 @@ require_once __DIR__ . '/partials/header.php';
 .sess-badge.closed { background:rgba(255,255,255,.07);color:#555; }
 .sess-mode { font-size:10px;color:#555;margin-top:3px; }
 
-.msg-bubble { max-width:75%;padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.5;word-break:break-word; }
+.msg-bubble { min-width:60px;max-width:75%;padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.5;word-break:break-word;white-space:pre-wrap; }
 .msg-user  .msg-bubble { background:#2a2d3e;color:#ddd; border-radius:12px 12px 4px 12px; }
 .msg-ai    .msg-bubble { background:rgba(196,181,253,.15);color:#c4b5fd; border-radius:12px 12px 12px 4px; }
 .msg-admin .msg-bubble { background:rgba(168,240,220,.12);color:#a8f0dc; border-radius:12px 12px 12px 4px; }
-.msg-system .msg-bubble { background:transparent;color:#555;font-size:11px;font-style:italic;text-align:center; }
+.msg-system .msg-bubble { background:transparent;color:#555;font-size:11px;font-style:italic;text-align:center;min-width:0; }
 .msg-row { display:flex;margin-bottom:8px; }
 .msg-row.msg-user  { justify-content:flex-end; }
 .msg-row.msg-system{ justify-content:center; }
-.msg-time { font-size:10px;color:#444;margin-top:3px;text-align:right; }
+.msg-time { font-size:10px;color:#444;margin-top:3px; }
+.msg-row.msg-user .msg-time { text-align:right; }
 
 .detail-panel { background:#131520;border:1px solid #1f2235;border-radius:12px;overflow:hidden; }
 .detail-header { padding:14px 18px;border-bottom:1px solid #1f2235;display:flex;align-items:center;gap:10px; }
@@ -206,23 +216,23 @@ require_once __DIR__ . '/partials/header.php';
   <!-- Detail panel -->
   <?php if ($viewId && $viewSess): ?>
   <div class="col-lg-8">
-    <div class="detail-panel">
+    <div class="detail-panel" id="detail-panel">
       <div class="detail-header">
         <div class="sess-avatar"><?= strtoupper(substr($viewSess['user_name'],0,1)) ?></div>
         <div style="flex:1;">
           <div style="font-weight:700;font-size:14px;color:#e0e0f0;"><?= htmlspecialchars($viewSess['user_name']) ?></div>
           <div style="font-size:11px;color:#555;">
-            <?= htmlspecialchars($viewSess['user_email']??'-') ?> &nbsp;·&nbsp;
-            Mode: <strong style="color:#a8f0dc"><?= $viewSess['mode'] ?></strong> &nbsp;·&nbsp;
-            Status: <strong style="color:<?= $viewSess['status']==='open'?'#4CAF82':'#555' ?>"><?= $viewSess['status'] ?></strong>
+            <?= htmlspecialchars($viewSess['user_email']??'-') ?> &nbsp;&middot;&nbsp;
+            Mode: <strong style="color:#a8f0dc" id="dp-mode"><?= $viewSess['mode'] ?></strong> &nbsp;&middot;&nbsp;
+            Status: <strong style="color:<?= $viewSess['status']==='open'?'#4CAF82':'#555' ?>" id="dp-status"><?= $viewSess['status'] ?></strong>
           </div>
         </div>
-        <a href="/console/livechat.php" style="color:#555;font-size:20px;text-decoration:none;line-height:1;">×</a>
+        <a href="/console/livechat.php" style="color:#555;font-size:20px;text-decoration:none;line-height:1;">&times;</a>
       </div>
 
       <div class="detail-msgs" id="detail-msgs">
         <?php foreach ($viewMsgs as $m): ?>
-        <div class="msg-row msg-<?= $m['sender'] ?>">
+        <div class="msg-row msg-<?= $m['sender'] ?>" data-id="<?= $m['id'] ?>">
           <div>
             <div class="msg-bubble"><?= nl2br(htmlspecialchars($m['message'])) ?></div>
             <div class="msg-time"><?= date('H:i', strtotime($m['created_at'])) ?></div>
@@ -232,25 +242,85 @@ require_once __DIR__ . '/partials/header.php';
       </div>
 
       <?php if ($viewSess['status']==='open'): ?>
-      <div class="detail-reply">
-        <form method="post">
-          <input type="hidden" name="tab" value="reply">
-          <input type="hidden" name="session_id" value="<?= $viewId ?>">
-          <div style="display:flex;gap:8px;align-items:flex-end;">
-            <textarea name="reply_msg" class="c-form-control" rows="2" placeholder="Ketik balasan..." style="flex:1;resize:none;" required></textarea>
-            <button type="submit" style="background:var(--brand);border:none;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;height:fit-content;">Kirim</button>
-          </div>
-          <p style="font-size:11px;color:#444;margin-top:5px;">💡 Balasan juga akan dikirim ke thread Telegram.</p>
-        </form>
+      <div class="detail-reply" id="detail-reply">
+        <div style="display:flex;gap:8px;align-items:flex-end;">
+          <textarea id="console-reply-input" class="c-form-control" rows="2"
+            placeholder="Ketik balasan sebagai <?= htmlspecialchars($cfg['chat_admin_name']) ?>..."
+            style="flex:1;resize:none;"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendConsoleReply();}"
+          ></textarea>
+          <button onclick="sendConsoleReply()" id="console-reply-btn"
+            style="background:var(--brand);border:none;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;height:fit-content;white-space:nowrap;">
+            Kirim
+          </button>
+        </div>
+        <p style="font-size:11px;color:#444;margin-top:5px;">Balas sebagai <strong style="color:#ccc;"><?= htmlspecialchars($cfg['chat_admin_name']) ?></strong> &mdash; juga dikirim ke Telegram.</p>
       </div>
       <?php else: ?>
       <div style="padding:12px 18px;color:#555;font-size:12px;text-align:center;">🔒 Sesi sudah ditutup.</div>
       <?php endif; ?>
     </div>
   </div>
+
   <script>
-    const dm = document.getElementById('detail-msgs');
-    if (dm) dm.scrollTop = dm.scrollHeight;
+  const CONSOLE_SESSION_ID = <?= $viewId ?>;
+  const dm = document.getElementById('detail-msgs');
+  if (dm) dm.scrollTop = dm.scrollHeight;
+  let consolePollTimer = null;
+  let consoleLastId    = <?= !empty($viewMsgs) ? (int)end($viewMsgs)['id'] : 0 ?>;
+
+  // ── Append bubble (console side) ──────────────────────────
+  function appendConsoleBubble(sender, message, time, id) {
+    const row = document.createElement('div');
+    row.className = `msg-row msg-${sender}`;
+    row.dataset.id = id;
+    const t = time ? new Date(time).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '';
+    row.innerHTML = `<div><div class="msg-bubble">${nl2html(message)}</div><div class="msg-time">${t}</div></div>`;
+    dm.appendChild(row);
+    dm.scrollTop = dm.scrollHeight;
+  }
+  function nl2html(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  // ── Send reply via AJAX ────────────────────────────────────
+  async function sendConsoleReply() {
+    const input = document.getElementById('console-reply-input');
+    const btn   = document.getElementById('console-reply-btn');
+    const msg   = input.value.trim();
+    if (!msg) return;
+    input.value = ''; btn.disabled = true; btn.textContent = '...';
+    try {
+      const fd = new FormData();
+      fd.append('tab', 'reply');
+      fd.append('session_id', CONSOLE_SESSION_ID);
+      fd.append('reply_msg', msg);
+      const res  = await fetch('/console/livechat.php', {method:'POST',body:fd});
+      const data = await res.json();
+      if (data.ok) {
+        appendConsoleBubble('admin', data.message, data.created_at, data.id);
+        if (data.id > consoleLastId) consoleLastId = data.id;
+      }
+    } catch(e) { alert('Gagal kirim: ' + e.message); }
+    btn.disabled = false; btn.textContent = 'Kirim';
+    input.focus();
+  }
+
+  // ── Poll new messages (user & AI) ─────────────────────────
+  async function consolePoll() {
+    try {
+      const res  = await fetch(`/console/livechat.php?action=console_poll&session_id=${CONSOLE_SESSION_ID}&after_id=${consoleLastId}`);
+      const data = await res.json();
+      if (!data.ok) return;
+      (data.messages||[]).forEach(m => {
+        if (parseInt(m.id) > consoleLastId) {
+          consoleLastId = parseInt(m.id);
+          appendConsoleBubble(m.sender, m.message, m.created_at, m.id);
+        }
+      });
+    } catch {}
+  }
+  consolePollTimer = setInterval(consolePoll, 3000);
   </script>
   <?php endif; ?>
 </div>
@@ -268,6 +338,11 @@ require_once __DIR__ . '/partials/header.php';
       <div class="c-card h-100">
         <div class="c-card-header"><span class="c-card-title">🤖 Telegram Bot</span></div>
         <div class="c-card-body">
+          <div class="c-form-group">
+            <label class="c-label">Nama Admin (tampil di chat user)</label>
+            <input type="text" name="chat_admin_name" class="c-form-control" value="<?= htmlspecialchars($cfg['chat_admin_name']) ?>" placeholder="Admin">
+            <small style="color:#444;font-size:11px;">Nama yang tampil saat admin membalas chat.</small>
+          </div>
           <div class="c-form-group">
             <label class="c-label">Bot Token</label>
             <input type="text" name="tg_bot_token" class="c-form-control" value="<?= htmlspecialchars($cfg['tg_bot_token']) ?>" placeholder="1234567890:AAH...">
