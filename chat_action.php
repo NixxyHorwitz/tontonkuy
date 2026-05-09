@@ -1,4 +1,4 @@
-﻿<?php
+php
 /**
  * chat_action.php â€” AJAX handler untuk LiveChat (Telegram + OpenAI)
  * Endpoint: /chat_action?action=...
