@@ -6,7 +6,7 @@ if (!isset($pdo)) {
 }
 
 try {
-    $stmt = $pdo->prepare("UPDATE deposits SET status = 'cancelled' WHERE status = 'pending' AND created_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
+    $stmt = $pdo->prepare("UPDATE deposits SET status = 'rejected' WHERE status = 'pending' AND created_at < DATE_SUB(NOW(), INTERVAL 15 MINUTE)");
     $stmt->execute();
 } catch (\Throwable $th) {
     // Silently fail to not interrupt the request
