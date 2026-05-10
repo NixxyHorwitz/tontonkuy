@@ -91,6 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['tab'] ?? '') === 'reply') 
     $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'admin',?)")
         ->execute([$sid, $fullMsg]);
     $newId = (int)$pdo->lastInsertId();
+    $pdo->prepare("UPDATE chat_sessions SET last_message_at=NOW() WHERE id=?")->execute([$sid]);
     // Kirim ke Telegram
     $sess = $pdo->prepare("SELECT * FROM chat_sessions WHERE id=?");
     $sess->execute([$sid]); $sessRow = $sess->fetch();

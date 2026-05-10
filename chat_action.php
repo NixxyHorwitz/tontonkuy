@@ -266,6 +266,9 @@ switch ($action) {
         )->execute([$sessId, $text]);
         $userMsgId = (int)$pdo->lastInsertId();
 
+        // Update last_message_at so session doesn't auto-close while active
+        $pdo->prepare("UPDATE chat_sessions SET last_message_at=NOW() WHERE id=?")->execute([$sessId]);
+
         // Kirim ke Telegram thread atau main chat
         $chatId  = setting($pdo, 'lc_tg_chat_id', '');
         $tgMsgId = null;
@@ -344,6 +347,7 @@ switch ($action) {
                 "INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'ai',?)"
             )->execute([$sessId, $aiReply]);
             $aiMsgId = (int)$pdo->lastInsertId();
+            $pdo->prepare("UPDATE chat_sessions SET last_message_at=NOW() WHERE id=?")->execute([$sessId]);
 
             if ($chatId) {
                 $tgParams = [
