@@ -194,7 +194,7 @@ switch ($action) {
                    . "\xF0\x9F\x91\xA4 User: {$userName}"
                    . ($userEmail ? "\n\xF0\x9F\x93\xA7 Email: {$userEmail}" : '')
                    . "\n\xF0\x9F\x94\x91 Session: #{$sessId}"
-                   . "\n\xF0\x9F\xA4\x96 Mode: AI";
+                   . "\n\xF0\x9F\xA4\x96 Mode: " . ($initMode === 'admin' ? 'Admin' : 'AI');
 
             // Always try to create Forum Topic first
             $tgRes = tg_api($pdo, 'createForumTopic', [
@@ -209,8 +209,8 @@ switch ($action) {
                 $tgThreadId = $tgRes['result']['message_thread_id'] ?? null;
                 $pdo->prepare("UPDATE chat_sessions SET tg_thread_id=? WHERE id=?")
                     ->execute([$tgThreadId, $sessId]);
-                // Update forum setting in DB jika belum 1
-                $pdo->prepare("INSERT INTO settings (\`key\`,value) VALUES ('lc_tg_forum','1') ON DUPLICATE KEY UPDATE value='1'")->execute([]);
+                // Update forum setting in DB
+                setting_set($pdo, 'lc_tg_forum', '1');
                 $tgSend = tg_api($pdo, 'sendMessage', [
                     'chat_id'           => $chatId,
                     'message_thread_id' => $tgThreadId,
@@ -219,7 +219,7 @@ switch ($action) {
                 ]);
             } else {
                 // Bukan forum / gagal — kirim ke chat biasa
-                $pdo->prepare("INSERT INTO settings (\`key\`,value) VALUES ('lc_tg_forum','0') ON DUPLICATE KEY UPDATE value='0'")->execute([]);
+                setting_set($pdo, 'lc_tg_forum', '0');
                 $tgRes = tg_api($pdo, 'sendMessage', [
                     'chat_id'      => $chatId,
                     'text'         => $intro,
