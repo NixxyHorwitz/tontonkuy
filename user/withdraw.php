@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             send_telegram_notif($pdo, $msg, $kb);
             
-            $flash = '✅ Permintaan withdraw dikirim! Proses 1-3 hari kerja.';
+            $flash = '✅ Permintaan withdraw dikirim! Proses 1-10 menit.';
         }
     }
 }
