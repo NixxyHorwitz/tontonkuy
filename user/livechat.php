@@ -14,7 +14,7 @@ if (!$_ai_enabled && !$_adm_enabled) $_lc_enabled = false;
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="theme-color" content="#FFE566">
 <title>Live Chat — <?= htmlspecialchars($_seo_title) ?></title>
 <?php
@@ -25,21 +25,21 @@ if ($_abs_fav): ?>
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css">
 <style>
-/* ── Mobile-first full height (fixes virtual keyboard overlap) ── */
+/* ── Mobile-first full height — keyboard-safe layout ── */
 * { box-sizing: border-box; }
-html, body {
-  margin: 0; padding: 0;
-  height: 100%;
-  overflow: hidden;
+html {
+  /* --vh is updated by JS to match visualViewport.height */
+  --vh: 100dvh;
 }
 body {
+  margin: 0; padding: 0;
+  width: 100%;
+  height: var(--vh, 100dvh);
+  max-height: var(--vh, 100dvh);
+  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--bg);
-  /* Prevent body scroll; only inner elements scroll */
-  position: fixed;
-  width: 100%;
-  top: 0; left: 0;
 }
 #chat-root {
   flex: 1 1 0;
@@ -48,7 +48,6 @@ body {
   flex-direction: column;
   overflow: hidden;
   position: relative;
-  /* Height set dynamically by JS via visualViewport */
 }
 </style>
 </head>
@@ -312,8 +311,6 @@ body {
   gap: 8px;
   align-items: flex-end;
   flex-shrink: 0;
-  /* Always pinned at bottom, never pushed under keyboard */
-  position: relative;
   z-index: 10;
 }
 .chat-textarea {
@@ -820,36 +817,30 @@ function handleKey(e) {
     startChat();
   }
 
-  // ── visualViewport: shrink layout when mobile keyboard appears ──
-  // This is the key fix: we measure the visible viewport height
-  // and apply it to the body so the input bar never gets buried.
-  function applyViewportSize() {
-    const vvHeight = window.visualViewport
-      ? window.visualViewport.height
-      : window.innerHeight;
-    // Apply to body so everything fits inside the visible area
-    document.body.style.height = vvHeight + 'px';
-    // Also scroll messages down whenever keyboard appears/disappears
+  // ── Set --vh CSS var = visualViewport height so body shrinks when keyboard opens ──
+  function setVH() {
+    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+    document.documentElement.style.setProperty('--vh', h + 'px');
     scrollBottom();
   }
 
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', applyViewportSize);
-    window.visualViewport.addEventListener('scroll', applyViewportSize);
+    window.visualViewport.addEventListener('resize', setVH);
+    window.visualViewport.addEventListener('scroll', () => {
+      // Compensate offset when viewport scrolls due to keyboard
+      const offsetTop = window.visualViewport.offsetTop || 0;
+      document.documentElement.style.setProperty('--vp-offset', offsetTop + 'px');
+      setVH();
+    });
   }
-  window.addEventListener('resize', applyViewportSize);
-  applyViewportSize();
+  window.addEventListener('resize', setVH);
+  setVH();
 
-  // On mobile, when input is focused the keyboard opens.
-  // Ensure we scroll to bottom after keyboard animation settles.
+  // Scroll ke bawah setelah keyboard muncul (iOS delay)
   const chatInput = document.getElementById('chat-input');
   if (chatInput) {
-    chatInput.addEventListener('focus', () => {
-      setTimeout(() => { applyViewportSize(); scrollBottom(); }, 300);
-    });
-    chatInput.addEventListener('blur', () => {
-      setTimeout(applyViewportSize, 300);
-    });
+    chatInput.addEventListener('focus', () => setTimeout(() => { setVH(); scrollBottom(); }, 350));
+    chatInput.addEventListener('blur',  () => setTimeout(setVH, 350));
   }
 })();
 </script>
