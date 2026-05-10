@@ -240,18 +240,31 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
       <?php if ($pending_upg > 0): ?><span class="badge-dot"><?= $pending_upg ?></span><?php endif; ?>
     </a>
 
-    <div class="c-sidebar__label" style="margin-top:6px">Pengaturan</div>
-    <a href="/console/payment.php" class="c-nav-link <?= $activePage==='payment'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-      Rekening & QRIS
+    <div class="c-sidebar__label" style="margin-top:6px">Analitik & Interaksi</div>
+    <a href="/console/video_analytics.php" class="c-nav-link <?= $activePage==='video_analytics'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Analisis Video
     </a>
+    <a href="/console/analytics.php" class="c-nav-link <?= $activePage==='analytics'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Traffic Analytics
+    </a>
+    <a href="/console/livechat.php" class="c-nav-link <?= $activePage==='livechat'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+      Live Chat
+      <?php
+        try { $pending_chat = (int)$pdo->query("SELECT COUNT(*) FROM chat_sessions WHERE status='open'")->fetchColumn(); } catch(\Throwable) { $pending_chat = 0; }
+        if ($pending_chat > 0): ?><span class="badge-dot"><?= $pending_chat ?></span><?php endif; ?>
+    </a>
+    <a href="/console/notifications" class="c-nav-link <?= $activePage==='notifications'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+      Push Notifikasi
+    </a>
+
+    <div class="c-sidebar__label" style="margin-top:6px">Tampilan & Konten</div>
     <a href="/console/memberships.php" class="c-nav-link <?= $activePage==='memberships'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
       Paket Membership
-    </a>
-    <a href="/console/seo.php" class="c-nav-link <?= $activePage==='seo'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      SEO Management
     </a>
     <a href="/console/panduan" class="c-nav-link <?= $activePage==='panduan'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
@@ -261,24 +274,15 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       Tombol Kontak
     </a>
-    <a href="/console/livechat.php" class="c-nav-link <?= $activePage==='livechat'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-      Live Chat
-      <?php
-        try { $pending_chat = (int)$pdo->query("SELECT COUNT(*) FROM chat_sessions WHERE status='open'")->fetchColumn(); } catch(\Throwable) { $pending_chat = 0; }
-        if ($pending_chat > 0): ?><span class="badge-dot"><?= $pending_chat ?></span><?php endif; ?>
+
+    <div class="c-sidebar__label" style="margin-top:6px">Sistem & Pengaturan</div>
+    <a href="/console/payment.php" class="c-nav-link <?= $activePage==='payment'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+      Rekening & QRIS
     </a>
-    <a href="/console/analytics.php" class="c-nav-link <?= $activePage==='analytics'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      Traffic Analytics
-    </a>
-    <a href="/console/video_analytics.php" class="c-nav-link <?= $activePage==='video_analytics'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
-      Analisis Video
-    </a>
-    <a href="/console/notifications" class="c-nav-link <?= $activePage==='notifications'?'active':'' ?>">
-      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
-      Push Notifikasi
+    <a href="/console/seo.php" class="c-nav-link <?= $activePage==='seo'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      SEO Management
     </a>
     <a href="/console/settings.php" class="c-nav-link <?= $activePage==='settings'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
