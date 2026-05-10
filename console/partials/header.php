@@ -272,6 +272,10 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Traffic Analytics
     </a>
+    <a href="/console/video_analytics.php" class="c-nav-link <?= $activePage==='video_analytics'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+      Analisis Video
+    </a>
     <a href="/console/notifications" class="c-nav-link <?= $activePage==='notifications'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
       Push Notifikasi

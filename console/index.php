@@ -32,10 +32,13 @@ try {
 
     // Top videos
     $topVideos = $pdo->query("SELECT title, total_watches, reward_amount FROM videos ORDER BY total_watches DESC LIMIT 5")->fetchAll();
+
+    // Top users by earnings
+    $topEarners = $pdo->query("SELECT id, username, total_earned FROM users ORDER BY total_earned DESC LIMIT 5")->fetchAll();
 } catch(\Throwable $e) {
     $totalUsers=$totalVideos=$watchesToday=$pendingWd=$pendingDep=$pendingUpg=0;
     $totalBalance=$totalEarned=$totalRevenue=0.0;
-    $chartData=$revChartData=$recentUsers=$topVideos=[];
+    $chartData=$revChartData=$recentUsers=$topVideos=$topEarners=[];
 }
 
 $pageTitle  = 'Dashboard';
@@ -136,8 +139,28 @@ require __DIR__ . '/partials/header.php';
     </div>
   </div>
   
+  <!-- Top Users -->
+  <div class="col-md-4">
+    <div class="c-card h-100">
+      <div class="c-card-header"><span class="c-card-title">👑 Top User (Earned)</span></div>
+      <div class="c-card-body" style="padding:0">
+        <?php foreach ($topEarners as $i => $u): ?>
+        <div style="padding:10px 16px;border-bottom:1px solid #1a1d27;display:flex;align-items:center;gap:10px">
+          <span style="font-size:16px"><?= ['🥇','🥈','🥉','4️⃣','5️⃣'][$i] ?></span>
+          <div style="flex:1;min-width:0">
+            <div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($u['username']) ?></div>
+            <div style="font-size:11px;color:#4CAF82;font-weight:700"><?= format_rp((float)$u['total_earned']) ?></div>
+          </div>
+          <a href="/console/user_detail.php?id=<?= $u['id'] ?>" style="font-size:11px;color:#888;text-decoration:none">Detail</a>
+        </div>
+        <?php endforeach; ?>
+        <?php if (empty($topEarners)): ?><div style="padding:20px;text-align:center;color:#555;font-size:13px">Belum ada data</div><?php endif; ?>
+      </div>
+    </div>
+  </div>
+  
   <!-- Recent users -->
-  <div class="col-md-8">
+  <div class="col-md-4">
     <div class="c-card h-100">
       <div class="c-card-header">
         <span class="c-card-title">👥 Pengguna Terbaru</span>
