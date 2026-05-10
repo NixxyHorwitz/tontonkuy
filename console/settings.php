@@ -338,7 +338,7 @@ if ($start_lock && $end_lock) {
     <div class="row g-2" style="font-size:13px">
       <div class="col-6 col-md-3"><span style="color:#666">PHP Version</span><div style="font-weight:700"><?= PHP_VERSION ?></div></div>
       <div class="col-6 col-md-3"><span style="color:#666">Database</span><div style="font-weight:700"><?= $_ENV['DB_DATABASE'] ?? 'tonton' ?></div></div>
-      <div class="col-6 col-md-3"><span style="color:#666">Server Time</span><div style="font-weight:700"><?= date('d M Y H:i') ?></div></div>
+      <div class="col-6 col-md-3"><span style="color:#666">Server Time</span><div style="font-weight:700"><?= date('d M Y H:i') ?> <small style="color:#888;font-weight:400"><?= date_default_timezone_get() ?></small></div></div>
       <?php try {
         $sz = (int)$pdo->query("SELECT COUNT(*) FROM watch_history")->fetchColumn();
         echo "<div class='col-6 col-md-3'><span style='color:#666'>Watch History</span><div style='font-weight:700'>".number_format($sz)." baris</div></div>";
