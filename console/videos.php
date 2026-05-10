@@ -84,6 +84,7 @@ require __DIR__ . '/partials/header.php';
         <option value="reward_desc" <?= $currentSort==='reward_desc'?'selected':'' ?>>Reward Terbesar (Rp)</option>
         <option value="reward_asc" <?= $currentSort==='reward_asc'?'selected':'' ?>>Reward Terkecil (Rp)</option>
         <option value="duration_asc" <?= $currentSort==='duration_asc'?'selected':'' ?>>Durasi Tersingkat</option>
+        <option value="random" <?= $currentSort==='random'?'selected':'' ?>>Acak (Random)</option>
       </select>
     </form>
   </div>

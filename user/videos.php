@@ -13,6 +13,7 @@ if ($sort_mode === 'oldest') $order_by = 'v.id ASC';
 if ($sort_mode === 'reward_desc') $order_by = 'v.reward_amount DESC, v.id DESC';
 if ($sort_mode === 'reward_asc') $order_by = 'v.reward_amount ASC, v.id DESC';
 if ($sort_mode === 'duration_asc') $order_by = 'v.watch_duration ASC, v.id DESC';
+if ($sort_mode === 'random') $order_by = 'RAND()';
 
 // All active videos with watch status for today
 $videos = $pdo->prepare(
