@@ -33,6 +33,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','Sesi ditutup oleh Admin.')")->execute([$sid]);
         }
     }
+
+    // Bulk delete sessions
+    if ($tab === 'bulk_delete') {
+        $ids = array_filter(array_map('intval', (array)($_POST['session_ids'] ?? [])));
+        if ($ids) {
+            $ph = implode(',', array_fill(0, count($ids), '?'));
+            $pdo->prepare("DELETE FROM chat_messages WHERE session_id IN ({$ph})")->execute($ids);
+            $pdo->prepare("DELETE FROM chat_sessions WHERE id IN ({$ph})")->execute($ids);
+        }
+        header('Location: /console/livechat.php'); exit;
+    }
 }
 
 // ── Load settings ─────────────────────────────────────────────
@@ -117,8 +128,10 @@ require_once __DIR__ . '/partials/header.php';
 .lc-tab  { padding:10px 18px; font-size:13px; font-weight:600; color:#666; cursor:pointer; border-bottom:2px solid transparent; text-decoration:none; }
 .lc-tab.active { color:var(--brand); border-bottom-color:var(--brand); }
 
-.sess-row { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid #1a1d27; }
+.sess-row { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid #1a1d27; }
 .sess-row:last-child { border-bottom:none; }
+.sess-row.selected { background:rgba(66,133,244,.07); border-radius:8px; }
+.sess-cb { accent-color:#4285F4; width:15px; height:15px; cursor:pointer; flex-shrink:0; }
 .sess-avatar { width:36px;height:36px;border-radius:50%;background:var(--brand);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:#fff;flex-shrink:0; }
 .sess-body { flex:1;min-width:0; }
 .sess-name { font-size:13.5px;font-weight:700;color:#e0e0f0; }
@@ -128,6 +141,8 @@ require_once __DIR__ . '/partials/header.php';
 .sess-badge.open   { background:rgba(76,175,130,.2);color:#4CAF82; }
 .sess-badge.closed { background:rgba(255,255,255,.07);color:#555; }
 .sess-mode { font-size:10px;color:#555;margin-top:3px; }
+.bulk-bar { display:none;align-items:center;gap:8px;padding:8px 12px;background:rgba(66,133,244,.1);border:1px solid rgba(66,133,244,.25);border-radius:8px;margin-bottom:10px;font-size:12px;color:#a0b4f0; }
+.bulk-bar.visible { display:flex; }
 
 .msg-bubble { min-width:60px;max-width:75%;padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.5;word-break:break-word;white-space:pre-wrap; }
 .msg-user  .msg-bubble { background:#2a2d3e;color:#ddd; border-radius:12px 12px 4px 12px; }
@@ -183,11 +198,27 @@ require_once __DIR__ . '/partials/header.php';
         <span style="font-size:12px;color:#555;"><?= count($sessions) ?> sesi</span>
       </div>
       <div class="c-card-body" style="padding:0 20px;">
+
+        <!-- Bulk action toolbar -->
+        <form method="post" id="bulk-form">
+          <input type="hidden" name="tab" value="bulk_delete">
+
+          <div class="bulk-bar" id="bulk-bar">
+            <input type="checkbox" id="cb-all" class="sess-cb" onchange="toggleAll(this)" title="Pilih semua">
+            <span id="bulk-count">0 dipilih</span>
+            <button type="submit" onclick="return confirmDelete()"
+              style="background:rgba(244,78,59,.2);border:1px solid rgba(244,78,59,.4);color:#F44E3B;padding:4px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;margin-left:auto;">
+              🗑️ Hapus Terpilih
+            </button>
+          </div>
+
         <?php if (empty($sessions)): ?>
           <p style="color:#555;font-size:13px;padding:20px 0;text-align:center;">Belum ada sesi chat.</p>
         <?php else: ?>
           <?php foreach ($sessions as $s): ?>
-          <div class="sess-row">
+          <div class="sess-row" id="sess-row-<?= $s['id'] ?>">
+            <input type="checkbox" name="session_ids[]" value="<?= $s['id'] ?>" class="sess-cb sess-check"
+              onchange="onCheckChange()">
             <div class="sess-avatar"><?= strtoupper(substr($s['user_name'],0,1)) ?></div>
             <div class="sess-body">
               <div class="sess-name"><?= htmlspecialchars($s['user_name']) ?>
@@ -199,12 +230,14 @@ require_once __DIR__ . '/partials/header.php';
               <span class="sess-badge <?= $s['status'] ?>"><?= $s['status'] ?></span>
               <div class="sess-mode">🤖 <?= $s['mode'] ?> · <?= $s['msg_count'] ?> pesan</div>
               <div style="margin-top:5px;display:flex;gap:4px;justify-content:flex-end;">
-                <a href="/console/livechat.php?view=<?= $s['id'] ?>" class="btn btn-sm" style="background:#1f2235;border:1px solid #2a2d3e;color:#ccc;padding:3px 10px;font-size:11px;border-radius:6px;text-decoration:none;">Detail</a>
+                <a href="/console/livechat.php?view=<?= $s['id'] ?>" class="btn btn-sm"
+                   style="background:#1f2235;border:1px solid #2a2d3e;color:#ccc;padding:3px 10px;font-size:11px;border-radius:6px;text-decoration:none;">Detail</a>
                 <?php if ($s['status']==='open'): ?>
                 <form method="post" style="margin:0;">
                   <input type="hidden" name="tab" value="close_session">
                   <input type="hidden" name="session_id" value="<?= $s['id'] ?>">
-                  <button type="submit" onclick="return confirm('Tutup sesi ini?')" style="background:rgba(244,78,59,.15);border:1px solid rgba(244,78,59,.3);color:#F44E3B;padding:3px 10px;font-size:11px;border-radius:6px;cursor:pointer;">Tutup</button>
+                  <button type="submit" onclick="return confirm('Tutup sesi ini?')"
+                    style="background:rgba(244,78,59,.15);border:1px solid rgba(244,78,59,.3);color:#F44E3B;padding:3px 10px;font-size:11px;border-radius:6px;cursor:pointer;">Tutup</button>
                 </form>
                 <?php endif; ?>
               </div>
@@ -212,9 +245,47 @@ require_once __DIR__ . '/partials/header.php';
           </div>
           <?php endforeach; ?>
         <?php endif; ?>
+        </form>
+
       </div>
     </div>
   </div>
+
+  <script>
+  // Multi-select logic
+  function onCheckChange() {
+    const checks = document.querySelectorAll('.sess-check');
+    const checked = document.querySelectorAll('.sess-check:checked');
+    const bar = document.getElementById('bulk-bar');
+    const cbAll = document.getElementById('cb-all');
+    document.getElementById('bulk-count').textContent = checked.length + ' dipilih';
+    bar.classList.toggle('visible', checked.length > 0);
+    cbAll.indeterminate = checked.length > 0 && checked.length < checks.length;
+    cbAll.checked = checked.length === checks.length && checks.length > 0;
+    // Highlight selected rows
+    checks.forEach(c => c.closest('.sess-row')?.classList.toggle('selected', c.checked));
+  }
+  function toggleAll(cb) {
+    document.querySelectorAll('.sess-check').forEach(c => {
+      c.checked = cb.checked;
+      c.closest('.sess-row')?.classList.toggle('selected', cb.checked);
+    });
+    onCheckChange();
+  }
+  function confirmDelete() {
+    const n = document.querySelectorAll('.sess-check:checked').length;
+    return n > 0 && confirm('Hapus ' + n + ' sesi beserta semua pesannya? Tindakan ini tidak bisa dibatalkan.');
+  }
+  // Show bulk bar only when there are sessions
+  document.addEventListener('DOMContentLoaded', () => {
+    if (document.querySelectorAll('.sess-check').length > 0) {
+      document.getElementById('bulk-bar').style.display = 'flex';
+      document.getElementById('bulk-bar').classList.remove('visible');
+      // Actually keep hidden until at least 1 checked — reset to hidden
+      document.getElementById('bulk-bar').style.display = '';
+    }
+  });
+  </script>
 
   <!-- Detail panel -->
   <?php if ($viewId && $viewSess): ?>

@@ -25,7 +25,7 @@ error_log('[LiveChat] page loaded, user=' . ($user['username'] ?? 'null')
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="theme-color" content="#FFE566">
 <title>Live Chat — <?= htmlspecialchars($_seo_title) ?></title>
 <?php
@@ -351,7 +351,10 @@ body { margin: 0; padding: 0; overflow: hidden; background: var(--bg); }
   border-radius: 12px;
   box-shadow: 3px 3px 0 var(--ink);
   padding: 10px 13px;
-  font-size: 13.5px;
+  /* iOS Safari: font-size HARUS >= 16px untuk mencegah auto-zoom */
+  font-size: 16px;
+  /* Secara visual dikecilkan dengan transform agar tetap pas */
+  transform-origin: top left;
   font-family: inherit;
   font-weight: 600;
   color: var(--ink);
@@ -360,9 +363,11 @@ body { margin: 0; padding: 0; overflow: hidden; background: var(--bg); }
   transition: box-shadow .15s;
   overflow-y: auto;
   line-height: 1.45;
+  touch-action: manipulation; /* cegah double-tap zoom */
+  -webkit-text-size-adjust: 100%;
 }
 .chat-textarea:focus { box-shadow: 5px 5px 0 var(--ink); }
-.chat-textarea::placeholder { color: #bbb; }
+.chat-textarea::placeholder { color: #bbb; font-size: 15px; }
 .chat-send-btn {
   width: 44px; height: 44px;
   flex-shrink: 0;
