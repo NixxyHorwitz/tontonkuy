@@ -3,11 +3,16 @@ declare(strict_types=1);
 require_once __DIR__ . '/auth.php';
 csrf_enforce();
 
-$flash = $flashType = '';
+// Read flash from session (set after PRG redirect)
+$flash     = $_SESSION['settings_flash']      ?? '';
+$flashType = $_SESSION['settings_flash_type'] ?? '';
+unset($_SESSION['settings_flash'], $_SESSION['settings_flash_type']);
 global $pdo;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
+    $action    = $_POST['action'] ?? '';
+    $flash     = '';
+    $flashType = '';
 
     if ($action === 'save_general') {
         $keys = ['site_name','site_tagline','free_watch_limit','referral_bonus',
@@ -123,26 +128,36 @@ if ($start_lock && $end_lock) {
         $wd_estimation = "<div class='alert alert-success py-2 mb-3' style='border-radius:8px;font-size:13px'>✅ Saat ini WD <strong>DIBUKA</strong>. Akan ditutup dalam <strong>{$h} jam {$m} menit</strong>.</div>";
     }
 }
+
+$active_tab = $_GET['tab'] ?? 'general';
+$tabs = [
+    'general' => ['icon' => '🌐', 'label' => 'Umum'],
+    'bank'    => ['icon' => '🏦', 'label' => 'Rekening'],
+    'wd'      => ['icon' => '🔒', 'label' => 'Jam Lock WD'],
+    'system'  => ['icon' => '🔧', 'label' => 'Sistem & TG'],
+];
 ?>
 
-<ul class="nav nav-pills mb-4" id="settingsTabs" role="tablist" style="gap:8px;background:rgba(255,255,255,0.03);padding:8px;border-radius:12px">
-  <li class="nav-item" role="presentation">
-    <button class="nav-link active text-white" data-bs-toggle="pill" data-bs-target="#tab-general" type="button" role="tab" style="border-radius:8px">🌐 Umum</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link text-white" data-bs-toggle="pill" data-bs-target="#tab-bank" type="button" role="tab" style="border-radius:8px">🏦 Rekening</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link text-white" data-bs-toggle="pill" data-bs-target="#tab-wd" type="button" role="tab" style="border-radius:8px">🔒 Jam Lock WD</button>
-  </li>
-  <li class="nav-item" role="presentation">
-    <button class="nav-link text-white" data-bs-toggle="pill" data-bs-target="#tab-system" type="button" role="tab" style="border-radius:8px">🔧 Sistem & Telegram</button>
-  </li>
-</ul>
+<style>
+.stab-nav{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:20px;padding:6px;background:rgba(255,255,255,.04);border-radius:12px;border:1px solid rgba(255,255,255,.07)}
+.stab-link{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;font-size:12px;font-weight:700;color:var(--text2,#aaa);text-decoration:none;transition:all .15s;border:1px solid transparent;white-space:nowrap}
+.stab-link:hover{background:rgba(255,255,255,.07);color:#fff}
+.stab-link.active{background:var(--brand,#6366f1);color:#fff;border-color:rgba(255,255,255,.2);box-shadow:0 2px 8px rgba(99,102,241,.35)}
+.stab-pane{display:none}
+.stab-pane.active{display:block}
+</style>
+
+<nav class="stab-nav">
+<?php foreach($tabs as $key => $t): ?>
+  <a href="?tab=<?= $key ?>" class="stab-link <?= $active_tab===$key?'active':'' ?>">
+    <?= $t['icon'] ?> <?= $t['label'] ?>
+  </a>
+<?php endforeach; ?>
+</nav>
 
 <div class="tab-content">
   <!-- TAB GENERAL -->
-  <div class="tab-pane fade show active" id="tab-general" role="tabpanel">
+  <div class="stab-pane <?= $active_tab==='general'?'active':'' ?>" id="tab-general">
     <div class="row g-3"><div class="col-md-8">
       <div class="c-card mb-3">
         <div class="c-card-header"><span class="c-card-title">🌐 Pengaturan Umum</span></div>
@@ -199,7 +214,7 @@ if ($start_lock && $end_lock) {
   </div>
 
   <!-- TAB BANK -->
-  <div class="tab-pane fade" id="tab-bank" role="tabpanel">
+  <div class="stab-pane <?= $active_tab==='bank'?'active':'' ?>" id="tab-bank">
     <div class="row g-3"><div class="col-md-6">
       <div class="c-card mb-3">
         <div class="c-card-header"><span class="c-card-title">🏦 Info Rekening & QRIS</span></div>
@@ -223,7 +238,7 @@ if ($start_lock && $end_lock) {
   </div>
 
   <!-- TAB WD LOCK -->
-  <div class="tab-pane fade" id="tab-wd" role="tabpanel">
+  <div class="stab-pane <?= $active_tab==='wd'?'active':'' ?>" id="tab-wd">
     <div class="row g-3"><div class="col-md-6">
       <div class="c-card mb-3">
         <div class="c-card-header"><span class="c-card-title">🔒 Jam Lock Penarikan (WD)</span></div>
@@ -264,7 +279,7 @@ if ($start_lock && $end_lock) {
   </div>
 
   <!-- TAB SYSTEM & TELEGRAM -->
-  <div class="tab-pane fade" id="tab-system" role="tabpanel">
+  <div class="stab-pane <?= $active_tab==='system'?'active':'' ?>" id="tab-system">
     <div class="row g-3">
       <div class="col-md-6">
         <!-- Maintenance mode -->
