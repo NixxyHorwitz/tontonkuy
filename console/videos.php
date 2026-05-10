@@ -47,9 +47,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare("DELETE FROM videos WHERE id=?")->execute([$id]);
         $flash = 'Video dihapus.';
     }
+
+    if ($action === 'save_sort') {
+        $sort = $_POST['sort_mode'] ?? 'default';
+        $pdo->prepare("INSERT INTO settings (`key`,`value`) VALUES ('video_sort_mode',?) ON DUPLICATE KEY UPDATE `value`=?")->execute([$sort, $sort]);
+        $flash = 'Mode sortir video berhasil disimpan.';
+    }
 }
 
 $videos = $pdo->query("SELECT * FROM videos ORDER BY sort_order ASC, id DESC")->fetchAll();
+$currentSort = setting($pdo, 'video_sort_mode', 'default');
 
 $pageTitle  = 'Manajemen Video';
 $activePage = 'videos';
@@ -65,13 +72,33 @@ require __DIR__ . '/partials/header.php';
 <div class="alert alert-<?= $flashType==='error'?'danger':'success' ?> py-2 mb-3" style="border-radius:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
 <?php endif; ?>
 
+<div class="c-card mb-4">
+  <div class="c-card-body py-3">
+    <form method="POST" class="d-flex align-items-center gap-3">
+      <?= csrf_field() ?><input type="hidden" name="action" value="save_sort">
+      <div style="font-size:13px;font-weight:600;white-space:nowrap">Urutkan Video User:</div>
+      <select name="sort_mode" class="c-form-control" style="width:auto;min-width:200px" onchange="this.form.submit()">
+        <option value="default" <?= $currentSort==='default'?'selected':'' ?>>Custom (berdasarkan Urutan & ID)</option>
+        <option value="newest" <?= $currentSort==='newest'?'selected':'' ?>>Terbaru (ID Terbesar)</option>
+        <option value="oldest" <?= $currentSort==='oldest'?'selected':'' ?>>Terlama (ID Terkecil)</option>
+        <option value="reward_desc" <?= $currentSort==='reward_desc'?'selected':'' ?>>Reward Terbesar (Rp)</option>
+        <option value="reward_asc" <?= $currentSort==='reward_asc'?'selected':'' ?>>Reward Terkecil (Rp)</option>
+        <option value="duration_asc" <?= $currentSort==='duration_asc'?'selected':'' ?>>Durasi Tersingkat</option>
+      </select>
+    </form>
+  </div>
+</div>
+
 <div class="c-card">
   <div style="overflow-x:auto">
     <table class="c-table">
-      <thead><tr><th>Thumbnail</th><th>Judul</th><th>Reward</th><th>Durasi</th><th>Tonton</th><th>Status</th><th>Aksi</th></tr></thead>
+      <thead><tr><th>Urutan</th><th>Thumbnail</th><th>Judul</th><th>Reward</th><th>Durasi</th><th>Tonton</th><th>Status</th><th>Aksi</th></tr></thead>
       <tbody>
       <?php foreach ($videos as $v): ?>
       <tr>
+        <td>
+          <span class="badge bg-secondary" style="font-size:11px"><?= $v['sort_order'] ?></span>
+        </td>
         <td><img src="https://img.youtube.com/vi/<?= $v['youtube_id'] ?>/default.jpg" style="width:80px;height:45px;object-fit:cover;border-radius:6px"></td>
         <td style="max-width:200px">
           <div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= htmlspecialchars($v['title']) ?></div>

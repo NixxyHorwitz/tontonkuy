@@ -5,6 +5,15 @@ require_once dirname(__DIR__) . '/auth/guard.php';
 $watch_limit = user_watch_limit($pdo, $user);
 $watch_today = user_watch_today($pdo, $user);
 
+// Determine Sort Order
+$sort_mode = setting($pdo, 'video_sort_mode', 'default');
+$order_by = 'v.sort_order ASC, v.id DESC';
+if ($sort_mode === 'newest') $order_by = 'v.id DESC';
+if ($sort_mode === 'oldest') $order_by = 'v.id ASC';
+if ($sort_mode === 'reward_desc') $order_by = 'v.reward_amount DESC, v.id DESC';
+if ($sort_mode === 'reward_asc') $order_by = 'v.reward_amount ASC, v.id DESC';
+if ($sort_mode === 'duration_asc') $order_by = 'v.watch_duration ASC, v.id DESC';
+
 // All active videos with watch status for today
 $videos = $pdo->prepare(
     "SELECT v.*,
@@ -12,7 +21,7 @@ $videos = $pdo->prepare(
         WHERE wh.user_id=? AND wh.video_id=v.id AND DATE(wh.watched_at)=CURDATE()) AS watched_today
      FROM videos v
      WHERE v.is_active=1
-     ORDER BY v.sort_order ASC, v.id DESC"
+     ORDER BY {$order_by}"
 );
 $videos->execute([$user['id']]);
 $videos = $videos->fetchAll();
