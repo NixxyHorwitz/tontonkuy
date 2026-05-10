@@ -191,7 +191,13 @@ $_psvg = [
 
 <?php if (!empty($_contact_btns)): ?>
 <!-- Community / Contact -->
-<div style="font-size:11px;font-weight:800;color:#888;margin-bottom:6px;margin-top:4px">💬 HUBUNGI KAMI</div>
+<div style="font-size:11px;font-weight:800;color:#888;margin-bottom:6px;margin-top:4px">BANTUAN & KOMUNITAS</div>
+<a href="/panduan" class="contact-item">
+  <div class="contact-icon" style="background:var(--brand);color:#fff;font-size:16px;font-weight:normal">📖</div>
+  <div style="flex:1;font-weight:800;font-size:13px">Buku Panduan</div>
+  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="opacity:.35"><polyline points="9 18 15 12 9 6"/></svg>
+</a>
+
 <?php foreach ($_contact_btns as $_cb): ?>
 <a href="<?= htmlspecialchars($_cb['url']) ?>" target="_blank" rel="noopener" class="contact-item">
   <div class="contact-icon" style="background:<?= htmlspecialchars($_cb['bg_color']) ?>">

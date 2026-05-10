@@ -85,11 +85,12 @@ require dirname(__DIR__) . '/partials/header.php';
       <div class="dual-balance__val" style="font-size:18px"><?= format_rp((float)$user['balance_dep']) ?></div>
     </div>
   </div>
-  <div class="hero-card__actions" style="margin-top:10px;gap:6px">
-    <a href="/deposit"      class="hero-card__btn">⬆️ Topup</a>
-    <a href="/withdraw"     class="hero-card__btn">⬇️ Tarik</a>
-    <a href="/upgrade"      class="hero-card__btn">👑 Upgrade</a>
-    <a href="/checkin"      class="hero-card__btn">📅 Absen</a>
+  <div class="hero-card__actions" style="margin-top:10px;gap:6px;flex-wrap:wrap">
+    <a href="/deposit"      class="hero-card__btn" style="flex:1;min-width:70px">⬆️ Topup</a>
+    <a href="/withdraw"     class="hero-card__btn" style="flex:1;min-width:70px">⬇️ Tarik</a>
+    <a href="/upgrade"      class="hero-card__btn" style="flex:1;min-width:70px">👑 Upgrade</a>
+    <a href="/checkin"      class="hero-card__btn" style="flex:1;min-width:70px">📅 Absen</a>
+    <a href="/panduan"      class="hero-card__btn" style="flex:1;min-width:70px;background:var(--white);color:var(--brand);border-color:var(--brand)">📖 Panduan</a>
   </div>
 </div>
 
