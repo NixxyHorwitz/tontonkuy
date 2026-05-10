@@ -176,6 +176,12 @@ switch ($action) {
         if ($consoleLink) {
             $inlineKbd['inline_keyboard'][] = [['text' => "🖥️ Buka Console", 'url' => $consoleLink]];
         }
+        if ($userId) {
+            $userDetailLink = $siteUrl ? "{$siteUrl}/console/user_detail.php?id={$userId}" : null;
+            if ($userDetailLink) {
+                $inlineKbd['inline_keyboard'][] = [['text' => "👤 Detail User (Depo/WD)", 'url' => $userDetailLink]];
+            }
+        }
         $inlineKbd['inline_keyboard'][] = [
             ['text' => "🔒 Tutup", 'callback_data' => "close_sess:{$sessId}"],
             ['text' => "🗑️ Hapus Sesi", 'callback_data' => "del_thread:{$sessId}"]
