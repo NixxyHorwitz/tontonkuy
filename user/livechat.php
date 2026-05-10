@@ -27,19 +27,19 @@ if ($_abs_fav): ?>
 <style>
 /* ── Mobile-first full height (fixes virtual keyboard overlap) ── */
 * { box-sizing: border-box; }
-html {
+html, body {
+  margin: 0; padding: 0;
   height: 100%;
-  height: -webkit-fill-available;
+  overflow: hidden;
 }
 body {
-  margin: 0; padding: 0;
-  height: 100vh;
-  height: 100dvh;
-  min-height: -webkit-fill-available;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   background: var(--bg);
+  /* Prevent body scroll; only inner elements scroll */
+  position: fixed;
+  width: 100%;
+  top: 0; left: 0;
 }
 #chat-root {
   flex: 1 1 0;
@@ -48,6 +48,7 @@ body {
   flex-direction: column;
   overflow: hidden;
   position: relative;
+  /* Height set dynamically by JS via visualViewport */
 }
 </style>
 </head>
@@ -311,9 +312,8 @@ body {
   gap: 8px;
   align-items: flex-end;
   flex-shrink: 0;
-  /* Stay on top of virtual keyboard via sticky bottom */
-  position: sticky;
-  bottom: 0;
+  /* Always pinned at bottom, never pushed under keyboard */
+  position: relative;
   z-index: 10;
 }
 .chat-textarea {
@@ -549,6 +549,7 @@ async function startChat() {
 
   try {
     const fd = new FormData();
+    fd.append('mode', startMode); // kirim mode pilihan user ke server
     const res = await fetch('/chat_action?action=start', { method: 'POST', body: fd, credentials: 'include' });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error || 'Gagal memulai sesi.');
@@ -566,12 +567,8 @@ async function startChat() {
     msgs.innerHTML = '';
     (data.messages || []).forEach(m => appendBubble(m.sender, m.message, m.created_at, false));
 
-    // If start mode differs from current, switch
-    if (startMode !== currentMode) {
-      await switchMode(startMode);
-    } else {
-      updateModeUI(currentMode);
-    }
+    // Mode sudah di-set di server, langsung update UI
+    updateModeUI(currentMode);
 
     // Track lastMsgId dari DB id yg dikembalikan server (cegah double render saat poll)
     if (data.last_msg_id) lastMsgId = parseInt(data.last_msg_id);
@@ -732,11 +729,12 @@ function appendModeDivider(mode, label) {
 function updateModeUI(mode) {
   const aiBtn  = document.getElementById('modebtn-ai');
   const admBtn = document.getElementById('modebtn-admin');
-  aiBtn.classList.toggle('active', mode === 'ai');
-  admBtn.classList.toggle('active', mode === 'admin');
+  if (aiBtn)  aiBtn.classList.toggle('active', mode === 'ai');
+  if (admBtn) admBtn.classList.toggle('active', mode === 'admin');
 
   const banner = document.getElementById('mode-info-banner');
   const bannerText = document.getElementById('mode-info-text');
+  if (!banner || !bannerText) return;
   if (mode === 'ai') {
     banner.className = 'mode-info-banner ai-mode';
     bannerText.innerHTML = '🤖 Mode AI aktif &mdash; Dijawab otomatis oleh Asisten AI.';
@@ -822,20 +820,36 @@ function handleKey(e) {
     startChat();
   }
 
-  // ── visualViewport: resize chat area when mobile keyboard appears ──
+  // ── visualViewport: shrink layout when mobile keyboard appears ──
+  // This is the key fix: we measure the visible viewport height
+  // and apply it to the body so the input bar never gets buried.
+  function applyViewportSize() {
+    const vvHeight = window.visualViewport
+      ? window.visualViewport.height
+      : window.innerHeight;
+    // Apply to body so everything fits inside the visible area
+    document.body.style.height = vvHeight + 'px';
+    // Also scroll messages down whenever keyboard appears/disappears
+    scrollBottom();
+  }
+
   if (window.visualViewport) {
-    const setSize = () => {
-      const root = document.getElementById('chat-root');
-      if (root) {
-        const offset = window.innerHeight - window.visualViewport.height;
-        root.style.height = (window.visualViewport.height) + 'px';
-        // Scroll messages to bottom when keyboard appears
-        scrollBottom();
-      }
-    };
-    window.visualViewport.addEventListener('resize', setSize);
-    window.visualViewport.addEventListener('scroll', setSize);
-    setSize();
+    window.visualViewport.addEventListener('resize', applyViewportSize);
+    window.visualViewport.addEventListener('scroll', applyViewportSize);
+  }
+  window.addEventListener('resize', applyViewportSize);
+  applyViewportSize();
+
+  // On mobile, when input is focused the keyboard opens.
+  // Ensure we scroll to bottom after keyboard animation settles.
+  const chatInput = document.getElementById('chat-input');
+  if (chatInput) {
+    chatInput.addEventListener('focus', () => {
+      setTimeout(() => { applyViewportSize(); scrollBottom(); }, 300);
+    });
+    chatInput.addEventListener('blur', () => {
+      setTimeout(applyViewportSize, 300);
+    });
   }
 })();
 </script>

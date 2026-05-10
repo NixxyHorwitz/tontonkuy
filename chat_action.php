@@ -114,10 +114,10 @@ switch ($action) {
         $user       = auth_user($pdo);
         $sessionKey = $_COOKIE['chat_session'] ?? '';
 
-        // Cek sesi existing
+        // Cek sesi existing — hanya return jika masih OPEN
         if ($sessionKey) {
             $sess = get_chat_session($pdo, $sessionKey);
-            if ($sess) {
+            if ($sess && $sess['status'] === 'open') {
                 $msgs = $pdo->prepare(
                     "SELECT id,sender,message,created_at FROM chat_messages
                      WHERE session_id=? ORDER BY id ASC LIMIT 100"
@@ -133,6 +133,8 @@ switch ($action) {
                     'welcome'     => setting($pdo, 'chat_welcome_msg', 'Halo! Ada yang bisa dibantu?'),
                 ]);
             }
+            // Sesi tidak valid / sudah closed — bersihkan cookie, buat baru
+            setcookie('chat_session', '', time() - 3600, '/');
         }
 
         // Buat sesi baru
@@ -140,10 +142,11 @@ switch ($action) {
         $userName  = $user ? $user['username'] : (trim($_POST['name'] ?? '') ?: 'Guest');
         $userEmail = $user ? $user['email'] : (trim($_POST['email'] ?? '') ?: null);
         $userId    = $user ? (int)$user['id'] : null;
+        $initMode  = in_array($_POST['mode'] ?? '', ['ai','admin'], true) ? $_POST['mode'] : 'ai';
 
         $pdo->prepare(
-            "INSERT INTO chat_sessions (session_key,user_id,user_name,user_email,mode) VALUES (?,?,?,?,'ai')"
-        )->execute([$newKey, $userId, $userName, $userEmail]);
+            "INSERT INTO chat_sessions (session_key,user_id,user_name,user_email,mode) VALUES (?,?,?,?,?)"
+        )->execute([$newKey, $userId, $userName, $userEmail, $initMode]);
         $sessId = (int)$pdo->lastInsertId();
 
         // Welcome message
@@ -224,7 +227,7 @@ switch ($action) {
 
         json_ok([
             'session_key' => $newKey,
-            'mode'        => 'ai',
+            'mode'        => $initMode,
             'status'      => 'open',
             'messages'    => [
                 ['id' => $welcomeMsgId, 'sender' => 'system', 'message' => $welcome, 'created_at' => date('Y-m-d H:i:s')],
