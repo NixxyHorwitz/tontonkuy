@@ -35,29 +35,29 @@ if ($_abs_fav): ?>
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css">
 <style>
-/* ── Mobile-first full height — keyboard-safe layout ── */
+/* ── LiveChat: position:fixed layout (keyboard-safe, app.css-proof) ── */
 * { box-sizing: border-box; }
-html {
-  /* --vh is updated by JS to match visualViewport.height */
-  --vh: 100dvh;
+body { margin: 0; padding: 0; overflow: hidden; background: var(--bg); }
+
+/* Topbar: fixed to top */
+.chat-topbar {
+  position: fixed !important;
+  top: 0; left: 0; right: 0;
+  height: 54px;
+  z-index: 100;
 }
-body {
-  margin: 0; padding: 0;
-  width: 100%;
-  height: var(--vh, 100dvh);
-  max-height: var(--vh, 100dvh);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-}
+
+/* Chat root: fills everything below topbar */
 #chat-root {
-  flex: 1 1 0;
-  min-height: 0;
+  position: fixed;
+  top: 54px;
+  left: 0; right: 0;
+  bottom: 0;
+  /* bottom diupdate JS saat keyboard muncul */
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  position: relative;
+  background: var(--bg);
 }
 </style>
 </head>
@@ -880,31 +880,32 @@ function handleKey(e) {
     startChat();
   }
 
-  // ── Set --vh CSS var = visualViewport height so body shrinks when keyboard opens ──
-  function setVH() {
-    const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
-    document.documentElement.style.setProperty('--vh', h + 'px');
-    dbg('setVH', { h, innerH: window.innerHeight, vvH: window.visualViewport?.height });
+  // ── Keyboard handler: update #chat-root bottom when keyboard appears ──
+  // Dengan position:fixed, kita tinggal adjust 'bottom' = window.innerHeight - visualViewport.height
+  const chatRoot = document.getElementById('chat-root');
+  function onVpChange() {
+    if (!chatRoot) return;
+    const vvH   = window.visualViewport?.height ?? window.innerHeight;
+    const vvTop = window.visualViewport?.offsetTop ?? 0;
+    // bottom = space occupied by keyboard
+    const kbHeight = window.innerHeight - vvH - vvTop;
+    chatRoot.style.bottom = Math.max(0, kbHeight) + 'px';
+    dbg('vpChange', { vvH, kbHeight, innerH: window.innerHeight });
     scrollBottom();
   }
 
   if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', setVH);
-    window.visualViewport.addEventListener('scroll', () => {
-      // Compensate offset when viewport scrolls due to keyboard
-      const offsetTop = window.visualViewport.offsetTop || 0;
-      document.documentElement.style.setProperty('--vp-offset', offsetTop + 'px');
-      setVH();
-    });
+    window.visualViewport.addEventListener('resize', onVpChange);
+    window.visualViewport.addEventListener('scroll', onVpChange);
   }
-  window.addEventListener('resize', setVH);
-  setVH();
+  window.addEventListener('resize', onVpChange);
+  onVpChange();
 
-  // Scroll ke bawah setelah keyboard muncul (iOS delay)
+  // iOS: scroll to bottom setelah keyboard animation selesai
   const chatInput = document.getElementById('chat-input');
   if (chatInput) {
-    chatInput.addEventListener('focus', () => setTimeout(() => { setVH(); scrollBottom(); }, 350));
-    chatInput.addEventListener('blur',  () => setTimeout(setVH, 350));
+    chatInput.addEventListener('focus', () => setTimeout(() => { onVpChange(); scrollBottom(); }, 350));
+    chatInput.addEventListener('blur',  () => setTimeout(onVpChange, 350));
   }
 })();
 </script>
