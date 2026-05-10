@@ -25,10 +25,33 @@ if ($_abs_fav): ?>
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css">
 <style>
-  html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+/* ── Mobile-first full height (fixes virtual keyboard overlap) ── */
+* { box-sizing: border-box; }
+html {
+  height: 100%;
+  height: -webkit-fill-available;
+}
+body {
+  margin: 0; padding: 0;
+  height: 100vh;
+  height: 100dvh;
+  min-height: -webkit-fill-available;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+}
+#chat-root {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
 </style>
 </head>
-<body style="display:flex;flex-direction:column;height:100%;align-items:stretch;background:var(--bg);">
+<body>
 
 <?php if (!$_lc_enabled): ?>
 <!-- Live Chat Disabled -->
@@ -98,11 +121,11 @@ if ($_abs_fav): ?>
 .chat-page {
   display: flex;
   flex-direction: column;
-  flex: 1 1 0;
+  width: 100%;
+  height: 100%;
   padding: 0;
   overflow: hidden;
   min-height: 0;
-  min-width: 0;
 }
 
 /* ── Mode switch bar ─────────────────── */
@@ -281,12 +304,17 @@ if ($_abs_fav): ?>
 /* ── Input area ──────────────────────── */
 .chat-inputbar {
   padding: 10px 12px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
   background: var(--white);
   border-top: var(--border);
   display: flex;
   gap: 8px;
   align-items: flex-end;
   flex-shrink: 0;
+  /* Stay on top of virtual keyboard via sticky bottom */
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 .chat-textarea {
   flex: 1;
@@ -354,6 +382,8 @@ if ($_abs_fav): ?>
   justify-content: center;
   padding: 20px;
   overflow-y: auto;
+  /* Important: don't capture touch on the container */
+  -webkit-overflow-scrolling: touch;
 }
 .chat-start-card {
   width: 100%;
@@ -391,7 +421,7 @@ if ($_abs_fav): ?>
 }
 </style>
 
-<div style="flex:1 1 0;position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:0;min-width:0;">
+<div id="chat-root">
 
   <!-- Start Overlay (shown until session created) -->
   <div class="chat-start-overlay" id="chat-start-overlay">
@@ -470,7 +500,6 @@ if ($_abs_fav): ?>
         placeholder="Ketik pesan..." rows="1"
         onkeydown="handleKey(event)"
         oninput="autoResize(this)"
-        onfocus="setTimeout(()=>window.scrollTo(0, document.body.scrollHeight), 300)"
       ></textarea>
       <button class="chat-send-btn" id="chat-send-btn" onclick="sendMessage()">
         <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
@@ -790,8 +819,23 @@ function handleKey(e) {
 (function() {
   const hasCookie = document.cookie.split(';').some(c => c.trim().startsWith('chat_session='));
   if (hasCookie) {
-    // Auto-load existing session
     startChat();
+  }
+
+  // ── visualViewport: resize chat area when mobile keyboard appears ──
+  if (window.visualViewport) {
+    const setSize = () => {
+      const root = document.getElementById('chat-root');
+      if (root) {
+        const offset = window.innerHeight - window.visualViewport.height;
+        root.style.height = (window.visualViewport.height) + 'px';
+        // Scroll messages to bottom when keyboard appears
+        scrollBottom();
+      }
+    };
+    window.visualViewport.addEventListener('resize', setSize);
+    window.visualViewport.addEventListener('scroll', setSize);
+    setSize();
   }
 })();
 </script>

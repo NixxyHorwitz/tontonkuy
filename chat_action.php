@@ -183,43 +183,42 @@ switch ($action) {
 
         if ($chatId) {
             $threadTitle = "{$userName}" . ($userEmail ? " ({$userEmail})" : '') . " #S{$sessId}";
-            $intro = "Sesi Baru\nUser: {$userName}"
-                   . ($userEmail ? "\nEmail: {$userEmail}" : '')
-                   . "\nSession: #{$sessId}\nMode: AI";
+            $intro = "\xF0\x9F\x92\xAC Sesi Chat Baru\n" 
+                   . "\xF0\x9F\x91\xA4 User: {$userName}"
+                   . ($userEmail ? "\n\xF0\x9F\x93\xA7 Email: {$userEmail}" : '')
+                   . "\n\xF0\x9F\x94\x91 Session: #{$sessId}"
+                   . "\n\xF0\x9F\xA4\x96 Mode: AI";
 
-            if ($isForum) {
-                $tgRes   = tg_api($pdo, 'createForumTopic', [
-                    'chat_id'    => $chatId,
-                    'name'       => mb_substr($threadTitle, 0, 128),
-                    'icon_color' => 7322096,
+            // Always try to create Forum Topic first
+            $tgRes = tg_api($pdo, 'createForumTopic', [
+                'chat_id'    => $chatId,
+                'name'       => mb_substr($threadTitle, 0, 128),
+                'icon_color' => 7322096,
+            ]);
+            $tgDebug = $tgRes;
+
+            if (!empty($tgRes['ok'])) {
+                // Forum topic berhasil dibuat
+                $tgThreadId = $tgRes['result']['message_thread_id'] ?? null;
+                $pdo->prepare("UPDATE chat_sessions SET tg_thread_id=? WHERE id=?")
+                    ->execute([$tgThreadId, $sessId]);
+                // Update forum setting in DB jika belum 1
+                $pdo->prepare("INSERT INTO settings (\`key\`,value) VALUES ('lc_tg_forum','1') ON DUPLICATE KEY UPDATE value='1'")->execute([]);
+                $tgSend = tg_api($pdo, 'sendMessage', [
+                    'chat_id'           => $chatId,
+                    'message_thread_id' => $tgThreadId,
+                    'text'              => $intro,
+                    'reply_markup'      => $inlineKbd,
                 ]);
-                $tgDebug = $tgRes;
-
-                if (!empty($tgRes['ok'])) {
-                    $tgThreadId = $tgRes['result']['message_thread_id'] ?? null;
-                    $pdo->prepare("UPDATE chat_sessions SET tg_thread_id=? WHERE id=?")
-                        ->execute([$tgThreadId, $sessId]);
-                    tg_api($pdo, 'sendMessage', [
-                        'chat_id'           => $chatId,
-                        'message_thread_id' => $tgThreadId,
-                        'text'              => $intro,
-                        'reply_markup'      => $inlineKbd,
-                    ]);
-                } else {
-                    $errDesc = $tgRes['description'] ?? 'unknown';
-                    tg_api($pdo, 'sendMessage', [
-                        'chat_id'      => $chatId,
-                        'text'         => "Gagal buat thread: {$errDesc}\n\n" . $intro,
-                        'reply_markup' => $inlineKbd,
-                    ]);
-                }
             } else {
-                $tgRes   = tg_api($pdo, 'sendMessage', [
+                // Bukan forum / gagal — kirim ke chat biasa
+                $pdo->prepare("INSERT INTO settings (\`key\`,value) VALUES ('lc_tg_forum','0') ON DUPLICATE KEY UPDATE value='0'")->execute([]);
+                $tgRes = tg_api($pdo, 'sendMessage', [
                     'chat_id'      => $chatId,
                     'text'         => $intro,
                     'reply_markup' => $inlineKbd,
                 ]);
-                $tgDebug = $tgRes;
+                $tgDebug = ['forum_failed' => $tgDebug, 'fallback' => $tgRes];
             }
         }
 
