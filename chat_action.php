@@ -254,15 +254,19 @@ switch ($action) {
         )->execute([$sessId, $text]);
         $userMsgId = (int)$pdo->lastInsertId();
 
-        // Kirim ke Telegram thread
+        // Kirim ke Telegram thread atau main chat
         $chatId  = setting($pdo, 'lc_tg_chat_id', '');
         $tgMsgId = null;
-        if ($chatId && $sess['tg_thread_id']) {
-            $tgRes = tg_api($pdo, 'sendMessage', [
-                'chat_id'           => $chatId,
-                'message_thread_id' => (int)$sess['tg_thread_id'],
-                'text'              => "User: " . $sess['user_name'] . "\n" . $text,
-            ]);
+        if ($chatId) {
+            $tgParams = [
+                'chat_id' => $chatId,
+                'text'    => "Sesi #{$sessId} | User: " . $sess['user_name'] . "\n\n" . $text,
+            ];
+            if ($sess['tg_thread_id']) {
+                $tgParams['message_thread_id'] = (int)$sess['tg_thread_id'];
+                $tgParams['text'] = "User: " . $sess['user_name'] . "\n" . $text;
+            }
+            $tgRes = tg_api($pdo, 'sendMessage', $tgParams);
             $tgMsgId = $tgRes['result']['message_id'] ?? null;
             $pdo->prepare("UPDATE chat_messages SET tg_msg_id=? WHERE id=?")
                 ->execute([$tgMsgId, $userMsgId]);
@@ -329,12 +333,16 @@ switch ($action) {
             )->execute([$sessId, $aiReply]);
             $aiMsgId = (int)$pdo->lastInsertId();
 
-            if ($chatId && $sess['tg_thread_id']) {
-                $tgAi = tg_api($pdo, 'sendMessage', [
-                    'chat_id'           => $chatId,
-                    'message_thread_id' => (int)$sess['tg_thread_id'],
-                    'text'              => "AI: " . $aiReply,
-                ]);
+            if ($chatId) {
+                $tgParams = [
+                    'chat_id' => $chatId,
+                    'text'    => "Sesi #{$sessId} | AI: " . $aiReply,
+                ];
+                if ($sess['tg_thread_id']) {
+                    $tgParams['message_thread_id'] = (int)$sess['tg_thread_id'];
+                    $tgParams['text'] = "AI: " . $aiReply;
+                }
+                $tgAi = tg_api($pdo, 'sendMessage', $tgParams);
                 $pdo->prepare("UPDATE chat_messages SET tg_msg_id=? WHERE id=?")
                     ->execute([$tgAi['result']['message_id'] ?? null, $aiMsgId]);
             }

@@ -24,8 +24,11 @@ if ($_abs_fav): ?>
 <link rel="apple-touch-icon" href="<?= htmlspecialchars($_abs_fav) ?>">
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css">
+<style>
+  html, body { height: 100%; margin: 0; padding: 0; overflow: hidden; }
+</style>
 </head>
-<body style="display:flex;flex-direction:column;height:100dvh;height:100vh;overflow:hidden;align-items:stretch;">
+<body style="display:flex;flex-direction:column;height:100%;align-items:stretch;background:var(--bg);">
 
 <?php if (!$_lc_enabled): ?>
 <!-- Live Chat Disabled -->
@@ -467,6 +470,7 @@ if ($_abs_fav): ?>
         placeholder="Ketik pesan..." rows="1"
         onkeydown="handleKey(event)"
         oninput="autoResize(this)"
+        onfocus="setTimeout(()=>window.scrollTo(0, document.body.scrollHeight), 300)"
       ></textarea>
       <button class="chat-send-btn" id="chat-send-btn" onclick="sendMessage()">
         <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
