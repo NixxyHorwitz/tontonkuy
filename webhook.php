@@ -114,6 +114,22 @@ function do_wd_reject(PDO $pdo, int $id, string $reason): string {
     return 'ok';
 }
 
+/** Do the actual withdraw hold (no refund) */
+function do_wd_hold(PDO $pdo, int $id, string $reason): string {
+    $pdo->beginTransaction();
+    $wd = $pdo->prepare("SELECT * FROM withdrawals WHERE id=? FOR UPDATE");
+    $wd->execute([$id]);
+    $wd = $wd->fetch();
+    if (!$wd || $wd['status'] !== 'pending') {
+        $pdo->rollBack();
+        return 'WD tidak ditemukan atau bukan pending.';
+    }
+    $note = $reason ?: 'Hold via Bot (Selesai non-refund)';
+    $pdo->prepare("UPDATE withdrawals SET status='hold', admin_note=?, processed_at=NOW() WHERE id=?")->execute([$note, $id]);
+    $pdo->commit();
+    return 'ok';
+}
+
 // ── Callback Query Handler ───────────────────────────────────────────────────
 
 if (isset($update['callback_query'])) {
@@ -198,37 +214,49 @@ if (isset($update['callback_query'])) {
         http_response_code(200); exit;
     }
 
-    // ── REJECT (ask for reason) ───────────────────────────────────────────────
-    if (preg_match('/^(depo|wd)_reject_(\d+)$/', $data, $m)) {
-        $type = $m[1];
-        $id   = (int)$m[2];
-        answer_cb($token, $cb_id, '📝 Ketik alasan penolakan...');
+    // ── REJECT / HOLD (ask for reason) ─────────────────────────────────────────
+    if (preg_match('/^(depo|wd)_(reject|hold)_(\d+)$/', $data, $m)) {
+        $type   = $m[1];
+        $action = $m[2];
+        $id     = (int)$m[3];
+        $act_id = "{$type}_{$action}";
+        $label  = $action === 'hold' ? 'Hold' : 'penolakan';
+        
+        answer_cb($token, $cb_id, "📝 Ketik alasan {$label}...");
         // Send prompt and capture its message_id
         $prompt_msg_id = send_msg($token, $chat_id,
-            "📝 <b>Ketik alasan penolakan</b> untuk {$type} #{$id} dan kirim sebagai pesan.\n\nAtau tekan tombol di bawah untuk langsung tolak tanpa alasan.",
-            [[['text' => '⏭ Skip (Tanpa Alasan)', 'callback_data' => "{$type}_reject_skip_{$id}"]]]
+            "📝 <b>Ketik alasan {$label}</b> untuk {$type} #{$id} dan kirim sebagai pesan.\n\nAtau tekan tombol di bawah untuk langsung memproses tanpa alasan.",
+            [[['text' => '⏭ Skip (Tanpa Alasan)', 'callback_data' => "{$act_id}_skip_{$id}"]]]
         );
-        // Save state: awaiting_reason|type|id|orig_msg_id|orig_b64|prompt_msg_id
-        $state = implode('|', ['awaiting_reason', $type, $id, $msg_id, base64_encode($orig), (int)$prompt_msg_id]);
+        // Save state: awaiting_reason|type|action|id|orig_msg_id|orig_b64|prompt_msg_id
+        $state = implode('|', ['awaiting_reason', $type, $action, $id, $msg_id, base64_encode($orig), (int)$prompt_msg_id]);
         set_tg_state($pdo, $chat_id, $state);
         http_response_code(200); exit;
     }
 
-    // ── REJECT SKIP (no reason) ───────────────────────────────────────────────
-    if (preg_match('/^(depo|wd)_reject_skip_(\d+)$/', $data, $m)) {
-        $type = $m[1];
-        $id   = (int)$m[2];
+    // ── REJECT / HOLD SKIP (no reason) ─────────────────────────────────────────
+    if (preg_match('/^(depo|wd)_(reject|hold)_skip_(\d+)$/', $data, $m)) {
+        $type   = $m[1];
+        $action = $m[2];
+        $id     = (int)$m[3];
         clear_tg_state($pdo, $chat_id);
 
         if ($type === 'depo') {
             $res = do_depo_reject($pdo, $id, '');
+            $icon = '❌'; $status = 'Rejected';
         } else {
-            $res = do_wd_reject($pdo, $id, '');
+            if ($action === 'hold') {
+                $res = do_wd_hold($pdo, $id, '');
+                $icon = '⏸'; $status = 'Hold';
+            } else {
+                $res = do_wd_reject($pdo, $id, '');
+                $icon = '❌'; $status = 'Rejected';
+            }
         }
 
         if ($res === 'ok') {
-            answer_cb($token, $cb_id, '❌ Ditolak tanpa alasan.');
-            edit_msg($token, $chat_id, $msg_id, str_replace('Status: Pending', 'Status: ❌ Rejected', $orig));
+            answer_cb($token, $cb_id, "{$icon} " . ucfirst($action) . " tanpa alasan.");
+            edit_msg($token, $chat_id, $msg_id, str_replace('Status: Pending', "Status: {$icon} {$status}", $orig));
         } else {
             answer_cb($token, $cb_id, '⚠️ ' . $res);
         }
@@ -258,10 +286,10 @@ if (isset($update['message'])) {
     $state = get_tg_state($pdo, $chat_id);
     if (!$state) { http_response_code(200); exit; }
 
-    $parts = explode('|', $state, 6);
+    $parts = explode('|', $state, 7);
     if ($parts[0] !== 'awaiting_reason') { http_response_code(200); exit; }
 
-    [, $type, $id, $orig_msg_id, $orig_b64, $prompt_msg_id] = array_pad($parts, 6, 0);
+    [, $type, $action, $id, $orig_msg_id, $orig_b64, $prompt_msg_id] = array_pad($parts, 7, 0);
     $id            = (int)$id;
     $orig_msg_id   = (int)$orig_msg_id;
     $prompt_msg_id = (int)$prompt_msg_id;
@@ -272,17 +300,24 @@ if (isset($update['message'])) {
 
     if ($type === 'depo') {
         $res = do_depo_reject($pdo, $id, $reason);
+        $icon = '❌'; $status = 'Rejected';
     } else {
-        $res = do_wd_reject($pdo, $id, $reason);
+        if ($action === 'hold') {
+            $res = do_wd_hold($pdo, $id, $reason);
+            $icon = '⏸'; $status = 'Hold';
+        } else {
+            $res = do_wd_reject($pdo, $id, $reason);
+            $icon = '❌'; $status = 'Rejected';
+        }
     }
 
     if ($res === 'ok') {
-        $new_text = str_replace('Status: Pending', "Status: ❌ Rejected\nAlasan: {$reason}", $orig_text);
+        $new_text = str_replace('Status: Pending', "Status: {$icon} {$status}\nAlasan: {$reason}", $orig_text);
         edit_msg($token, $chat_id, $orig_msg_id, $new_text);
         // Edit the prompt message to confirm the reason was received
         if ($prompt_msg_id) {
             edit_msg($token, $chat_id, $prompt_msg_id,
-                "❌ <b>" . strtoupper($type) . " #{$id} ditolak</b>\n📝 Alasan: <i>" . htmlspecialchars($reason) . "</i>");
+                "{$icon} <b>" . strtoupper($type) . " #{$id} " . ($action==='hold'?'di-hold':'ditolak') . "</b>\n📝 Alasan: <i>" . htmlspecialchars($reason) . "</i>");
         }
     } else {
         send_msg($token, $chat_id, "⚠️ Gagal: {$res}");

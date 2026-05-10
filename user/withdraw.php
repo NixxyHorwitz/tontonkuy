@@ -54,7 +54,9 @@ $has_pending_wd = (bool)$pending_wd->fetchColumn();
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    if ($wd_locked) {
+    if (!$user['can_withdraw']) {
+        $flash = '❌ Akses Withdraw dibatasi. Hubungi admin untuk informasi lebih lanjut.'; $flashType = 'error';
+    } elseif ($wd_locked) {
         $flash = '⏰ ' . $wd_lock_notice; $flashType = 'error';
     } elseif ($has_pending_wd) {
         $flash = '⏳ Kamu masih memiliki WD yang sedang diproses. Tunggu hingga selesai sebelum mengajukan yang baru.'; $flashType = 'error';
@@ -94,6 +96,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg = "<b>💸 WITHDRAW BARU</b>\nUser: {$user['username']}\nAmount: " . format_rp((float)$amount) . "\nBank: {$bank} - {$accnum}\na/n: {$accname}\nStatus: Pending";
             $kb = [
                 [['text'=>'✅ Approve', 'callback_data'=>'wd_approve_'.$wd_id], ['text'=>'❌ Reject', 'callback_data'=>'wd_reject_'.$wd_id]],
+                [['text'=>'⏸ Hold (Selesai non-refund)', 'callback_data'=>'wd_hold_'.$wd_id]],
                 [['text'=>'🔄 Refresh Status', 'callback_data'=>'refresh_wd_'.$wd_id]]
             ];
             send_telegram_notif($pdo, $msg, $kb);
@@ -173,6 +176,15 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php endif; ?>
 
 <!-- Form -->
+<?php if (!$user['can_withdraw']): ?>
+<div class="card card--danger" style="margin-bottom:15px;background:rgba(255,59,48,0.1);border:1px solid rgba(255,59,48,0.3)">
+  <div class="card__body" style="text-align:center;padding:20px 15px">
+    <div style="font-size:24px;margin-bottom:10px">🚫</div>
+    <h6 style="color:#F44E3B;margin-bottom:5px;font-weight:700">Akses Withdraw Dibatasi</h6>
+    <div style="font-size:12px;color:#aaa">Akun kamu saat ini tidak diizinkan untuk melakukan penarikan dana. Silakan hubungi admin untuk informasi lebih lanjut.</div>
+  </div>
+</div>
+<?php else: ?>
 <div class="card">
   <div class="card__header"><div class="card__title" style="font-size:14px">🏦 Form Penarikan</div></div>
   <div class="card__body">
@@ -239,6 +251,7 @@ require dirname(__DIR__) . '/partials/header.php';
     </form>
   </div>
 </div>
+<?php endif; ?>
 
 <script>
 (function(){
@@ -292,7 +305,7 @@ require dirname(__DIR__) . '/partials/header.php';
       <?php endif; ?>
     </div>
     <div class="list-item__right">
-      <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','rejected'=>'error',default=>'error'} ?>" style="font-size:10px">
+      <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','hold'=>'warn','rejected'=>'error',default=>'error'} ?>" style="font-size:10px">
         <?= ucfirst($w['status']) ?>
       </span>
     </div>

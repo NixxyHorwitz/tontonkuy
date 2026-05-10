@@ -29,6 +29,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $flash = "Withdraw #{$id} ditolak dan saldo dikembalikan.";
         }
     }
+    if ($action === 'hold' && $id) {
+        $wd = $pdo->prepare("SELECT * FROM withdrawals WHERE id=? AND status='pending'");
+        $wd->execute([$id]); $wd = $wd->fetch();
+        if ($wd) {
+            $pdo->prepare("UPDATE withdrawals SET status='hold',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$note ?: 'Selesai tanpa refund', $id]);
+            $flash = "Withdraw #{$id} ditahan (Hold), saldo TIDAK dikembalikan.";
+        }
+    }
+    if ($action === 'refund' && $id) {
+        $wd = $pdo->prepare("SELECT * FROM withdrawals WHERE id=? AND status='hold'");
+        $wd->execute([$id]); $wd = $wd->fetch();
+        if ($wd) {
+            // Refund balance from hold state
+            $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$wd['amount'], $wd['user_id']]);
+            $pdo->prepare("UPDATE withdrawals SET status='rejected',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$note ?: 'Refund dari status Hold', $id]);
+            $flash = "Withdraw #{$id} di-refund. Status menjadi Rejected dan saldo dikembalikan.";
+        }
+    }
 }
 
 $where = $filter !== 'all' ? "WHERE status=?" : "";
@@ -55,7 +73,7 @@ require __DIR__ . '/partials/header.php';
 
 <!-- Filter tabs -->
 <div class="d-flex gap-2 mb-3 flex-wrap">
-  <?php foreach (['all'=>'Semua','pending'=>'Pending','approved'=>'Approved','rejected'=>'Rejected'] as $s=>$lbl): ?>
+  <?php foreach (['all'=>'Semua','pending'=>'Pending','approved'=>'Approved','rejected'=>'Rejected','hold'=>'Hold'] as $s=>$lbl): ?>
   <a href="?status=<?= $s ?>" class="btn btn-sm <?= $filter===$s?'text-white':'btn-secondary' ?>" style="<?= $filter===$s?'background:var(--brand)':'' ?>">
     <?= $lbl ?> <?php $cnt=$s==='all'?array_sum($countMap):($countMap[$s]??0); if($cnt>0): ?><span class="badge bg-dark ms-1"><?= $cnt ?></span><?php endif; ?>
   </a>
@@ -78,15 +96,20 @@ require __DIR__ . '/partials/header.php';
           </td>
           <td style="font-size:12px;color:#666"><?= date('d M Y H:i', strtotime($w['created_at'])) ?></td>
           <td>
-            <span class="badge <?= match($w['status']){'approved'=>'b-success','pending'=>'b-warn','rejected'=>'b-danger'} ?>" style="border-radius:6px;padding:4px 8px">
+            <span class="badge <?= match($w['status']){'approved'=>'b-success','pending'=>'b-warn','hold'=>'b-warn','rejected'=>'b-danger'} ?>" style="border-radius:6px;padding:4px 8px">
               <?= ucfirst($w['status']) ?>
             </span>
             <?php if ($w['admin_note']): ?><div style="font-size:11px;color:#666;margin-top:3px"><?= htmlspecialchars($w['admin_note']) ?></div><?php endif; ?>
           </td>
           <td>
             <?php if ($w['status'] === 'pending'): ?>
-            <button class="btn btn-sm b-success" style="border:none;border-radius:8px;font-size:11px" onclick="processWd(<?= $w['id'] ?>,'approve')">✓ Approve</button>
-            <button class="btn btn-sm b-danger" style="border:none;border-radius:8px;font-size:11px" onclick="processWd(<?= $w['id'] ?>,'reject')">✗ Reject</button>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <button class="btn btn-sm b-success" style="border:none;border-radius:8px;font-size:11px" onclick="processWd(<?= $w['id'] ?>,'approve')">✓ Approve</button>
+              <button class="btn btn-sm b-danger" style="border:none;border-radius:8px;font-size:11px" onclick="processWd(<?= $w['id'] ?>,'reject')">✗ Reject</button>
+              <button class="btn btn-sm b-warn" style="border:none;border-radius:8px;font-size:11px;color:#fff" onclick="processWd(<?= $w['id'] ?>,'hold')">⏸ Hold</button>
+            </div>
+            <?php elseif ($w['status'] === 'hold'): ?>
+            <button class="btn btn-sm b-danger" style="border:none;border-radius:8px;font-size:11px" onclick="processWd(<?= $w['id'] ?>,'refund')">↩️ Refund Saldo</button>
             <?php else: ?>
             <span style="font-size:11px;color:#555">—</span>
             <?php endif; ?>
@@ -123,8 +146,15 @@ require __DIR__ . '/partials/header.php';
 function processWd(id, action) {
   document.getElementById('wd-id').value = id;
   document.getElementById('wd-action').value = action;
-  document.getElementById('wd-title').textContent = action==='approve'?'✅ Setujui Withdraw':'❌ Tolak Withdraw';
-  document.getElementById('wd-submit').style.background = action==='approve'?'#4CAF82':'#F44E3B';
+  
+  let title = '', color = '';
+  if (action==='approve') { title = '✅ Setujui Withdraw'; color = '#4CAF82'; }
+  else if (action==='reject') { title = '❌ Tolak Withdraw & Refund'; color = '#F44E3B'; }
+  else if (action==='hold') { title = '⏸ Hold Withdraw (No Refund)'; color = '#f59e0b'; }
+  else if (action==='refund') { title = '↩️ Refund Saldo Hold'; color = '#F44E3B'; }
+  
+  document.getElementById('wd-title').textContent = title;
+  document.getElementById('wd-submit').style.background = color;
   new bootstrap.Modal(document.getElementById('wdModal')).show();
 }
 </script>
