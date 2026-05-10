@@ -4,11 +4,14 @@
  * Endpoint: /chat_action?action=...
  */
 declare(strict_types=1);
+ini_set('log_errors', '1');
+error_reporting(E_ALL);
 require_once __DIR__ . '/bootstrap.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
+error_log('[chat_action] action=' . $action . ' method=' . ($_SERVER['REQUEST_METHOD'] ?? '?') . ' cookie=' . (isset($_COOKIE['chat_session']) ? 'yes' : 'no'));
 
 // ─── Helper: JSON response ────────────────────────────────────
 function json_ok(array $data = []): never {

@@ -1,5 +1,10 @@
 <?php
 declare(strict_types=1);
+// DEBUG: tampilkan semua error PHP ke log
+ini_set('display_errors', '0');
+ini_set('log_errors', '1');
+error_reporting(E_ALL);
+
 require_once __DIR__ . '/../bootstrap.php';
 $user         = require_auth($pdo);
 $_favicon     = setting($pdo, 'favicon_path', '');
@@ -9,6 +14,11 @@ $_ai_enabled  = setting($pdo, 'chat_ai_enabled', '1') === '1';
 $_adm_enabled = setting($pdo, 'chat_admin_enabled', '1') === '1';
 // Jika keduanya disabled, anggap livechat off
 if (!$_ai_enabled && !$_adm_enabled) $_lc_enabled = false;
+
+error_log('[LiveChat] page loaded, user=' . ($user['username'] ?? 'null')
+    . ' lc_enabled=' . (int)$_lc_enabled
+    . ' ai=' . (int)$_ai_enabled
+    . ' adm=' . (int)$_adm_enabled);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -78,6 +88,22 @@ body {
     <div class="chat-status-badge online" id="chat-status-badge" style="border:1.5px solid var(--ink);">Online</div>
   </div>
 </header>
+
+<!-- ── DEBUG PANEL (hapus setelah selesai debug) ── -->
+<div id="lc-debug-wrapper" style="
+  position:fixed; bottom:0; left:0; right:0; z-index:9999;
+  background:rgba(0,0,10,0.92); color:#e0e0e0;
+  font-size:10px; font-family:monospace; line-height:1.5;
+  max-height:38vh; display:flex; flex-direction:column;
+  border-top:2px solid #4fc3f7;
+">
+  <div style="display:flex;justify-content:space-between;padding:4px 8px;background:#111;flex-shrink:0;border-bottom:1px solid #333">
+    <strong style="color:#4fc3f7">🐛 LiveChat Debug</strong>
+    <button onclick="this.closest('#lc-debug-wrapper').style.display='none'"
+      style="background:none;border:none;color:#aaa;cursor:pointer;font-size:12px">✕ tutup</button>
+  </div>
+  <div id="lc-debug" style="overflow-y:auto;flex:1;padding:6px 8px"></div>
+</div>
 
 <style>
 /* ═══════════════════════════════════════
@@ -525,6 +551,35 @@ let lastMsgId    = 0;
 let pollTimer    = null;
 let sessionStatus = 'open';
 
+// ── DEBUG PANEL ──────────────────────────────────────────
+const _debugEl = document.getElementById('lc-debug');
+function dbg(msg, data) {
+  const ts = new Date().toLocaleTimeString('id-ID');
+  const str = data ? JSON.stringify(data) : '';
+  console.log('[LiveChat]', msg, data ?? '');
+  if (_debugEl) {
+    const line = document.createElement('div');
+    line.style.cssText = 'border-bottom:1px solid #333;padding:2px 0;word-break:break-all';
+    line.innerHTML = `<span style="color:#aaa">${ts}</span> <span style="color:#4fc3f7">${msg}</span>` + (str ? ` <span style="color:#fff9c4">${str}</span>` : '');
+    _debugEl.appendChild(line);
+    _debugEl.scrollTop = _debugEl.scrollHeight;
+  }
+}
+window.onerror = (msg, src, line, col, err) => {
+  dbg('❌ JS Error: ' + msg, { src, line });
+  return false;
+};
+window.addEventListener('unhandledrejection', e => dbg('❌ Promise rejected', String(e.reason)));
+
+// log viewport info on load
+dbg('init', {
+  innerH: window.innerHeight,
+  innerW: window.innerWidth,
+  vvH: window.visualViewport?.height,
+  dvh: CSS.supports('height','100dvh'),
+  cookie: document.cookie.includes('chat_session')
+});
+
 // ── Mode selector on start screen ────────────────────────
 function selectStartMode(mode) {
   startMode = mode;
@@ -544,20 +599,27 @@ async function startChat() {
   btn.disabled = true;
   btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="animation:spin 1s linear infinite"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4"/></svg> Menghubungkan...';
 
+  dbg('startChat()', { startMode });
+
   try {
     const fd = new FormData();
-    fd.append('mode', startMode); // kirim mode pilihan user ke server
+    fd.append('mode', startMode);
     const res = await fetch('/chat_action?action=start', { method: 'POST', body: fd, credentials: 'include' });
+    dbg('start HTTP', { status: res.status, ok: res.ok });
     const data = await res.json();
+    dbg('start response', data);
     if (!data.ok) throw new Error(data.error || 'Gagal memulai sesi.');
 
     sessionKey    = data.session_key;
     currentMode   = data.mode;
     sessionStatus = data.status;
 
+    dbg('session created', { sessionKey, currentMode, sessionStatus, msgs: (data.messages||[]).length });
+
     // Show chat UI
     document.getElementById('chat-start-overlay').style.display = 'none';
     document.getElementById('chat-ui').style.display = 'flex';
+    dbg('UI shown');
 
     // Render existing messages
     const msgs = document.getElementById('chat-messages');
@@ -575,6 +637,7 @@ async function startChat() {
     document.getElementById('chat-input').focus();
 
   } catch(e) {
+    dbg('❌ startChat error', e.message);
     btn.disabled = false;
     btn.innerHTML = '💬 Mulai Chat';
     alert('❌ ' + e.message);
@@ -821,6 +884,7 @@ function handleKey(e) {
   function setVH() {
     const h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
     document.documentElement.style.setProperty('--vh', h + 'px');
+    dbg('setVH', { h, innerH: window.innerHeight, vvH: window.visualViewport?.height });
     scrollBottom();
   }
 
