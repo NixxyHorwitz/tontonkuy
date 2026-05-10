@@ -110,6 +110,7 @@ function cleanup_inactive_sessions(PDO $pdo): void {
 // ACTIONS
 // ═══════════════════════════════════════════════════════════════
 
+try {
 switch ($action) {
 
     // ── Start / get session ─────────────────────────────────────
@@ -555,4 +556,8 @@ switch ($action) {
 
     default:
         json_err('Action tidak dikenal.', 404);
+}
+} catch (\Throwable $e) {
+    error_log('[chat_action] UNCAUGHT ' . get_class($e) . ': ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+    json_err('Server error: ' . $e->getMessage(), 500);
 }

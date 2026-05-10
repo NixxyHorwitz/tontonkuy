@@ -12,13 +12,14 @@ $_seo_title   = setting($pdo, 'seo_title', 'TontonKuy');
 $_lc_enabled  = setting($pdo, 'livechat_enabled', '1') === '1';
 $_ai_enabled  = setting($pdo, 'chat_ai_enabled', '1') === '1';
 $_adm_enabled = setting($pdo, 'chat_admin_enabled', '1') === '1';
-// Jika keduanya disabled, anggap livechat off
+$_debug_on    = setting($pdo, 'lc_debug_panel', '0') === '1';
 if (!$_ai_enabled && !$_adm_enabled) $_lc_enabled = false;
 
 error_log('[LiveChat] page loaded, user=' . ($user['username'] ?? 'null')
     . ' lc_enabled=' . (int)$_lc_enabled
     . ' ai=' . (int)$_ai_enabled
-    . ' adm=' . (int)$_adm_enabled);
+    . ' adm=' . (int)$_adm_enabled
+    . ' debug=' . (int)$_debug_on);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -89,7 +90,8 @@ body { margin: 0; padding: 0; overflow: hidden; background: var(--bg); }
   </div>
 </header>
 
-<!-- ── DEBUG PANEL (hapus setelah selesai debug) ── -->
+<?php if ($_debug_on): ?>
+<!-- ── DEBUG PANEL (aktif via Console → Livechat → Pengaturan) ── -->
 <div id="lc-debug-wrapper" style="
   position:fixed; bottom:0; left:0; right:0; z-index:9999;
   background:rgba(0,0,10,0.92); color:#e0e0e0;
@@ -104,6 +106,7 @@ body { margin: 0; padding: 0; overflow: hidden; background: var(--bg); }
   </div>
   <div id="lc-debug" style="overflow-y:auto;flex:1;padding:6px 8px"></div>
 </div>
+<?php endif; ?>
 
 <style>
 /* ═══════════════════════════════════════

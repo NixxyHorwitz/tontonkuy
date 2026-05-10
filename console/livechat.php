@@ -15,6 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'lc_tg_token','lc_tg_chat_id','lc_tg_forum',
             'openai_api_key','openai_model','ai_system_prompt',
             'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled','chat_admin_name','livechat_enabled','lc_site_url',
+            'lc_debug_panel',
         ];
         foreach ($keys as $k) {
             $v = trim($_POST[$k] ?? '');
@@ -40,6 +41,7 @@ foreach ([
     'lc_tg_token','lc_tg_chat_id','lc_tg_forum',
     'openai_api_key','openai_model','ai_system_prompt',
     'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled','chat_admin_name','livechat_enabled','lc_site_url',
+    'lc_debug_panel',
 ] as $k) { $cfg[$k] = setting($pdo, $k, ''); }
 if (empty($cfg['chat_admin_name'])) $cfg['chat_admin_name'] = 'Admin';
 if (empty($cfg['livechat_enabled'])) $cfg['livechat_enabled'] = '1';
@@ -398,7 +400,7 @@ require_once __DIR__ . '/partials/header.php';
               <strong style="color:#e0e0f0;">Livechat Aktif</strong>
             </label>
           </div>
-          <div style="display:flex;gap:20px;flex-wrap:wrap;">
+          <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;">
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
               <input type="checkbox" name="chat_ai_enabled" value="1" <?= $cfg['chat_ai_enabled']==='1'?'checked':'' ?>>
               Aktifkan Mode AI
@@ -406,6 +408,13 @@ require_once __DIR__ . '/partials/header.php';
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
               <input type="checkbox" name="chat_admin_enabled" value="1" <?= $cfg['chat_admin_enabled']==='1'?'checked':'' ?>>
               Aktifkan Mode Admin
+            </label>
+          </div>
+          <!-- Debug Panel Toggle -->
+          <div style="display:flex;gap:20px;flex-wrap:wrap;padding:10px 14px;background:rgba(251,188,4,.07);border:1px solid rgba(251,188,4,.2);border-radius:8px;">
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+              <input type="checkbox" name="lc_debug_panel" value="1" <?= $cfg['lc_debug_panel']==='1'?'checked':'' ?>>
+              <span>🐛 <strong style="color:#FBBC04;">Debug Panel</strong> <span style="color:#555;font-size:11px;">(tampilkan panel debug di livechat user)</span></span>
             </label>
           </div>
         </div>
