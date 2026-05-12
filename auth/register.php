@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Create user
             $code = generate_referral_code($pdo);
             $hash = password_hash($password, PASSWORD_BCRYPT);
-            $pdo->prepare("INSERT INTO users (username,email,whatsapp,password_hash,referral_code,referred_by,bank_name,account_number,account_name) VALUES (?,?,?,?,?,?,?,?,?)")
+            $pdo->prepare("INSERT INTO users (username,email,whatsapp,password_hash,referral_code,referred_by,bank_name,account_number,account_name,can_withdraw) VALUES (?,?,?,?,?,?,?,?,?,1)")
                 ->execute([$username, $email, $whatsapp, $hash, $code, $ref_by, $bank_name, $account_number, $account_name]);
             $new_id = (int)$pdo->lastInsertId();
 

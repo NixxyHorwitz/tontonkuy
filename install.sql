@@ -25,7 +25,10 @@ CREATE TABLE IF NOT EXISTS `users` (
   `watch_count_today` INT NOT NULL DEFAULT 0,
   `watch_reset_date`  DATE DEFAULT NULL,
   `last_checkin`      DATE DEFAULT NULL,
-  `is_active`      TINYINT(1) NOT NULL DEFAULT 1,
+  `bank_name`         VARCHAR(100) DEFAULT NULL,
+  `account_number`    VARCHAR(50) DEFAULT NULL,
+  `account_name`      VARCHAR(100) DEFAULT NULL,
+  `is_active`         TINYINT(1) NOT NULL DEFAULT 1,
   `created_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at`     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   INDEX idx_email (`email`),
@@ -45,6 +48,8 @@ CREATE TABLE IF NOT EXISTS `memberships` (
   `description`     TEXT DEFAULT NULL,
   `is_active`       TINYINT(1) NOT NULL DEFAULT 1,
   `sort_order`      INT NOT NULL DEFAULT 0,
+  `min_wd`          DECIMAL(15,2) NOT NULL DEFAULT 50000.00,
+  `max_wd`          DECIMAL(15,2) NOT NULL DEFAULT 0.00,
   `created_at`      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -179,3 +184,44 @@ CREATE TABLE IF NOT EXISTS `admins` (
 -- Default admin: username=admin, password=admin123 (will be changed on first login)
 INSERT INTO `admins` (`username`, `password_hash`) VALUES
 ('admin', '$2y$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi');
+
+-- ============================================================
+-- REFERRAL COMMISSIONS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `referral_commissions` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `user_id` INT UNSIGNED NOT NULL,
+  `from_user_id` INT UNSIGNED NOT NULL,
+  `amount` DECIMAL(15,2) NOT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX idx_user_id (`user_id`),
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`from_user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- NOTIFICATIONS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `notifications` (
+  `id` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `title` VARCHAR(255) NOT NULL,
+  `message` TEXT NOT NULL,
+  `type` ENUM('info','success','warning','alert','congrats') NOT NULL DEFAULT 'info',
+  `icon` VARCHAR(10) DEFAULT NULL,
+  `target_type` ENUM('all','single','selected','has_balance','has_membership') NOT NULL DEFAULT 'all',
+  `target_user_ids` TEXT DEFAULT NULL,
+  `action_url` VARCHAR(255) DEFAULT NULL,
+  `action_text` VARCHAR(50) DEFAULT NULL,
+  `expires_at` DATETIME DEFAULT NULL,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS `notification_reads` (
+  `id` BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  `notification_id` INT UNSIGNED NOT NULL,
+  `user_id` INT UNSIGNED NOT NULL,
+  `read_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE INDEX `uidx_notif_user` (`notification_id`, `user_id`),
+  FOREIGN KEY (`notification_id`) REFERENCES `notifications`(`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
