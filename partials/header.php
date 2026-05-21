@@ -26,7 +26,7 @@ $_favicon    = setting($pdo, 'favicon_path', '');
 <meta name="robots" content="<?= htmlspecialchars($_seo_robots) ?>">
 <?php
 $absolute_og = $_seo_og ? (preg_match('~^https?://~', $_seo_og) ? $_seo_og : base_url(ltrim($_seo_og, '/'))) : '';
-$absolute_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : base_url(ltrim($_favicon, '/'))) : '';
+$fav_url = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : '/' . ltrim($_favicon, '/')) : '';
 $current_url = base_url(ltrim($_SERVER['REQUEST_URI'] ?? '', '/'));
 $final_og_desc = $_seo_og_desc ?: $_seo_desc;
 ?>
@@ -42,9 +42,9 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
 <meta property="og:description" content="<?= htmlspecialchars($final_og_desc) ?>">
 <?php endif; ?>
 <meta name="twitter:card" content="<?= htmlspecialchars($_seo_twcard) ?>">
-<?php if ($absolute_fav): ?>
-<link rel="icon" type="image/png" href="<?= htmlspecialchars($absolute_fav) ?>?v=<?= @filemtime(dirname(__DIR__) . $_favicon) ?: time() ?>">
-<link rel="apple-touch-icon" href="<?= htmlspecialchars($absolute_fav) ?>?v=<?= @filemtime(dirname(__DIR__) . $_favicon) ?: time() ?>">
+<?php if ($fav_url): ?>
+<link rel="icon" type="image/png" href="<?= htmlspecialchars($fav_url) ?>?v=<?= @filemtime(dirname(__DIR__) . '/' . ltrim($_favicon, '/')) ?: time() ?>">
+<link rel="apple-touch-icon" href="<?= htmlspecialchars($fav_url) ?>?v=<?= @filemtime(dirname(__DIR__) . '/' . ltrim($_favicon, '/')) ?: time() ?>">
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css">
 </head>
