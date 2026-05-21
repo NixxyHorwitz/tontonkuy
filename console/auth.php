@@ -35,8 +35,8 @@ if (!$_is_head_admin && !$_is_staff) {
     redirect("/console/login?next={$redir}");
 }
 
-// ── Load staff permissions into session if needed ──────────────────────────
-if ($_is_staff && !isset($_SESSION['staff_permissions'])) {
+// ── Load staff permissions (fresh on every load) ─────────────────────────────
+if ($_is_staff) {
     $sp = $pdo->prepare("
         SELECT p.permission FROM staff_role_permissions p
         JOIN staff s ON s.role_id = p.role_id
