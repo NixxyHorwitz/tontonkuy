@@ -35,17 +35,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $flash = 'Kamu sudah mengklaim kode ini sebelumnya.';
                     $flashType = 'error';
                 } else {
-                    // Berikan reward ke user (WD Balance)
-                    $reward = (float)$codeData['reward_amount'];
-                    
+                    // Record klaim
                     $pdo->prepare("INSERT INTO user_redeems (user_id, code_id) VALUES (?, ?)")
                         ->execute([$user['id'], $codeData['id']]);
                         
                     $pdo->prepare("UPDATE redeem_codes SET claims_count = claims_count + 1 WHERE id = ?")
                         ->execute([$codeData['id']]);
                         
-                    $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id = ?")
-                        ->execute([$reward, $reward, $user['id']]);
+                    // Berikan reward ke user
+                    $r_wd  = (float)$codeData['reward_wd'];
+                    $r_dep = (float)$codeData['reward_dep'];
+                    $r_lvl = $codeData['reward_level_id'];
+                    
+                    $updateSql = "UPDATE users SET balance_wd = balance_wd + ?, balance_dep = balance_dep + ?, total_earned = total_earned + ?";
+                    $updateParams = [$r_wd, $r_dep, $r_wd]; // hanya WD yang dihitung total earned (opsional, tergantung logic bisnis)
+
+                    $level_name = '';
+                    if ($r_lvl) {
+                        // Get level duration
+                        $ls = $pdo->prepare("SELECT name, duration_days FROM memberships WHERE id = ?");
+                        $ls->execute([$r_lvl]);
+                        $levelData = $ls->fetch();
+                        if ($levelData) {
+                            $level_name = $levelData['name'];
+                            $days = (int)$levelData['duration_days'];
+                            $updateSql .= ", membership_id = ?, membership_expires_at = DATE_ADD(NOW(), INTERVAL ? DAY)";
+                            $updateParams[] = $r_lvl;
+                            $updateParams[] = $days;
+                        }
+                    }
+
+                    $updateSql .= " WHERE id = ?";
+                    $updateParams[] = $user['id'];
+                    
+                    $pdo->prepare($updateSql)->execute($updateParams);
                         
                     // Re-fetch user to reflect changes
                     $usrStmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
@@ -53,7 +76,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $user = $usrStmt->fetch();
                     
                     $pdo->commit();
-                    $flash = '✅ Selamat! Kamu mendapatkan ' . format_rp($reward) . ' dari kode redeem.';
+                    
+                    $msg_parts = [];
+                    if ($r_wd > 0) $msg_parts[] = 'Saldo WD ' . format_rp($r_wd);
+                    if ($r_dep > 0) $msg_parts[] = 'Saldo Deposit ' . format_rp($r_dep);
+                    if ($level_name) $msg_parts[] = 'Level ' . $level_name;
+                    
+                    $flash = '✅ Selamat! Kamu mendapatkan ' . implode(', ', $msg_parts) . '.';
                     $flashType = 'success';
                     goto done_redeem;
                 }
@@ -71,7 +100,7 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <div class="page-title-bar">
   <h1>🎁 Kode Redeem</h1>
-  <p>Tukarkan kodemu dan dapatkan reward tambahan!</p>
+  <p>Tukarkan kodemu dan dapatkan reward melimpah!</p>
 </div>
 
 <?php if ($flash): ?>
@@ -85,7 +114,7 @@ require dirname(__DIR__) . '/partials/header.php';
       <?= csrf_field() ?>
       <div class="form-group" style="margin-bottom:16px">
         <input class="form-control" type="text" name="code" 
-               placeholder="Contoh: TONTON10K" style="text-transform:uppercase;letter-spacing:2px;font-weight:700" required>
+               placeholder="Contoh: TONTONVIP" style="text-transform:uppercase;letter-spacing:2px;font-weight:700" required>
       </div>
       <button type="submit" class="btn btn--primary btn--full">Klaim Reward</button>
     </form>
@@ -98,9 +127,8 @@ require dirname(__DIR__) . '/partials/header.php';
   <div class="card__body" style="font-size:12px;color:#555">
     <ul style="padding-left:16px;margin:0">
       <li style="margin-bottom:4px">Pastikan kode yang dimasukkan sudah benar (huruf besar/kecil otomatis disesuaikan).</li>
-      <li style="margin-bottom:4px">Setiap kode redeem memiliki batas waktu (kedaluwarsa) dan batas kuota klaim.</li>
-      <li style="margin-bottom:4px">Satu akun hanya dapat mengklaim satu kode yang sama maksimal 1 (satu) kali.</li>
-      <li>Reward akan otomatis masuk ke <strong>Saldo Penarikan (WD)</strong> kamu setelah berhasil diklaim.</li>
+      <li style="margin-bottom:4px">Satu akun hanya dapat mengklaim satu kode maksimal 1 (satu) kali.</li>
+      <li>Kode redeem dapat memberikan kombinasi reward berupa <strong>Saldo WD, Saldo Deposit, maupun Level (Membership)</strong>.</li>
     </ul>
   </div>
 </div>

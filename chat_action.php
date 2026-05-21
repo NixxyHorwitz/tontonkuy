@@ -178,8 +178,14 @@ switch ($action) {
         }
         if ($userId) {
             $userDetailLink = $siteUrl ? "{$siteUrl}/console/user_detail.php?id={$userId}" : null;
-            if ($userDetailLink) {
-                $inlineKbd['inline_keyboard'][] = [['text' => "👤 Detail User (Depo/WD)", 'url' => $userDetailLink]];
+            $userEditLink = $siteUrl ? "{$siteUrl}/console/user_edit.php?id={$userId}" : null;
+            
+            $u_btns = [];
+            if ($userDetailLink) $u_btns[] = ['text' => "ℹ️ Cek Detail", 'callback_data' => "uinfo:{$userId}"];
+            if ($userEditLink) $u_btns[] = ['text' => "✏️ Edit Saldo", 'web_app' => ['url' => $userEditLink]];
+            
+            if (!empty($u_btns)) {
+                $inlineKbd['inline_keyboard'][] = $u_btns;
             }
         }
         $inlineKbd['inline_keyboard'][] = [
@@ -476,6 +482,38 @@ switch ($action) {
             [$cbAction, $cbSessId] = array_pad(explode(':', $cbData, 2), 2, '');
             $cbSessId = (int)$cbSessId;
             $ackText  = 'Done';
+
+            if ($cbAction === 'uinfo' && $cbSessId) {
+                $uId = $cbSessId;
+                $uStmt = $pdo->prepare("SELECT u.*, m.name as membership_name FROM users u LEFT JOIN memberships m ON m.id=u.membership_id WHERE u.id=?");
+                $uStmt->execute([$uId]);
+                $uInfo = $uStmt->fetch();
+                
+                if ($uInfo) {
+                    $lvl = $uInfo['membership_name'] ?: 'Free';
+                    $txt = "👤 <b>Info User: {$uInfo['username']}</b>\n"
+                         . "Level: {$lvl}\n"
+                         . "WD: Rp" . number_format((float)$uInfo['balance_wd'], 0, ',', '.') . "\n"
+                         . "Depo: Rp" . number_format((float)$uInfo['balance_dep'], 0, ',', '.');
+                         
+                    tg_api($pdo, 'sendMessage', [
+                        'chat_id' => $cb['message']['chat']['id'],
+                        'message_thread_id' => $cb['message']['message_thread_id'] ?? null,
+                        'text' => $txt,
+                        'parse_mode' => 'HTML'
+                    ]);
+                    $ackText = "Data dikirim!";
+                } else {
+                    $ackText = "User tidak ditemukan";
+                }
+                
+                tg_api($pdo, 'answerCallbackQuery', [
+                    'callback_query_id' => $cbId,
+                    'text'              => $ackText,
+                    'show_alert'        => false,
+                ]);
+                echo '{}'; exit;
+            }
 
             if ($cbSessId) {
                 $csStmt = $pdo->prepare("SELECT * FROM chat_sessions WHERE id=?");

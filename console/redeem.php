@@ -14,23 +14,29 @@ if (isset($_POST['delete_id'])) {
 
 // Handle Add
 if (isset($_POST['add_code'])) {
-    $code   = strtoupper(trim($_POST['code'] ?? ''));
-    $reward = (float)preg_replace('/\D/', '', $_POST['reward'] ?? '0');
-    $quota  = (int)($_POST['quota'] ?? 0);
-    $expiry = trim($_POST['expiry'] ?? '');
+    $code       = strtoupper(trim($_POST['code'] ?? ''));
+    $reward_wd  = (float)preg_replace('/\D/', '', $_POST['reward_wd'] ?? '0');
+    $reward_dep = (float)preg_replace('/\D/', '', $_POST['reward_dep'] ?? '0');
+    $level_id   = (int)($_POST['level_id'] ?? 0);
+    $quota      = (int)($_POST['quota'] ?? 0);
+    $expiry     = trim($_POST['expiry'] ?? '');
     
-    if (!$code || $reward <= 0) {
-        $flash = "Kode dan reward tidak boleh kosong/nol!";
+    if (!$code) {
+        $flash = "Kode redeem tidak boleh kosong!";
+        $flashType = "danger";
+    } elseif ($reward_wd <= 0 && $reward_dep <= 0 && $level_id <= 0) {
+        $flash = "Minimal satu jenis reward (WD / Deposit / Level) harus diisi!";
         $flashType = "danger";
     } else {
         $exp_date = null;
         if ($expiry) {
             $exp_date = date('Y-m-d H:i:s', strtotime($expiry));
         }
+        $r_level = $level_id > 0 ? $level_id : null;
         
         try {
-            $pdo->prepare("INSERT INTO redeem_codes (code, reward_amount, max_claims, expires_at) VALUES (?, ?, ?, ?)")
-                ->execute([$code, $reward, $quota, $exp_date]);
+            $pdo->prepare("INSERT INTO redeem_codes (code, reward_wd, reward_dep, reward_level_id, max_claims, expires_at) VALUES (?, ?, ?, ?, ?, ?)")
+                ->execute([$code, $reward_wd, $reward_dep, $r_level, $quota, $exp_date]);
             $flash = "Kode redeem berhasil ditambahkan!";
             $flashType = "success";
         } catch (\PDOException $e) {
@@ -42,6 +48,14 @@ if (isset($_POST['add_code'])) {
             $flashType = "danger";
         }
     }
+}
+
+// Fetch memberships for dropdown & lookup
+$m_stmt = $pdo->query("SELECT id, name FROM memberships ORDER BY sort_order ASC");
+$memberships = $m_stmt->fetchAll(PDO::FETCH_ASSOC);
+$mem_map = [];
+foreach ($memberships as $m) {
+    $mem_map[$m['id']] = $m['name'];
 }
 
 $codes = $pdo->query("SELECT * FROM redeem_codes ORDER BY created_at DESC")->fetchAll();
@@ -83,13 +97,20 @@ require __DIR__ . '/partials/header.php';
             $badge = 'success';
             if ($is_expired) { $status = 'Expired'; $badge = 'danger'; }
             elseif ($is_depleted) { $status = 'Habis'; $badge = 'warning text-dark'; }
+            
+            $rewards = [];
+            if ($c['reward_wd'] > 0) $rewards[] = '<span style="color:#4CAF82">WD: '.format_rp((float)$c['reward_wd']).'</span>';
+            if ($c['reward_dep'] > 0) $rewards[] = '<span style="color:#4E9BFF">Dep: '.format_rp((float)$c['reward_dep']).'</span>';
+            if ($c['reward_level_id']) $rewards[] = '<span style="color:#FFC107">Level: '.htmlspecialchars($mem_map[$c['reward_level_id']] ?? 'Unknown').'</span>';
           ?>
           <tr>
             <td>
               <strong style="font-family:monospace;font-size:14px;letter-spacing:1px;color:var(--brand)"><?= htmlspecialchars($c['code']) ?></strong><br>
               <span class="badge bg-<?= $badge ?>" style="font-size:10px"><?= $status ?></span>
             </td>
-            <td style="color:#4CAF82;font-weight:700"><?= format_rp((float)$c['reward_amount']) ?></td>
+            <td style="font-size:12px;font-weight:600;line-height:1.5">
+              <?= !empty($rewards) ? implode('<br>', $rewards) : '-' ?>
+            </td>
             <td>
               <?= $c['claims_count'] ?> / <?= $c['max_claims'] > 0 ? $c['max_claims'] : '∞' ?>
             </td>
@@ -131,8 +152,23 @@ require __DIR__ . '/partials/header.php';
         </div>
         
         <div class="mb-3">
-          <label class="c-label">Nominal Reward (Rp) <span class="text-danger">*</span></label>
-          <input type="number" name="reward" class="c-form-control" required min="100" step="100" placeholder="10000">
+          <label class="c-label">Reward Saldo WD (Rp)</label>
+          <input type="number" name="reward_wd" class="c-form-control" min="0" step="100" placeholder="Contoh: 10000" value="0">
+        </div>
+
+        <div class="mb-3">
+          <label class="c-label">Reward Saldo Deposit (Rp)</label>
+          <input type="number" name="reward_dep" class="c-form-control" min="0" step="100" placeholder="Contoh: 5000" value="0">
+        </div>
+
+        <div class="mb-3">
+          <label class="c-label">Reward Level Membership</label>
+          <select name="level_id" class="c-form-control">
+            <option value="0">-- Tidak Ada (Jangan Ubah Level) --</option>
+            <?php foreach ($memberships as $m): ?>
+            <option value="<?= $m['id'] ?>"><?= htmlspecialchars($m['name']) ?></option>
+            <?php endforeach; ?>
+          </select>
         </div>
         
         <div class="mb-3">
