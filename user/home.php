@@ -130,6 +130,59 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 <div id="ref-toast" style="display:none;text-align:center;font-size:11px;font-weight:800;color:var(--green);margin-top:4px">✓ Kode disalin!</div>
 
+<!-- CTA Investasi Banner -->
+<div style="
+  margin-top: 10px;
+  background: var(--yellow);
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+">
+  <!-- Small badge -->
+  <div style="
+    display: inline-block;
+    background: var(--sky);
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 6px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    box-shadow: 1px 1px 0 var(--ink);
+  ">
+    🔥 Profit Pasif Menanti
+  </div>
+  
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+    <div style="flex: 1;">
+      <h4 style="font-size: 14px; font-weight: 900; color: var(--ink); margin: 0 0 2px 0;">📈 Portal Investasi Ponzi</h4>
+      <p style="font-size: 11px; color: #444; font-weight: 700; margin: 0; line-height: 1.4;">
+        Lipatgandakan saldo Anda secara pasif hingga <strong style="color:var(--brand)">ROI 120%+</strong>. Dapatkan profit harian otomatis!
+      </p>
+    </div>
+    <a href="/invest" class="btn btn--primary btn--sm" style="
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 900;
+      background: var(--brand);
+      color: #fff;
+      border: 2px solid var(--ink);
+      box-shadow: 2px 2px 0 var(--ink);
+      text-decoration: none;
+      padding: 6px 12px;
+      height: fit-content;
+      white-space: nowrap;
+    ">
+      🚀 Mulai Invest
+    </a>
+  </div>
+</div>
+
 <?php if (!empty($notif_preview)): ?>
 <!-- Notification Preview -->
 <div style="margin-top:10px">
