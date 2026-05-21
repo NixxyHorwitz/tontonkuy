@@ -244,7 +244,7 @@ require dirname(__DIR__) . '/partials/header.php';
       $can_afford = (float)$user['balance_dep'] >= (float)$m['price'];
     ?>
     <div class="membership-card" id="card-<?= $m['id'] ?>"
-         style="transition:all .2s<?= !$can_afford ? ';opacity:.65' : '' ?>">
+         style="transition:all .2s">
       <?php if ($i === 2): ?><div class="membership-card__badge">🔥 Populer</div><?php endif; ?>
       <div style="display:flex;align-items:center;justify-content:space-between">
         <div>
@@ -255,8 +255,8 @@ require dirname(__DIR__) . '/partials/header.php';
           <div style="width:44px;height:44px;background:<?= $color ?>22;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px">
             <?= ['⭐','🥈','🥇','💎'][$i] ?? '⭐' ?>
           </div>
-          <span class="badge badge--<?= $can_afford ? 'success' : 'error' ?>" style="font-size:10px">
-            <?= $can_afford ? '✓ Bisa' : '✗ Kurang' ?>
+          <span class="badge badge--<?= $can_afford ? 'success' : 'warn' ?>" style="font-size:10px">
+            <?= $can_afford ? '✓ Saldo Cukup' : '🎟️ Kurang / Gunakan Voucher' ?>
           </span>
         </div>
       </div>
@@ -270,16 +270,10 @@ require dirname(__DIR__) . '/partials/header.php';
         <?php if ($m['description']): ?><div class="membership-card__feature">ℹ️ <?= htmlspecialchars($m['description']) ?></div><?php endif; ?>
       </div>
       <div style="margin-top:12px">
-        <?php if ($can_afford): ?>
         <button type="button" class="btn btn--primary btn--full" style="font-size:13px"
           onclick="openConfirm(<?= $m['id'] ?>, '<?= htmlspecialchars($m['name'], ENT_QUOTES) ?>', <?= (float)$m['price'] ?>, <?= $m['duration_days'] ?>)">
           🚀 Upgrade ke <?= htmlspecialchars($m['name']) ?>
         </button>
-        <?php else: ?>
-        <button type="button" class="btn btn--full" disabled style="font-size:13px;opacity:.5">
-          💳 Saldo Kurang
-        </button>
-        <?php endif; ?>
       </div>
     </div>
     <?php endforeach; ?>
@@ -310,6 +304,9 @@ require dirname(__DIR__) . '/partials/header.php';
       <div id="voucher-message" style="font-size:11px;font-weight:700;margin-top:4px;display:none;"></div>
     </div>
 
+    <!-- Balance Warning -->
+    <div id="modal-balance-warning" style="display:none;font-size:12px;color:#F44E3B;font-weight:700;margin-bottom:12px;background:#FFF0EE;border:1.5px solid var(--ink);border-radius:8px;padding:8px 10px;"></div>
+
     <div style="font-size:12px;color:#888;margin-bottom:16px">⚠️ Saldo Deposit akan dipotong langsung. Aksi ini tidak bisa dibatalkan.</div>
     <div style="display:flex;gap:8px">
       <button type="button" class="btn btn--full" style="flex:1;font-size:13px" onclick="closeConfirm()">✖ Batal</button>
@@ -336,6 +333,29 @@ require dirname(__DIR__) . '/partials/header.php';
 @keyframes slideUp { from { transform:translateY(100%); opacity:0; } to { transform:translateY(0); opacity:1; } }
 </style>
 <script>
+const userBalance = <?= (float)$user['balance_dep'] ?>;
+
+function checkAffordability(finalPrice) {
+  const btn = document.getElementById('modal-confirm-btn');
+  const warnEl = document.getElementById('modal-balance-warning');
+  if (userBalance < finalPrice) {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor = 'not-allowed';
+    btn.innerText = '💳 Saldo Kurang';
+    if (warnEl) {
+      warnEl.style.display = 'block';
+      warnEl.innerHTML = '⚠️ Saldo Deposit tidak mencukupi (Kurang <strong>Rp ' + (finalPrice - userBalance).toLocaleString('id-ID') + '</strong>). Silakan gunakan voucher diskon atau isi saldo deposit Anda.';
+    }
+  } else {
+    btn.disabled = false;
+    btn.style.opacity = '1';
+    btn.style.cursor = 'pointer';
+    btn.innerText = '✅ Ya, Upgrade!';
+    if (warnEl) warnEl.style.display = 'none';
+  }
+}
+
 function openConfirm(id, name, price, days) {
   document.getElementById('chosen-id').value = id;
   document.getElementById('modal-name').textContent  = name;
@@ -358,6 +378,9 @@ function openConfirm(id, name, price, days) {
   
   document.getElementById('discount-row').style.display = 'none';
   document.getElementById('final-price-row').style.display = 'none';
+  
+  // Check if balance is enough for original price
+  checkAffordability(price);
   
   const m = document.getElementById('upgrade-modal');
   m.style.display = 'flex';
@@ -410,6 +433,10 @@ function applyVoucher() {
       document.getElementById('applied-voucher-code').value = '';
       document.getElementById('discount-row').style.display = 'none';
       document.getElementById('final-price-row').style.display = 'none';
+      
+      // Reset affordability check to original price
+      const originalPrice = parseFloat(document.getElementById('modal-price').textContent.replace(/[^0-9]/g, ''));
+      checkAffordability(originalPrice);
     } else {
       msgEl.style.color = '#4CAF82';
       msgEl.innerText = '✅ Diskon ' + res.discount_pct + '% diterapkan!';
@@ -426,6 +453,9 @@ function applyVoucher() {
       
       document.getElementById('voucher-input-container').style.display = 'none';
       document.getElementById('toggle-voucher-btn').style.display = 'none';
+      
+      // Check affordability based on final price
+      checkAffordability(res.final_price);
     }
   })
   .catch(err => {
