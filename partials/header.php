@@ -69,22 +69,65 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
         return (string)(int)$n;
       }
       ?>
-      <div class="topbar__balances">
-        <div class="topbar__bal-item topbar__bal-item--wd" title="Saldo Penarikan: <?= format_rp((float)$user['balance_wd']) ?>">
-          <span class="topbar__bal-label">WD</span>
-          <span class="topbar__bal-val"><?= fmt_short((float)$user['balance_wd']) ?></span>
+      <!-- Balance Dropdown -->
+      <div class="bal-dropdown" id="bal-dropdown">
+        <button type="button" class="bal-dropdown__trigger" onclick="toggleBalDropdown()" aria-label="Lihat saldo">
+          <span class="bal-dropdown__icon">💰</span>
+          <span class="bal-dropdown__text"><?= fmt_short((float)$user['balance_wd']) ?></span>
+          <span class="bal-dropdown__caret">▾</span>
+        </button>
+        <div class="bal-dropdown__panel" id="bal-panel">
+          <div class="bal-dropdown__row bal-dropdown__row--wd">
+            <span class="bal-dropdown__lbl">💸 Saldo WD</span>
+            <span class="bal-dropdown__val"><?= format_rp((float)$user['balance_wd']) ?></span>
+          </div>
+          <div class="bal-dropdown__row bal-dropdown__row--dep">
+            <span class="bal-dropdown__lbl">🏦 Saldo Deposit</span>
+            <span class="bal-dropdown__val"><?= format_rp((float)$user['balance_dep']) ?></span>
+          </div>
+          <?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>
+          <div class="bal-dropdown__row bal-dropdown__row--coin">
+            <span class="bal-dropdown__lbl">🪙 Koin Plinko</span>
+            <span class="bal-dropdown__val" id="user-coins"><?= number_format((int)$user['plinko_coins']) ?></span>
+          </div>
+          <?php endif; ?>
+          <a href="/plinko-shop" class="bal-dropdown__link">🛒 Lapak Koin →</a>
         </div>
-        <div class="topbar__bal-item topbar__bal-item--dep" title="Saldo Deposit: <?= format_rp((float)$user['balance_dep']) ?>">
-          <span class="topbar__bal-label">DEP</span>
-          <span class="topbar__bal-val"><?= fmt_short((float)$user['balance_dep']) ?></span>
-        </div>
-        <?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>
-        <div class="topbar__bal-item" style="background:var(--yellow) !important; border-color:var(--ink) !important;" title="Koin Plinko: <?= (int)$user['plinko_coins'] ?>">
-          <span class="topbar__bal-label" style="color:var(--ink) !important;">🪙</span>
-          <span class="topbar__bal-val" id="user-coins" style="color:var(--ink) !important; font-weight:900;"><?= (int)$user['plinko_coins'] ?></span>
-        </div>
-        <?php endif; ?>
       </div>
+      <style>
+      .bal-dropdown{position:relative;}
+      .bal-dropdown__trigger{display:flex;align-items:center;gap:4px;background:var(--yellow);border:2px solid var(--ink);border-radius:8px;box-shadow:2px 2px 0 var(--ink);padding:5px 10px;font-weight:900;font-size:12px;color:var(--ink);cursor:pointer;transition:transform .1s,box-shadow .1s;}
+      .bal-dropdown__trigger:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink);}
+      .bal-dropdown__caret{font-size:9px;transition:transform .2s;}
+      .bal-dropdown__panel{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:2.5px solid var(--ink);border-radius:10px;box-shadow:4px 4px 0 var(--ink);min-width:200px;z-index:999;overflow:hidden;}
+      .bal-dropdown__panel.open{display:block;animation:bdFadeIn .15s ease;}
+      .bal-dropdown__caret.open{transform:rotate(180deg);}
+      @keyframes bdFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+      .bal-dropdown__row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1.5px solid #eee;font-size:12px;}
+      .bal-dropdown__row--wd{background:var(--mint);}
+      .bal-dropdown__row--dep{background:#f5f8ff;}
+      .bal-dropdown__row--coin{background:var(--yellow);}
+      .bal-dropdown__lbl{font-weight:700;color:#444;}
+      .bal-dropdown__val{font-weight:900;color:var(--ink);}
+      .bal-dropdown__link{display:block;padding:9px 14px;font-size:11px;font-weight:900;color:var(--brand);text-decoration:none;text-align:center;background:#fafafa;}
+      .bal-dropdown__link:hover{background:var(--yellow);}
+      </style>
+      <script>
+      function toggleBalDropdown(){
+        const panel=document.getElementById('bal-panel');
+        const caret=document.querySelector('.bal-dropdown__caret');
+        const isOpen=panel.classList.toggle('open');
+        caret.classList.toggle('open',isOpen);
+      }
+      document.addEventListener('click',function(e){
+        const d=document.getElementById('bal-dropdown');
+        if(d && !d.contains(e.target)){
+          document.getElementById('bal-panel').classList.remove('open');
+          const c=document.querySelector('.bal-dropdown__caret');
+          if(c)c.classList.remove('open');
+        }
+      });
+      </script>
       <a href="/notifications" class="topbar__avatar" title="Notifikasi"
          id="notif-bell-btn"
          style="background:var(--lavender);font-size:16px;text-decoration:none;position:relative">
