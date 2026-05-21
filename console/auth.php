@@ -24,6 +24,7 @@ define('STAFF_PERMISSIONS', [
     'seo'             => 'SEO Management',
     'settings'        => 'Pengaturan Umum',
     'orders'          => 'Orders',
+    'vouchers'        => 'Voucher Diskon',
 ]);
 
 // ── Determine who is logged in ─────────────────────────────────────────────
@@ -113,6 +114,7 @@ function staff_home_url(): string {
         'seo'             => '/console/seo.php',
         'settings'        => '/console/settings.php',
         'orders'          => '/console/orders.php',
+        'vouchers'        => '/console/vouchers.php',
     ];
 
     $perms = $_SESSION['staff_permissions'] ?? [];

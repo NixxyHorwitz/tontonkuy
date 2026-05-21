@@ -20,6 +20,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$codeData) { echo json_encode(['error' => 'Kode redeem tidak ditemukan atau tidak valid.']); exit; }
         if ($codeData['expires_at'] && strtotime($codeData['expires_at']) < time()) { echo json_encode(['error' => 'Kode redeem ini sudah kedaluwarsa.']); exit; }
         if ($codeData['max_claims'] > 0 && $codeData['claims_count'] >= $codeData['max_claims']) { echo json_encode(['error' => 'Kode redeem ini sudah mencapai batas kuota klaim.']); exit; }
+        if (!empty($codeData['target_users'])) {
+            $allowed = array_map('trim', explode(',', $codeData['target_users']));
+            if (!in_array($user['username'], $allowed, true) && !in_array($user['email'], $allowed, true)) {
+                echo json_encode(['error' => 'Kode redeem ini khusus untuk pengguna tertentu saja.']);
+                exit;
+            }
+        }
         
         $chk = $pdo->prepare("SELECT id FROM user_redeems WHERE user_id = ? AND code_id = ?");
         $chk->execute([$user['id'], $codeData['id']]);
@@ -60,6 +67,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $flashType = 'error';
             } elseif ($codeData['max_claims'] > 0 && $codeData['claims_count'] >= $codeData['max_claims']) {
                 $flash = 'Kode redeem ini sudah mencapai batas kuota klaim.';
+                $flashType = 'error';
+            } elseif (!empty($codeData['target_users']) && 
+                      !in_array($user['username'], array_map('trim', explode(',', $codeData['target_users'])), true) && 
+                      !in_array($user['email'], array_map('trim', explode(',', $codeData['target_users'])), true)) {
+                $flash = 'Kode redeem ini khusus untuk pengguna tertentu saja.';
                 $flashType = 'error';
             } else {
                 // Cek apakah user sudah pernah klaim

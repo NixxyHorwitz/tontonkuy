@@ -21,6 +21,15 @@ if (isset($_POST['add_code'])) {
     $level_id   = (int)($_POST['level_id'] ?? 0);
     $quota      = (int)($_POST['quota'] ?? 0);
     $expiry     = trim($_POST['expiry'] ?? '');
+    $target_users = isset($_POST['target_users']) ? trim($_POST['target_users']) : '';
+    
+    if ($target_users === '') {
+        $target_users = null;
+    } else {
+        $users_arr = array_map('trim', explode(',', $target_users));
+        $users_arr = array_filter($users_arr);
+        $target_users = !empty($users_arr) ? implode(',', $users_arr) : null;
+    }
     
     if (!$code) {
         $flash = "Kode redeem tidak boleh kosong!";
@@ -36,8 +45,8 @@ if (isset($_POST['add_code'])) {
         $r_level = $level_id > 0 ? $level_id : null;
         
         try {
-            $pdo->prepare("INSERT INTO redeem_codes (code, reward_wd, reward_dep, reward_level_id, max_claims, expires_at) VALUES (?, ?, ?, ?, ?, ?)")
-                ->execute([$code, $reward_wd, $reward_dep, $r_level, $quota, $exp_date]);
+            $pdo->prepare("INSERT INTO redeem_codes (code, reward_wd, reward_dep, reward_level_id, max_claims, expires_at, target_users) VALUES (?, ?, ?, ?, ?, ?, ?)")
+                ->execute([$code, $reward_wd, $reward_dep, $r_level, $quota, $exp_date, $target_users]);
             $flash = "Kode redeem berhasil ditambahkan!";
             $flashType = "success";
         } catch (\PDOException $e) {
@@ -108,6 +117,9 @@ require __DIR__ . '/partials/header.php';
             <td>
               <strong style="font-family:monospace;font-size:14px;letter-spacing:1px;color:var(--brand)"><?= htmlspecialchars($c['code']) ?></strong><br>
               <span class="badge bg-<?= $badge ?>" style="font-size:10px"><?= $status ?></span>
+              <?php if (!empty($c['target_users'])): ?>
+                <br><span class="badge bg-info mt-1" style="font-size:10px;cursor:help;" title="<?= htmlspecialchars($c['target_users']) ?>">🔒 Tertarget</span>
+              <?php endif; ?>
             </td>
             <td style="font-size:12px;font-weight:600;line-height:1.5">
               <?= !empty($rewards) ? implode('<br>', $rewards) : '-' ?>
@@ -182,6 +194,12 @@ require __DIR__ . '/partials/header.php';
           <label class="c-label">Tanggal Kedaluwarsa</label>
           <input type="datetime-local" name="expiry" class="c-form-control">
           <small class="text-muted" style="font-size:11px">Biarkan kosong jika kode tidak memiliki batas waktu.</small>
+        </div>
+        
+        <div class="mb-3">
+          <label class="c-label">Batasi untuk User Tertentu (Opsional)</label>
+          <input type="text" name="target_users" class="c-form-control" placeholder="Contoh: budi, andi, anton@mail.com">
+          <small class="text-muted" style="font-size:11px">Masukkan username atau email, pisahkan dengan koma. Kosongkan jika untuk semua user.</small>
         </div>
       </div>
       <div class="modal-footer border-top-0 pt-0">

@@ -274,6 +274,12 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
       Kode Redeem
     </a>
     <?php endif; ?>
+    <?php if (staff_can('vouchers')): ?>
+    <a href="/console/vouchers.php" class="c-nav-link <?= $activePage==='vouchers'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 5v2m0 4v2M5 5v2m0 4v2M3 7h18M3 17h18M3 12h18"/></svg>
+      Voucher Diskon
+    </a>
+    <?php endif; ?>
     <?php if (staff_can('video_analytics')): ?>
     <a href="/console/video_analytics.php" class="c-nav-link <?= $activePage==='video_analytics'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>

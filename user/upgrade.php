@@ -13,6 +13,51 @@ if ($user['membership_id'] && $user['membership_expires_at'] && strtotime($user[
     $active_membership = $ms->fetch();
 }
 
+// AJAX Check Voucher
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check_voucher') {
+    header('Content-Type: application/json');
+    $code = strtoupper(trim($_POST['code'] ?? ''));
+    $mid  = (int)($_POST['membership_id'] ?? 0);
+    
+    if (!$code) { echo json_encode(['error' => 'Masukkan kode voucher.']); exit; }
+    if (!$mid) { echo json_encode(['error' => 'Pilih paket terlebih dahulu.']); exit; }
+    
+    $stmt = $pdo->prepare("SELECT * FROM discount_vouchers WHERE code = ?");
+    $stmt->execute([$code]);
+    $v = $stmt->fetch();
+    
+    if (!$v) { echo json_encode(['error' => 'Kode voucher tidak ditemukan atau tidak valid.']); exit; }
+    if ($v['expires_at'] && strtotime($v['expires_at']) < time()) { echo json_encode(['error' => 'Voucher ini sudah kedaluwarsa.']); exit; }
+    if ($v['max_claims'] > 0 && $v['claims_count'] >= $v['max_claims']) { echo json_encode(['error' => 'Kuota voucher ini sudah habis.']); exit; }
+    
+    $chk = $pdo->prepare("SELECT id FROM user_discount_claims WHERE user_id = ? AND voucher_id = ?");
+    $chk->execute([$user['id'], $v['id']]);
+    if ($chk->fetch()) { echo json_encode(['error' => 'Kamu sudah menggunakan voucher ini sebelumnya.']); exit; }
+    
+    $discounts = json_decode($v['discounts'], true) ?: [];
+    if (!isset($discounts[$mid])) { echo json_encode(['error' => 'Voucher ini tidak dapat digunakan untuk paket pilihanmu.']); exit; }
+    
+    $discount_pct = (int)$discounts[$mid];
+    
+    $ms = $pdo->prepare("SELECT price FROM memberships WHERE id=? AND is_active=1");
+    $ms->execute([$mid]);
+    $price = (float)$ms->fetchColumn();
+    if (!$price) { echo json_encode(['error' => 'Paket tidak valid.']); exit; }
+    
+    $discount_amount = ($price * $discount_pct) / 100;
+    $final_price     = $price - $discount_amount;
+    
+    echo json_encode([
+        'ok' => true,
+        'discount_pct' => $discount_pct,
+        'discount_amount' => $discount_amount,
+        'discount_amount_formatted' => format_rp($discount_amount),
+        'final_price' => $final_price,
+        'final_price_formatted' => format_rp($final_price)
+    ]);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $mid = (int)($_POST['membership_id'] ?? 0);
     $ms  = $pdo->prepare("SELECT * FROM memberships WHERE id=? AND is_active=1");
@@ -23,39 +68,99 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flash = 'Paket tidak ditemukan.'; $flashType = 'error';
     } elseif ((float)$chosen['price'] == 0) {
         $flash = 'Paket Free tidak perlu upgrade.'; $flashType = 'error';
-    } elseif ((float)$user['balance_dep'] < (float)$chosen['price']) {
-        $flash = 'Saldo Deposit tidak mencukupi. Deposit terlebih dahulu.'; $flashType = 'error';
     } else {
-        try {
-            $pdo->beginTransaction();
-            // Deduct from balance_dep (with atomic check to prevent race conditions)
-            $stmt = $pdo->prepare("UPDATE users SET balance_dep=balance_dep-? WHERE id=? AND balance_dep >= ?");
-            $stmt->execute([$chosen['price'], $user['id'], $chosen['price']]);
+        $voucher_code = strtoupper(trim($_POST['voucher_code'] ?? ''));
+        $price = (float)$chosen['price'];
+        $final_price = $price;
+        $v_data = null;
+        
+        if ($voucher_code !== '') {
+            $v_stmt = $pdo->prepare("SELECT * FROM discount_vouchers WHERE code = ? FOR UPDATE");
+            $v_stmt->execute([$voucher_code]);
+            $v_data = $v_stmt->fetch();
             
-            if ($stmt->rowCount() > 0) {
-                // Insert upgrade order (auto-confirmed via balance)
-                $pdo->prepare("INSERT INTO upgrade_orders (user_id,membership_id,amount,status,confirmed_at) VALUES (?,?,?,'confirmed',NOW())")
-                    ->execute([$user['id'], $mid, $chosen['price']]);
-                // Activate membership
-                $new_expires = date('Y-m-d H:i:s', strtotime("+{$chosen['duration_days']} days"));
-                $pdo->prepare("UPDATE users SET membership_id=?, membership_expires_at=? WHERE id=?")
-                    ->execute([$mid, $new_expires, $user['id']]);
-                $pdo->commit();
-                // Refresh user
-                $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
-                $flash = '🎉 Upgrade ke ' . htmlspecialchars($chosen['name']) . ' berhasil! Berlaku hingga ' . date('d M Y', strtotime($new_expires)) . '.';
-                // Refresh active membership
-                $active_membership = $chosen;
-            } else {
-                $pdo->rollBack();
-                $flash = 'Saldo Deposit tidak mencukupi. Transaksi digagalkan.'; $flashType = 'error';
+            if (!$v_data) {
+                $flash = 'Voucher diskon tidak valid.'; $flashType = 'error';
+                goto end_post;
             }
-        } catch (\Throwable $e) {
-            $pdo->rollBack();
-            $flash = 'Terjadi kesalahan. Silakan coba lagi.'; $flashType = 'error';
+            if ($v_data['expires_at'] && strtotime($v_data['expires_at']) < time()) {
+                $flash = 'Voucher diskon sudah kedaluwarsa.'; $flashType = 'error';
+                goto end_post;
+            }
+            if ($v_data['max_claims'] > 0 && $v_data['claims_count'] >= $v_data['max_claims']) {
+                $flash = 'Kuota voucher diskon sudah habis.'; $flashType = 'error';
+                goto end_post;
+            }
+            
+            $chk = $pdo->prepare("SELECT id FROM user_discount_claims WHERE user_id = ? AND voucher_id = ?");
+            $chk->execute([$user['id'], $v_data['id']]);
+            if ($chk->fetch()) {
+                $flash = 'Kamu sudah menggunakan voucher diskon ini sebelumnya.'; $flashType = 'error';
+                goto end_post;
+            }
+            
+            $discounts = json_decode($v_data['discounts'], true) ?: [];
+            if (!isset($discounts[$mid])) {
+                $flash = 'Voucher diskon tidak dapat digunakan untuk paket pilihanmu.'; $flashType = 'error';
+                goto end_post;
+            }
+            
+            $pct = (int)$discounts[$mid];
+            $discount_amount = ($price * $pct) / 100;
+            $final_price = $price - $discount_amount;
+        }
+        
+        if ((float)$user['balance_dep'] < $final_price) {
+            $flash = 'Saldo Deposit tidak mencukupi. Deposit terlebih dahulu.'; $flashType = 'error';
+        } else {
+            try {
+                $pdo->beginTransaction();
+                
+                $stmt = $pdo->prepare("UPDATE users SET balance_dep=balance_dep-? WHERE id=? AND balance_dep >= ?");
+                $stmt->execute([$final_price, $user['id'], $final_price]);
+                
+                if ($stmt->rowCount() > 0) {
+                    if ($v_data) {
+                        $v_lock = $pdo->prepare("SELECT claims_count, max_claims FROM discount_vouchers WHERE id = ? FOR UPDATE");
+                        $v_lock->execute([$v_data['id']]);
+                        $v_current = $v_lock->fetch();
+                        if ($v_current['max_claims'] > 0 && $v_current['claims_count'] >= $v_current['max_claims']) {
+                            throw new \Exception("Kuota voucher diskon sudah habis.");
+                        }
+                        
+                        $pdo->prepare("INSERT INTO user_discount_claims (user_id, voucher_id) VALUES (?, ?)")
+                            ->execute([$user['id'], $v_data['id']]);
+                        
+                        $pdo->prepare("UPDATE discount_vouchers SET claims_count = claims_count + 1 WHERE id = ?")
+                            ->execute([$v_data['id']]);
+                    }
+                    
+                    $pdo->prepare("INSERT INTO upgrade_orders (user_id,membership_id,amount,status,confirmed_at) VALUES (?,?,?,'confirmed',NOW())")
+                        ->execute([$user['id'], $mid, $final_price]);
+                    
+                    $new_expires = date('Y-m-d H:i:s', strtotime("+{$chosen['duration_days']} days"));
+                    $pdo->prepare("UPDATE users SET membership_id=?, membership_expires_at=? WHERE id=?")
+                        ->execute([$mid, $new_expires, $user['id']]);
+                    
+                    $pdo->commit();
+                    
+                    $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
+                    $flash = '🎉 Upgrade ke ' . htmlspecialchars($chosen['name']) . ' berhasil! Berlaku hingga ' . date('d M Y', strtotime($new_expires)) . '.';
+                    $active_membership = $chosen;
+                } else {
+                    $pdo->rollBack();
+                    $flash = 'Saldo Deposit tidak mencukupi. Transaksi digagalkan.'; $flashType = 'error';
+                }
+            } catch (\Throwable $e) {
+                if ($pdo->inTransaction()) {
+                    $pdo->rollBack();
+                }
+                $flash = 'Terjadi kesalahan: ' . $e->getMessage(); $flashType = 'error';
+            }
         }
     }
 }
+end_post:
 
 $pageTitle  = 'Upgrade Paket — TontonKuy';
 $activePage = 'upgrade';
@@ -130,6 +235,7 @@ require dirname(__DIR__) . '/partials/header.php';
 <form method="POST" id="upgrade-form">
   <?= csrf_field() ?>
   <input type="hidden" name="membership_id" id="chosen-id" value="">
+  <input type="hidden" name="voucher_code" id="applied-voucher-code" value="">
   <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
     <?php $colors = ['#FF6B35','#4E9BFF','#9C6FFF','#4CAF82'];
     foreach ($memberships as $i => $m):
@@ -188,9 +294,22 @@ require dirname(__DIR__) . '/partials/header.php';
     <div style="background:var(--yellow);border:2px solid var(--ink);border-radius:12px;padding:14px 16px;margin-bottom:16px">
       <div style="font-size:12px;color:#666;font-weight:700">Paket dipilih</div>
       <div style="font-size:18px;font-weight:900" id="modal-name">—</div>
-      <div style="font-size:13px;font-weight:700;margin-top:4px">Harga: <span id="modal-price">—</span></div>
-      <div style="font-size:12px;color:#666">Berlaku <span id="modal-days">—</span> hari setelah aktivasi</div>
+      <div style="font-size:13px;font-weight:700;margin-top:4px" id="price-row">Harga: <span id="modal-price">—</span></div>
+      <div style="font-size:13px;font-weight:700;margin-top:4px;color:#FF6B35;display:none" id="discount-row">Diskon: -<span id="modal-discount">—</span> (<span id="modal-pct">—</span>)</div>
+      <div style="font-size:15px;font-weight:900;margin-top:4px;border-top:1.5px dashed var(--ink);padding-top:4px;display:none" id="final-price-row">Total Bayar: <span id="modal-final-price">—</span></div>
+      <div style="font-size:12px;color:#666;margin-top:4px">Berlaku <span id="modal-days">—</span> hari setelah aktivasi</div>
     </div>
+    
+    <!-- Voucher Coupon Section -->
+    <div style="margin-bottom:16px;">
+      <button type="button" id="toggle-voucher-btn" onclick="toggleVoucherInput()" style="background:none;border:none;color:var(--brand);font-weight:800;font-size:12px;cursor:pointer;padding:0;text-decoration:underline;outline:none;">🎟️ Apa km punya voucher diskon?</button>
+      <div id="voucher-input-container" style="display:none;margin-top:8px;gap:8px;">
+        <input type="text" id="voucher-code-input" placeholder="KODE VOUCHER" style="flex:1;border:2px solid var(--ink);border-radius:8px;padding:6px 12px;font-weight:900;text-transform:uppercase;font-size:12px;outline:none;">
+        <button type="button" onclick="applyVoucher()" style="background:var(--brand);color:#fff;border:2px solid var(--ink);border-radius:8px;padding:6px 12px;font-weight:900;font-size:12px;cursor:pointer;box-shadow:2px 2px 0 var(--ink);">Gunakan</button>
+      </div>
+      <div id="voucher-message" style="font-size:11px;font-weight:700;margin-top:4px;display:none;"></div>
+    </div>
+
     <div style="font-size:12px;color:#888;margin-bottom:16px">⚠️ Saldo Deposit akan dipotong langsung. Aksi ini tidak bisa dibatalkan.</div>
     <div style="display:flex;gap:8px">
       <button type="button" class="btn btn--full" style="flex:1;font-size:13px" onclick="closeConfirm()">✖ Batal</button>
@@ -222,6 +341,24 @@ function openConfirm(id, name, price, days) {
   document.getElementById('modal-name').textContent  = name;
   document.getElementById('modal-price').textContent = 'Rp ' + price.toLocaleString('id-ID');
   document.getElementById('modal-days').textContent  = days;
+  
+  // Reset voucher states
+  document.getElementById('applied-voucher-code').value = '';
+  const codeInput = document.getElementById('voucher-code-input');
+  if (codeInput) codeInput.value = '';
+  const msgEl = document.getElementById('voucher-message');
+  if (msgEl) msgEl.style.display = 'none';
+  const container = document.getElementById('voucher-input-container');
+  if (container) container.style.display = 'none';
+  const toggleBtn = document.getElementById('toggle-voucher-btn');
+  if (toggleBtn) {
+    toggleBtn.style.display = 'inline-block';
+    toggleBtn.innerText = '🎟️ Apa km punya voucher diskon?';
+  }
+  
+  document.getElementById('discount-row').style.display = 'none';
+  document.getElementById('final-price-row').style.display = 'none';
+  
   const m = document.getElementById('upgrade-modal');
   m.style.display = 'flex';
   document.body.style.overflow = 'hidden';
@@ -229,6 +366,73 @@ function openConfirm(id, name, price, days) {
 function closeConfirm() {
   document.getElementById('upgrade-modal').style.display = 'none';
   document.body.style.overflow = '';
+}
+function toggleVoucherInput() {
+  const container = document.getElementById('voucher-input-container');
+  const toggleBtn = document.getElementById('toggle-voucher-btn');
+  if (container.style.display === 'none') {
+    container.style.display = 'flex';
+    toggleBtn.innerText = '✖ Tutup';
+  } else {
+    container.style.display = 'none';
+    toggleBtn.innerText = '🎟️ Apa km punya voucher diskon?';
+  }
+}
+function applyVoucher() {
+  const codeInput = document.getElementById('voucher-code-input');
+  const code = codeInput.value.toUpperCase().trim();
+  const mid = document.getElementById('chosen-id').value;
+  const msgEl = document.getElementById('voucher-message');
+  
+  if (!code) {
+    msgEl.style.color = '#F44E3B';
+    msgEl.innerText = '⚠️ Masukkan kode voucher.';
+    msgEl.style.display = 'block';
+    return;
+  }
+  
+  msgEl.style.color = '#777';
+  msgEl.innerText = '⏳ Mengecek voucher...';
+  msgEl.style.display = 'block';
+  
+  fetch('', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=check_voucher&code=' + encodeURIComponent(code) + '&membership_id=' + encodeURIComponent(mid) + '&_csrf=' + encodeURIComponent(document.querySelector('input[name="_csrf"]')?.value || '')
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.error) {
+      msgEl.style.color = '#F44E3B';
+      msgEl.innerText = '❌ ' + res.error;
+      msgEl.style.display = 'block';
+      
+      document.getElementById('applied-voucher-code').value = '';
+      document.getElementById('discount-row').style.display = 'none';
+      document.getElementById('final-price-row').style.display = 'none';
+    } else {
+      msgEl.style.color = '#4CAF82';
+      msgEl.innerText = '✅ Diskon ' + res.discount_pct + '% diterapkan!';
+      msgEl.style.display = 'block';
+      
+      document.getElementById('applied-voucher-code').value = code;
+      
+      document.getElementById('modal-discount').textContent = res.discount_amount_formatted;
+      document.getElementById('modal-pct').textContent = res.discount_pct + '%';
+      document.getElementById('modal-final-price').textContent = res.final_price_formatted;
+      
+      document.getElementById('discount-row').style.display = 'block';
+      document.getElementById('final-price-row').style.display = 'block';
+      
+      document.getElementById('voucher-input-container').style.display = 'none';
+      document.getElementById('toggle-voucher-btn').style.display = 'none';
+    }
+  })
+  .catch(err => {
+    msgEl.style.color = '#F44E3B';
+    msgEl.innerText = '❌ Gagal mengecek voucher.';
+    msgEl.style.display = 'block';
+  });
 }
 function submitUpgrade() {
   const btn = document.getElementById('modal-confirm-btn');
