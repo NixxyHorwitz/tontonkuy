@@ -177,10 +177,11 @@ switch ($action) {
             $inlineKbd['inline_keyboard'][] = [['text' => "🖥️ Buka Console", 'url' => $consoleLink]];
         }
         if ($userId) {
-            $u_btns = [];
-            
-            // Cek Detail always available via callback
-            $u_btns[] = ['text' => "ℹ️ Cek Detail", 'callback_data' => "uinfo:{$userId}"];
+            // First row of user-specific actions: History and Refund
+            $inlineKbd['inline_keyboard'][] = [
+                ['text' => "📜 Cek History Depo WD", 'callback_data' => "txnhist:{$userId}"],
+                ['text' => "💸 Refund All Holded WD", 'callback_data' => "refhold:{$userId}"]
+            ];
             
             // Fallback siteUrl if empty
             $actualSiteUrl = $siteUrl;
@@ -192,10 +193,10 @@ switch ($action) {
             if ($actualSiteUrl) {
                 // We use callback_data because web_app is strictly forbidden in group chats by Telegram API.
                 // We will catch this callback and send the admin a Private Message (PM) containing the web_app button.
-                $u_btns[] = ['text' => "✏️ Edit Saldo", 'callback_data' => "req_edit:{$userId}"];
+                $inlineKbd['inline_keyboard'][] = [
+                    ['text' => "✏️ Edit Saldo", 'callback_data' => "req_edit:{$userId}"]
+                ];
             }
-            
-            $inlineKbd['inline_keyboard'][] = $u_btns;
         }
         $inlineKbd['inline_keyboard'][] = [
             ['text' => "🔒 Tutup", 'callback_data' => "close_sess:{$sessId}"],
@@ -209,13 +210,33 @@ switch ($action) {
             ['text' => "🗑️ Hapus Pesan Ini", 'callback_data' => "del_msg:{$sessId}"]
         ];
 
+        $lvl = 'Free';
+        $balance_wd = 0.0;
+        $balance_dep = 0.0;
+        if ($userId) {
+            $uStmt = $pdo->prepare("SELECT u.*, m.name as membership_name FROM users u LEFT JOIN memberships m ON m.id=u.membership_id WHERE u.id=?");
+            $uStmt->execute([$userId]);
+            $uInfo = $uStmt->fetch();
+            if ($uInfo) {
+                $lvl = $uInfo['membership_name'] ?: 'Free';
+                $balance_wd = (float)$uInfo['balance_wd'];
+                $balance_dep = (float)$uInfo['balance_dep'];
+            }
+        }
+
         if ($chatId) {
-            $threadTitle = "{$userName}" . ($userEmail ? " ({$userEmail})" : '') . " #S{$sessId}";
-            $intro = "\xF0\x9F\x92\xAC Sesi Chat Baru\n" 
-                   . "\xF0\x9F\x91\xA4 User: {$userName}"
-                   . ($userEmail ? "\n\xF0\x9F\x93\xA7 Email: {$userEmail}" : '')
-                   . "\n\xF0\x9F\x94\x91 Session: #{$sessId}"
-                   . "\n\xF0\x9F\xA4\x96 Mode: " . ($initMode === 'admin' ? 'Admin' : 'AI');
+            $threadTitle = "{$userName} #{$sessId}";
+            $intro = "💬 Sesi Chat Baru\n" 
+                   . "👤 User: {$userName}\n";
+            if ($userId) {
+                $intro .= "🏅 Level: {$lvl}\n"
+                        . "💰 Saldo WD: Rp" . number_format($balance_wd, 0, ',', '.') . "\n"
+                        . "💳 Saldo Depo: Rp" . number_format($balance_dep, 0, ',', '.') . "\n";
+            } else {
+                $intro .= "🏅 Level: Guest\n";
+            }
+            $intro .= "🔑 Session: #{$sessId}\n"
+                    . "🤖 Mode: " . ($initMode === 'admin' ? 'Admin' : 'AI');
 
             // Always try to create Forum Topic first
             $tgRes = tg_api($pdo, 'createForumTopic', [
@@ -520,6 +541,120 @@ switch ($action) {
                     'callback_query_id' => $cbId,
                     'text'              => $ackText,
                     'show_alert'        => false,
+                ]);
+                echo '{}'; exit;
+            }
+
+            if ($cbAction === 'txnhist' && $cbSessId) {
+                $uId = $cbSessId;
+                $uStmt = $pdo->prepare("SELECT username FROM users WHERE id=?");
+                $uStmt->execute([$uId]);
+                $uInfo = $uStmt->fetch();
+                
+                if ($uInfo) {
+                    // Fetch recent deposits (last 5)
+                    $depStmt = $pdo->prepare("SELECT amount, status, created_at FROM deposits WHERE user_id=? ORDER BY created_at DESC LIMIT 5");
+                    $depStmt->execute([$uId]);
+                    $deposits = $depStmt->fetchAll();
+                    
+                    // Fetch recent withdrawals (last 5)
+                    $wdStmt = $pdo->prepare("SELECT amount, status, created_at FROM withdrawals WHERE user_id=? ORDER BY created_at DESC LIMIT 5");
+                    $wdStmt->execute([$uId]);
+                    $withdrawals = $wdStmt->fetchAll();
+                    
+                    $txt = "📜 <b>History Depo & WD: @{$uInfo['username']}</b>\n\n";
+                    
+                    $txt .= "<b>⬆️ DEPOSIT (Last 5):</b>\n";
+                    if (empty($deposits)) {
+                        $txt .= "<i>(Belum ada deposit)</i>\n";
+                    } else {
+                        foreach ($deposits as $d) {
+                            $statusIcon = $d['status'] === 'confirmed' ? '✅' : ($d['status'] === 'pending' ? '⏳' : '❌');
+                            $txt .= "• " . date('d M H:i', strtotime($d['created_at'])) . ": Rp" . number_format((float)$d['amount'], 0, ',', '.') . " {$statusIcon} " . ucfirst($d['status']) . "\n";
+                        }
+                    }
+                    
+                    $txt .= "\n<b>💸 WITHDRAW (Last 5):</b>\n";
+                    if (empty($withdrawals)) {
+                        $txt .= "<i>(Belum ada withdraw)</i>\n";
+                    } else {
+                        foreach ($withdrawals as $w) {
+                            $statusIcon = $w['status'] === 'approved' ? '✅' : ($w['status'] === 'pending' ? '⏳' : ($w['status'] === 'hold' ? '⏸' : '❌'));
+                            $txt .= "• " . date('d M H:i', strtotime($w['created_at'])) . ": Rp" . number_format((float)$w['amount'], 0, ',', '.') . " {$statusIcon} " . ucfirst($w['status']) . "\n";
+                        }
+                    }
+                         
+                    tg_api($pdo, 'sendMessage', [
+                        'chat_id' => $cb['message']['chat']['id'],
+                        'message_thread_id' => $cb['message']['message_thread_id'] ?? null,
+                        'text' => $txt,
+                        'parse_mode' => 'HTML'
+                    ]);
+                    $ackText = "History terkirim!";
+                } else {
+                    $ackText = "User tidak ditemukan";
+                }
+                
+                tg_api($pdo, 'answerCallbackQuery', [
+                    'callback_query_id' => $cbId,
+                    'text'              => $ackText,
+                    'show_alert'        => false,
+                ]);
+                echo '{}'; exit;
+            }
+
+            if ($cbAction === 'refhold' && $cbSessId) {
+                $uId = $cbSessId;
+                $uStmt = $pdo->prepare("SELECT username FROM users WHERE id=?");
+                $uStmt->execute([$uId]);
+                $uInfo = $uStmt->fetch();
+                
+                if ($uInfo) {
+                    $pdo->beginTransaction();
+                    try {
+                        $holds = $pdo->prepare("SELECT * FROM withdrawals WHERE user_id=? AND status='hold' FOR UPDATE");
+                        $holds->execute([$uId]);
+                        $holds = $holds->fetchAll();
+                        
+                        if (empty($holds)) {
+                            $ackText = "Tidak ada WD Hold untuk user ini!";
+                            $pdo->commit();
+                        } else {
+                            $total = 0;
+                            foreach ($holds as $h) {
+                                $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$h['amount'], $h['user_id']]);
+                                $pdo->prepare("UPDATE withdrawals SET status='rejected',admin_note=?,processed_at=NOW() WHERE id=?")
+                                    ->execute(['Bulk refund Hold oleh admin via Telegram', $h['id']]);
+                                $total += $h['amount'];
+                            }
+                            $pdo->commit();
+                            
+                            $txt = "💸 <b>Bulk Refund WD Hold Berhasil!</b>\n"
+                                 . "User: @{$uInfo['username']}\n"
+                                 . "Jumlah Transaksi: " . count($holds) . " WD\n"
+                                 . "Total Refund: <b>Rp" . number_format($total, 0, ',', '.') . "</b>\n"
+                                 . "Saldo WD user telah dikembalikan.";
+                                 
+                            tg_api($pdo, 'sendMessage', [
+                                'chat_id' => $cb['message']['chat']['id'],
+                                'message_thread_id' => $cb['message']['message_thread_id'] ?? null,
+                                'text' => $txt,
+                                'parse_mode' => 'HTML'
+                            ]);
+                            $ackText = "Berhasil me-refund " . count($holds) . " WD Hold!";
+                        }
+                    } catch (\Throwable $th) {
+                        $pdo->rollBack();
+                        $ackText = "Error: " . $th->getMessage();
+                    }
+                } else {
+                    $ackText = "User tidak ditemukan";
+                }
+                
+                tg_api($pdo, 'answerCallbackQuery', [
+                    'callback_query_id' => $cbId,
+                    'text'              => $ackText,
+                    'show_alert'        => true,
                 ]);
                 echo '{}'; exit;
             }
