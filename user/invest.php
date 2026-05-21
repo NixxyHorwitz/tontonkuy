@@ -100,27 +100,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $investments = $stmt->fetchAll();
             
             $total_claim_amount = 0.0;
+            $current_time = time();
             
             foreach ($investments as $inv) {
                 $purchase_time = strtotime($inv['created_at']);
-                $elapsed_days = (int)floor((time() - $purchase_time) / 86400);
-                $capped_days = min($elapsed_days, (int)$inv['duration_days']);
-                $claimable_days = max(0, $capped_days - (int)$inv['days_passed']);
+                $duration_seconds = (int)$inv['duration_days'] * 86400;
+                $end_time = $purchase_time + $duration_seconds;
+                $claim_time = min($current_time, $end_time);
                 
-                if ($claimable_days > 0) {
-                    $profit = $claimable_days * (float)$inv['daily_profit'];
-                    $total_claim_amount += $profit;
+                $last_claim_time = strtotime($inv['last_profit_claimed_at']);
+                $seconds_accrued = max(0, $claim_time - $last_claim_time);
+                
+                if ($seconds_accrued > 0) {
+                    $daily_profit = (float)$inv['daily_profit'];
+                    $profit_per_second = $daily_profit / 86400.0;
+                    $profit = round($seconds_accrued * $profit_per_second, 2);
                     
-                    $new_days_passed = (int)$inv['days_passed'] + $claimable_days;
-                    $new_status = ($new_days_passed >= (int)$inv['duration_days']) ? 'completed' : 'active';
-                    
-                    // Update user investment status
-                    $upd = $pdo->prepare("UPDATE user_investments SET days_passed = ?, last_profit_claimed_at = NOW(), status = ? WHERE id = ?");
-                    $upd->execute([$new_days_passed, $new_status, $inv['id']]);
-                    
-                    // Write to profit logs
-                    $log = $pdo->prepare("INSERT INTO investment_profit_logs (user_id, user_investment_id, amount, days_claimed, claimed_at) VALUES (?, ?, ?, ?, NOW())");
-                    $log->execute([$user['id'], $inv['id'], $profit, $claimable_days]);
+                    if ($profit > 0) {
+                        $total_claim_amount += $profit;
+                        
+                        $new_days_passed = (int)floor(($claim_time - $purchase_time) / 86400);
+                        $new_days_passed = min($new_days_passed, (int)$inv['duration_days']);
+                        $new_status = ($new_days_passed >= (int)$inv['duration_days']) ? 'completed' : 'active';
+                        
+                        // Update user investment
+                        $upd = $pdo->prepare("UPDATE user_investments SET days_passed = ?, last_profit_claimed_at = FROM_UNIXTIME(?), status = ? WHERE id = ?");
+                        $upd->execute([$new_days_passed, $claim_time, $new_status, $inv['id']]);
+                        
+                        // Write to profit logs
+                        $days_claimed = (int)round($seconds_accrued / 86400);
+                        $log = $pdo->prepare("INSERT INTO investment_profit_logs (user_id, user_investment_id, amount, days_claimed, claimed_at) VALUES (?, ?, ?, ?, FROM_UNIXTIME(?))");
+                        $log->execute([$user['id'], $inv['id'], $profit, $days_claimed, $claim_time]);
+                    }
                 }
             }
             
@@ -136,12 +147,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $us->execute([$user['id']]);
                 $user = $us->fetch();
                 
-                $_SESSION['invest_flash'] = '✅ Berhasil mengklaim total profit ' . format_rp($total_claim_amount) . ' ke saldo WD!';
+                $formatted_amount = floor($total_claim_amount) == $total_claim_amount ? format_rp($total_claim_amount) : 'Rp ' . number_format($total_claim_amount, 2, ',', '.');
+                $_SESSION['invest_flash'] = '✅ Berhasil mengklaim total profit ' . $formatted_amount . ' ke saldo WD!';
                 $_SESSION['invest_flash_type'] = 'success';
                 redirect('/invest');
             } else {
                 $pdo->rollBack();
-                $_SESSION['invest_flash'] = 'ℹ️ Belum ada profit harian baru yang siap diklaim.';
+                $_SESSION['invest_flash'] = 'ℹ️ Belum ada profit baru yang siap diklaim.';
                 $_SESSION['invest_flash_type'] = 'info';
                 redirect('/invest');
             }
@@ -159,7 +171,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $packages = $pdo->query("SELECT * FROM investment_packages WHERE is_active = 1 ORDER BY price ASC, id ASC")->fetchAll();
 
 $user_investments = $pdo->prepare("
-    SELECT ui.*, IFNULL(ip.name, 'Paket Investasi') as package_name
+    SELECT ui.*, IFNULL(ip.name, 'Paket Investasi') as package_name,
+           COALESCE((SELECT SUM(amount) FROM investment_profit_logs WHERE user_investment_id = ui.id), 0) as total_claimed
     FROM user_investments ui
     LEFT JOIN investment_packages ip ON ui.package_id = ip.id
     WHERE ui.user_id = ?
@@ -179,12 +192,13 @@ $completed_portfolios = [];
 foreach ($user_investments as $ui) {
     if ($ui['status'] === 'active') {
         $purchase_time = strtotime($ui['created_at']);
-        $elapsed_days = (int)floor((time() - $purchase_time) / 86400);
-        $capped_days = min($elapsed_days, (int)$ui['duration_days']);
-        $claimable_days = max(0, $capped_days - (int)$ui['days_passed']);
-        $claimable_profit = $claimable_days * (float)$ui['daily_profit'];
+        $end_time = $purchase_time + ((int)$ui['duration_days'] * 86400);
+        $current_time = min(time(), $end_time);
+        $last_claim_time = strtotime($ui['last_profit_claimed_at']);
         
-        $ui['claimable_days'] = $claimable_days;
+        $seconds_accrued = max(0, $current_time - $last_claim_time);
+        $claimable_profit = $seconds_accrued * ((float)$ui['daily_profit'] / 86400.0);
+        
         $ui['claimable_profit'] = $claimable_profit;
         
         $total_active_invested += (float)$ui['amount'];
@@ -480,20 +494,14 @@ require dirname(__DIR__) . '/partials/header.php';
   <!-- Claim Box -->
   <div class="claimable-bar">
     <div class="claimable-bar__title">💸 Akumulasi Profit Siap Klaim</div>
-    <div class="claimable-bar__val" id="global-claimable-text"><?= format_rp($total_claimable_profit) ?></div>
+    <div class="claimable-bar__val" id="global-claimable-text">Rp <?= number_format($total_claimable_profit, 2, ',', '.') ?></div>
     
     <form method="POST" style="margin-top:4px" onsubmit="return confirm('Klaim semua profit investasi yang tersedia saat ini?')">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="claim">
-      <?php if ($total_claimable_profit > 0): ?>
-        <button type="submit" class="btn btn--primary btn--full btn--sm" style="box-shadow: 2px 2px 0 var(--ink); background: var(--brand); color:#fff; font-weight:900;">
-          💸 Klaim Semua Profit Sekarang
-        </button>
-      <?php else: ?>
-        <button type="button" class="btn btn--ghost btn--full btn--sm" disabled style="box-shadow: 2px 2px 0 var(--ink); color:#888; font-weight:900; background:#eee; cursor: not-allowed;">
-          🔒 Belum Ada Profit Baru
-        </button>
-      <?php endif; ?>
+      <button type="submit" id="global-claim-btn" class="btn btn--primary btn--full btn--sm" style="box-shadow: 2px 2px 0 var(--ink); background: var(--brand); color:#fff; font-weight:900;">
+        💸 Klaim Semua Profit Sekarang
+      </button>
     </form>
   </div>
 </div>
@@ -521,7 +529,7 @@ require dirname(__DIR__) . '/partials/header.php';
         
         <div class="package-card__details">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-            <span>Kontrak Kontrak:</span>
+            <span>Durasi Kontrak:</span>
             <span><strong><?= $pkg['duration_days'] ?> Hari</strong></span>
           </div>
           <div style="display:flex;justify-content:space-between;margin-bottom:4px">
@@ -533,7 +541,7 @@ require dirname(__DIR__) . '/partials/header.php';
             <span style="color:var(--green)"><strong>+<?= format_rp((float)$pkg['daily_profit']) ?>/hari</strong></span>
           </div>
           <div style="display:flex;justify-content:space-between;border-top:1px dashed #ccc;padding-top:4px;margin-top:4px">
-            <span>Total Pengembalian:</span>
+            <span>Total Keuntungan:</span>
             <span style="color:var(--blue)"><strong><?= format_rp((float)$pkg['daily_profit'] * $pkg['duration_days']) ?></strong></span>
           </div>
         </div>
@@ -562,8 +570,10 @@ require dirname(__DIR__) . '/partials/header.php';
     <?php foreach ($active_portfolios as $ui): ?>
       <div class="portfolio-card active-portfolio-card" 
            data-purchase-time="<?= strtotime($ui['created_at']) ?>" 
-           data-duration-days="<?= $ui['duration_days'] ?>" 
-           data-days-passed="<?= $ui['days_passed'] ?>">
+           data-last-claim-time="<?= strtotime($ui['last_profit_claimed_at']) ?>"
+           data-daily-profit="<?= (float)$ui['daily_profit'] ?>"
+           data-duration-days="<?= (int)$ui['duration_days'] ?>"
+           data-total-claimed="<?= (float)$ui['total_claimed'] ?>">
         <div class="portfolio-card__title">
           <span><?= htmlspecialchars($ui['package_name']) ?></span>
           <span class="badge badge--success">Aktif</span>
@@ -575,16 +585,22 @@ require dirname(__DIR__) . '/partials/header.php';
         
         <div class="portfolio-card__progress-lbl">
           <span>Progress Siklus: <strong><?= $ui['days_passed'] ?> / <?= $ui['duration_days'] ?> Hari</strong></span>
-          <span>Claimed: <strong><?= format_rp($ui['days_passed'] * (float)$ui['daily_profit']) ?></strong></span>
+          <span>Claimed: <strong><?= format_rp((float)$ui['total_claimed']) ?></strong></span>
         </div>
         <div class="portfolio-card__bar">
           <div class="portfolio-card__fill" style="width: <?= ($ui['days_passed'] / $ui['duration_days']) * 100 ?>%"></div>
         </div>
         
-        <!-- Countdown Clock -->
+        <!-- Real-time Claimable Profit Box -->
+        <div style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;background:rgba(255,107,53,0.05);border:1.5px dashed var(--brand);border-radius:8px;padding:8px 10px;">
+          <span style="font-size:11.5px;font-weight:800;color:#555">Profit Siap Klaim:</span>
+          <span class="card-claimable-profit" style="font-size:13.5px;font-weight:900;color:var(--brand)">Rp 0,00</span>
+        </div>
+        
+        <!-- Sisa Kontrak Timer -->
         <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between">
-          <span style="font-size:11px;font-weight:800;color:#666">Siklus Selanjutnya:</span>
-          <span class="countdown-timer" style="font-size:12px;font-weight:900;letter-spacing:-0.2px">⏱ Menghitung...</span>
+          <span style="font-size:11px;font-weight:800;color:#666">Sisa Kontrak:</span>
+          <span class="countdown-timer" style="font-size:11.5px;font-weight:900;color:var(--ink);letter-spacing:-0.2px">⏱ Menghitung...</span>
         </div>
       </div>
     <?php endforeach; ?>
@@ -637,10 +653,10 @@ require dirname(__DIR__) . '/partials/header.php';
           <div class="list-item__icon" style="background:var(--lime);width:30px;height:30px;font-size:14px">📈</div>
           <div class="list-item__body">
             <div class="list-item__title" style="font-size:13px"><?= htmlspecialchars($log['package_name']) ?></div>
-            <div class="list-item__sub" style="font-size:10px">Klaim: <?= $log['days_claimed'] ?> Siklus Hari · <?= date('d M Y H:i', strtotime($log['claimed_at'])) ?></div>
+            <div class="list-item__sub" style="font-size:10px">Klaim: <?= $log['days_claimed'] > 0 ? $log['days_claimed'] . ' Hari' : 'Real-time' ?> · <?= date('d M Y H:i', strtotime($log['claimed_at'])) ?></div>
           </div>
           <div class="list-item__right">
-            <div class="list-item__amount list-item__amount--green" style="font-size:12px">+<?= format_rp((float)$log['amount']) ?></div>
+            <div class="list-item__amount list-item__amount--green" style="font-size:12px">+<?= floor((float)$log['amount']) == (float)$log['amount'] ? format_rp((float)$log['amount']) : 'Rp ' . number_format((float)$log['amount'], 2, ',', '.') ?></div>
           </div>
         </div>
       <?php endforeach; ?>
@@ -865,64 +881,82 @@ function initInvestPage() {
   });
 
   const cards = document.querySelectorAll(".active-portfolio-card");
+  const globalClaimText = document.getElementById("global-claimable-text");
+  const globalClaimBtn = document.getElementById("global-claim-btn");
   
+  function formatRupiah(num) {
+    return 'Rp ' + Math.max(0, num).toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
   function updateTimers() {
     const now = Math.floor(Date.now() / 1000);
+    let totalGlobalClaimable = 0;
     
     cards.forEach(card => {
       const purchaseTime = parseInt(card.dataset.purchaseTime);
+      const lastClaimTime = parseInt(card.dataset.lastClaimTime);
+      const dailyProfit = parseFloat(card.dataset.dailyProfit);
       const durationDays = parseInt(card.dataset.durationDays);
-      const daysPassed = parseInt(card.dataset.daysPassed);
+      
       const timerEl = card.querySelector(".countdown-timer");
+      const profitEl = card.querySelector(".card-claimable-profit");
       
-      if (!timerEl) return;
+      const endTime = purchaseTime + (durationDays * 86400);
+      const claimTime = Math.min(now, endTime);
       
-      // Elapsed days since purchase
-      const elapsedDays = Math.floor((now - purchaseTime) / 86400);
+      // Calculate accrued seconds since last claim
+      const secondsAccrued = Math.max(0, claimTime - lastClaimTime);
+      const profitPerSecond = dailyProfit / 86400.0;
+      const claimableProfit = secondsAccrued * profitPerSecond;
       
-      if (daysPassed >= durationDays) {
-        timerEl.innerHTML = "🏁 Selesai";
-        timerEl.style.color = "var(--green)";
-        return;
+      totalGlobalClaimable += claimableProfit;
+      
+      if (profitEl) {
+        profitEl.textContent = formatRupiah(claimableProfit);
       }
       
-      const nextAccrualDay = elapsedDays + 1;
-      
-      if (nextAccrualDay > durationDays) {
-        timerEl.innerHTML = "🎉 Klaim Tersedia!";
-        timerEl.style.color = "var(--green)";
-        return;
-      }
-      
-      const nextAccrualTime = purchaseTime + nextAccrualDay * 86400;
-      const remainingSeconds = nextAccrualTime - now;
-      
-      // Determine if a claim is currently available
-      const cappedDays = Math.min(elapsedDays, durationDays);
-      const claimableDays = Math.max(0, cappedDays - daysPassed);
-      
-      if (claimableDays > 0) {
-        timerEl.style.color = "var(--green)";
+      if (timerEl) {
+        const remainingSeconds = endTime - now;
         if (remainingSeconds <= 0) {
-          timerEl.innerHTML = "🎉 Klaim Tersedia!";
+          timerEl.innerHTML = "🏁 Selesai";
+          timerEl.style.color = "var(--green)";
         } else {
-          const h = String(Math.floor(remainingSeconds / 3600)).padStart(2, '0');
+          // Format sisa waktu: X Hari hh:mm:ss
+          const d = Math.floor(remainingSeconds / 86400);
+          const h = String(Math.floor((remainingSeconds % 86400) / 3600)).padStart(2, '0');
           const m = String(Math.floor((remainingSeconds % 3600) / 60)).padStart(2, '0');
           const s = String(remainingSeconds % 60).padStart(2, '0');
-          timerEl.innerHTML = `⏱ ${h}:${m}:${s} (Klaim Tersedia)`;
-        }
-      } else {
-        timerEl.style.color = "var(--ink)";
-        if (remainingSeconds <= 0) {
-          timerEl.innerHTML = "🎉 Klaim Tersedia!";
-        } else {
-          const h = String(Math.floor(remainingSeconds / 3600)).padStart(2, '0');
-          const m = String(Math.floor((remainingSeconds % 3600) / 60)).padStart(2, '0');
-          const s = String(remainingSeconds % 60).padStart(2, '0');
-          timerEl.innerHTML = `⏱ ${h}:${m}:${s}`;
+          timerEl.innerHTML = `⏱ ${d} Hari ${h}:${m}:${s}`;
+          timerEl.style.color = "var(--ink)";
         }
       }
     });
+    
+    if (globalClaimText) {
+      globalClaimText.textContent = formatRupiah(totalGlobalClaimable);
+    }
+    
+    if (globalClaimBtn) {
+      if (totalGlobalClaimable > 0.01) {
+        globalClaimBtn.disabled = false;
+        globalClaimBtn.type = "submit";
+        globalClaimBtn.innerHTML = "💸 Klaim Semua Profit Sekarang";
+        globalClaimBtn.className = "btn btn--primary btn--full btn--sm";
+        globalClaimBtn.style.background = "var(--brand)";
+        globalClaimBtn.style.color = "#fff";
+        globalClaimBtn.style.cursor = "pointer";
+        globalClaimBtn.style.boxShadow = "2px 2px 0 var(--ink)";
+      } else {
+        globalClaimBtn.disabled = true;
+        globalClaimBtn.type = "button";
+        globalClaimBtn.innerHTML = "🔒 Belum Ada Profit Baru";
+        globalClaimBtn.className = "btn btn--ghost btn--full btn--sm";
+        globalClaimBtn.style.background = "#eee";
+        globalClaimBtn.style.color = "#888";
+        globalClaimBtn.style.cursor = "not-allowed";
+        globalClaimBtn.style.boxShadow = "2px 2px 0 var(--ink)";
+      }
+    }
   }
   
   updateTimers();

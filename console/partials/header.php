@@ -17,7 +17,8 @@ try {
     $pending_wd  = (int)$pdo->query("SELECT COUNT(*) FROM withdrawals WHERE status='pending'")->fetchColumn();
     $pending_dep = (int)$pdo->query("SELECT COUNT(*) FROM deposits WHERE status='pending'")->fetchColumn();
     $pending_upg = (int)$pdo->query("SELECT COUNT(*) FROM upgrade_orders WHERE status='pending'")->fetchColumn();
-} catch(\Throwable) { $pending_wd = $pending_dep = $pending_upg = 0; }
+    $pending_ord = (int)$pdo->query("SELECT COUNT(*) FROM orders WHERE status='pending'")->fetchColumn();
+} catch(\Throwable) { $pending_wd = $pending_dep = $pending_upg = $pending_ord = 0; }
 
 $_favicon    = setting($pdo, 'favicon_path', '');
 $absolute_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : '/' . ltrim($_favicon, '/')) : '';
@@ -264,6 +265,13 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       Upgrade Orders
       <?php if ($pending_upg > 0): ?><span class="badge-dot"><?= $pending_upg ?></span><?php endif; ?>
+    </a>
+    <?php endif; ?>
+    <?php if (staff_can('orders')): ?>
+    <a href="/console/orders.php" class="c-nav-link <?= $activePage==='orders'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 002 1.61h9.72a2 2 0 002-1.61L23 6H6"/></svg>
+      Orders
+      <?php if ($pending_ord > 0): ?><span class="badge-dot"><?= $pending_ord ?></span><?php endif; ?>
     </a>
     <?php endif; ?>
 
