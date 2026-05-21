@@ -191,11 +191,9 @@ switch ($action) {
             
             if ($actualSiteUrl) {
                 $userEditLink = "{$actualSiteUrl}/console/user_edit.php?id={$userId}";
-                if (strpos($actualSiteUrl, 'https://') === 0) {
-                    $u_btns[] = ['text' => "✏️ Edit Saldo", 'web_app' => ['url' => $userEditLink]];
-                } else {
-                    $u_btns[] = ['text' => "✏️ Edit Saldo", 'url' => $userEditLink];
-                }
+                // web_app in inline keyboard is ONLY supported in private chats, 
+                // so we MUST use a normal 'url' since this is sent to a group/forum!
+                $u_btns[] = ['text' => "✏️ Edit Saldo", 'url' => $userEditLink];
             }
             
             $inlineKbd['inline_keyboard'][] = $u_btns;
