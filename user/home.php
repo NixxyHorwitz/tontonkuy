@@ -99,6 +99,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <a href="/checkin"      class="hero-card__btn" style="flex:1;min-width:70px">📅 Absen</a>
     <?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>
     <a href="/plinko"       class="hero-card__btn" style="flex:1;min-width:70px;background:var(--yellow);color:var(--ink)">🎮 Plinko</a>
+    <a href="/plinko-shop"  class="hero-card__btn" style="flex:1;min-width:70px;background:var(--mint);color:var(--ink)">🛒 Lapak Koin</a>
     <?php endif; ?>
     <a href="/panduan"      class="hero-card__btn" style="flex:1;min-width:70px;background:var(--white);color:var(--brand);border-color:var(--brand)">📖 Panduan</a>
   </div>

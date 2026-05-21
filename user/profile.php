@@ -266,6 +266,11 @@ $_psvg = [
   <div style="flex:1;font-weight:800;font-size:13px">Mini Game Plinko</div>
   <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="opacity:.35"><polyline points="9 18 15 12 9 6"/></svg>
 </a>
+<a href="/plinko-shop" class="contact-item">
+  <div class="contact-icon" style="background:var(--mint);color:#ink;font-size:16px;font-weight:normal">🛒</div>
+  <div style="flex:1;font-weight:800;font-size:13px">Lapak Koin Plinko</div>
+  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="opacity:.35"><polyline points="9 18 15 12 9 6"/></svg>
+</a>
 <?php endif; ?>
 
 <?php foreach ($_contact_btns as $_cb): ?>
