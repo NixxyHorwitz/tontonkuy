@@ -5,6 +5,40 @@ require_once dirname(__DIR__) . '/auth/guard.php';
 $flash = $flashType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? 'claim';
+    
+    // -- AJAX Check Endpoint --
+    if ($action === 'check') {
+        header('Content-Type: application/json');
+        $code_input = strtoupper(trim($_POST['code'] ?? ''));
+        if (!$code_input) { echo json_encode(['error' => 'Masukkan kode redeem.']); exit; }
+        
+        $stmt = $pdo->prepare("SELECT * FROM redeem_codes WHERE code = ?");
+        $stmt->execute([$code_input]);
+        $codeData = $stmt->fetch();
+        
+        if (!$codeData) { echo json_encode(['error' => 'Kode redeem tidak ditemukan atau tidak valid.']); exit; }
+        if ($codeData['expires_at'] && strtotime($codeData['expires_at']) < time()) { echo json_encode(['error' => 'Kode redeem ini sudah kedaluwarsa.']); exit; }
+        if ($codeData['max_claims'] > 0 && $codeData['claims_count'] >= $codeData['max_claims']) { echo json_encode(['error' => 'Kode redeem ini sudah mencapai batas kuota klaim.']); exit; }
+        
+        $chk = $pdo->prepare("SELECT id FROM user_redeems WHERE user_id = ? AND code_id = ?");
+        $chk->execute([$user['id'], $codeData['id']]);
+        if ($chk->fetch()) { echo json_encode(['error' => 'Kamu sudah mengklaim kode ini sebelumnya.']); exit; }
+        
+        $msg_parts = [];
+        if ($codeData['reward_wd'] > 0) $msg_parts[] = 'Saldo WD: ' . format_rp((float)$codeData['reward_wd']);
+        if ($codeData['reward_dep'] > 0) $msg_parts[] = 'Saldo Deposit: ' . format_rp((float)$codeData['reward_dep']);
+        if ($codeData['reward_level_id']) {
+            $ls = $pdo->prepare("SELECT name FROM memberships WHERE id = ?");
+            $ls->execute([$codeData['reward_level_id']]);
+            if ($lname = $ls->fetchColumn()) $msg_parts[] = 'Level: ' . $lname;
+        }
+        
+        echo json_encode(['ok' => true, 'details' => implode("\\n- ", $msg_parts)]);
+        exit;
+    }
+    // -- End AJAX Check --
+
     $code_input = strtoupper(trim($_POST['code'] ?? ''));
     if (!$code_input) {
         $flash = 'Masukkan kode redeem.';
@@ -110,13 +144,14 @@ require dirname(__DIR__) . '/partials/header.php';
 <div class="card card--mint" style="margin-bottom:16px">
   <div class="card__body">
     <div style="font-size:13px;font-weight:800;margin-bottom:8px">🎟️ Masukkan Kode Redeem</div>
-    <form method="POST">
+    <form id="form-claim" method="POST" onsubmit="checkRedeem(event)">
       <?= csrf_field() ?>
+      <input type="hidden" name="action" value="claim">
       <div class="form-group" style="margin-bottom:16px">
         <input class="form-control" type="text" name="code" 
                placeholder="Contoh: TONTONVIP" style="text-transform:uppercase;letter-spacing:2px;font-weight:700" required>
       </div>
-      <button type="submit" class="btn btn--primary btn--full">Klaim Reward</button>
+      <button type="submit" id="btn-check" class="btn btn--primary btn--full">Cek & Klaim</button>
     </form>
   </div>
 </div>
@@ -134,3 +169,39 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
+
+<script>
+function checkRedeem(e) {
+    e.preventDefault();
+    const form = document.getElementById('form-claim');
+    const code = form.querySelector('input[name="code"]').value;
+    const btn = document.getElementById('btn-check');
+    
+    btn.disabled = true;
+    btn.innerText = 'Mengecek...';
+    
+    fetch('', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'action=check&code=' + encodeURIComponent(code) + '&csrf_token=' + encodeURIComponent(form.querySelector('input[name="csrf_token"]')?.value || '')
+    })
+    .then(r => r.json())
+    .then(res => {
+        btn.disabled = false;
+        btn.innerText = 'Cek & Klaim';
+        if (res.error) {
+            alert(res.error);
+        } else {
+            if (confirm("🎁 Kode ini berisi reward berikut:\n\n- " + res.details + "\n\nApakah kamu yakin ingin mengklaimnya sekarang?")) {
+                form.onsubmit = null;
+                form.submit();
+            }
+        }
+    })
+    .catch(e => {
+        btn.disabled = false;
+        btn.innerText = 'Cek & Klaim';
+        alert('Terjadi kesalahan jaringan.');
+    });
+}
+</script>
