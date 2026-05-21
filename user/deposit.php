@@ -11,8 +11,17 @@ $bankAccount  = setting($pdo, 'bank_account', '-');
 $bankHolder   = setting($pdo, 'bank_holder', 'Admin');
 $qris_raw     = setting($pdo, 'qris_raw', '');
 
+$u_enabled = setting($pdo, 'depo_unique_code_enabled', '0') === '1';
+$u_min = (int)setting($pdo, 'depo_unique_code_min', '1');
+$u_max = (int)setting($pdo, 'depo_unique_code_max', '999');
+$unique_code = $u_enabled ? random_int(min($u_min, $u_max), max($u_min, $u_max)) : 0;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submit_bank') {
     $amount = (int) preg_replace('/\D/', '', $_POST['amount'] ?? '0');
+    $u_code = (int) preg_replace('/\D/', '', $_POST['unique_code'] ?? '0');
+    if ($u_enabled && $u_code >= min($u_min, $u_max) && $u_code <= max($u_min, $u_max)) {
+        $amount += $u_code;
+    }
     if ($amount < $min_deposit) {
         $flash = 'Minimal deposit ' . format_rp($min_deposit) . '.'; $flashType = 'error';
     } elseif (!$bank_enabled) {
@@ -48,6 +57,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submit_qris') {
     $amount = (int) preg_replace('/\D/', '', $_POST['amount'] ?? '0');
+    $u_code = (int) preg_replace('/\D/', '', $_POST['unique_code'] ?? '0');
+    if ($u_enabled && $u_code >= min($u_min, $u_max) && $u_code <= max($u_min, $u_max)) {
+        $amount += $u_code;
+    }
     if ($amount < $min_deposit) {
         $flash = 'Minimal deposit ' . format_rp($min_deposit) . '.'; $flashType = 'error';
     } elseif (!$qris_enabled || empty($qris_raw)) {
@@ -145,7 +158,7 @@ require dirname(__DIR__) . '/partials/header.php';
       <input type="hidden" name="action" value="submit_bank">
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Jumlah Transfer (Rp)</label>
-        <input class="form-control" type="number" name="amount" min="<?= $min_deposit ?>"
+        <input class="form-control" id="bank-amount" type="number" name="amount" min="<?= $min_deposit ?>"
                step="any" placeholder="Min. <?= number_format($min_deposit,0,'','') ?>" required>
       </div>
       <div class="qty-pills">
@@ -153,6 +166,16 @@ require dirname(__DIR__) . '/partials/header.php';
         <button type="button" class="btn btn--secondary btn--sm" onclick="setAmt('bank',<?= $q ?>)"><?= format_rp($q) ?></button>
         <?php endforeach; ?>
       </div>
+      
+      <?php if ($u_enabled): ?>
+      <input type="hidden" name="unique_code" value="<?= $unique_code ?>">
+      <div class="alert" style="margin-bottom:10px;font-size:12px;background:#f8fafc;border:2.5px dashed var(--brand);color:var(--ink);font-weight:700">
+        <div style="font-size:11px;color:#666;margin-bottom:4px">Total yang harus ditransfer:</div>
+        <div id="bank-total-transfer" style="font-size:22px;font-weight:900;color:var(--brand);letter-spacing:-0.5px">Rp 0</div>
+        <div style="font-size:11px;font-weight:700;color:#eab308;margin-top:6px;background:#fff5cc;padding:4px 6px;border-radius:4px;border:1px solid #fef08a">⚠️ Wajib transfer nominal persis hingga 3 digit terakhir agar deposit cepat diproses!</div>
+      </div>
+      <?php endif; ?>
+
       <div class="form-group" style="margin-bottom:10px">
         <label class="form-label" style="font-size:12px">Bukti Transfer <span style="font-weight:400;color:#888">(JPG/PNG)</span></label>
         <input class="form-control" type="file" name="proof" accept="image/*" style="padding:8px;font-size:12px">
@@ -190,6 +213,15 @@ require dirname(__DIR__) . '/partials/header.php';
         <button type="button" class="btn btn--secondary btn--sm" onclick="setAmt('qris',<?= $q ?>)"><?= format_rp($q) ?></button>
         <?php endforeach; ?>
       </div>
+      
+      <?php if ($u_enabled): ?>
+      <input type="hidden" name="unique_code" value="<?= $unique_code ?>">
+      <div class="alert" style="margin-bottom:10px;font-size:12px;background:#f8fafc;border:2.5px dashed var(--mint);color:var(--ink);font-weight:700">
+        <div style="font-size:11px;color:#666;margin-bottom:4px">Total pembayaran QRIS:</div>
+        <div id="qris-total-transfer" style="font-size:22px;font-weight:900;color:var(--brand);letter-spacing:-0.5px">Rp 0</div>
+      </div>
+      <?php endif; ?>
+
       <div class="alert alert--info" style="margin-bottom:10px;font-size:11px;padding:8px 10px">
         📲 Kamu akan diarahkan ke halaman scan QR setelah klik Bayar.
       </div>
@@ -250,6 +282,7 @@ function toggleCard(id) {
 function setAmt(type, v) {
   if (type === 'bank') document.querySelector('#body-bank input[name="amount"]').value = v;
   if (type === 'qris') document.getElementById('qris-amount').value = v;
+  if (typeof updateTotals === 'function') updateTotals();
 }
 function copyRek() {
   const t = document.getElementById('rek-num').textContent.trim();
@@ -258,7 +291,27 @@ function copyRek() {
 document.addEventListener('DOMContentLoaded', () => {
   const cards = ['bank','qris'].filter(k => document.getElementById('card-' + k));
   if (cards.length === 1) toggleCard(cards[0]);
+  
+  if (uEnabled) {
+    document.getElementById('bank-amount')?.addEventListener('input', updateTotals);
+    document.getElementById('qris-amount')?.addEventListener('input', updateTotals);
+  }
 });
+
+const uEnabled = <?= $u_enabled ? 'true' : 'false' ?>;
+const uCode    = <?= $unique_code ?>;
+
+function updateTotals() {
+  if (!uEnabled) return;
+  const bAmt = parseInt(document.getElementById('bank-amount')?.value || 0);
+  const qAmt = parseInt(document.getElementById('qris-amount')?.value || 0);
+  
+  const bTotal = document.getElementById('bank-total-transfer');
+  const qTotal = document.getElementById('qris-total-transfer');
+  
+  if (bTotal) bTotal.innerText = bAmt > 0 ? 'Rp ' + (bAmt + uCode).toLocaleString('id-ID') : 'Rp 0';
+  if (qTotal) qTotal.innerText = qAmt > 0 ? 'Rp ' + (qAmt + uCode).toLocaleString('id-ID') : 'Rp 0';
+}
 </script>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>

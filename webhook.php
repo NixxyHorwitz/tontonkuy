@@ -222,10 +222,15 @@ if (isset($update['callback_query'])) {
         $act_id = "{$type}_{$action}";
         $label  = $action === 'hold' ? 'Hold' : 'penolakan';
         
+        $table = $type === 'depo' ? 'deposits' : 'withdrawals';
+        $item = $pdo->prepare("SELECT u.username FROM {$table} t JOIN users u ON u.id=t.user_id WHERE t.id=?");
+        $item->execute([$id]);
+        $uname = $item->fetchColumn() ?: 'Unknown';
+        
         answer_cb($token, $cb_id, "📝 Ketik alasan {$label}...");
         // Send prompt and capture its message_id
         $prompt_msg_id = send_msg($token, $chat_id,
-            "📝 <b>Ketik alasan {$label}</b> untuk {$type} #{$id} dan kirim sebagai pesan.\n\nAtau tekan tombol di bawah untuk langsung memproses tanpa alasan.",
+            "📝 <b>Ketik alasan {$label}</b> untuk {$type} #{$id} (User: <b>{$uname}</b>) dan kirim sebagai pesan.\n\nAtau tekan tombol di bawah untuk langsung memproses tanpa alasan.",
             [[['text' => '⏭ Skip (Tanpa Alasan)', 'callback_data' => "{$act_id}_skip_{$id}"]]]
         );
         // Save state: awaiting_reason|type|action|id|orig_msg_id|orig_b64|prompt_msg_id
@@ -314,10 +319,16 @@ if (isset($update['message'])) {
     if ($res === 'ok') {
         $new_text = str_replace('Status: Pending', "Status: {$icon} {$status}\nAlasan: {$reason}", $orig_text);
         edit_msg($token, $chat_id, $orig_msg_id, $new_text);
+        
+        $table = $type === 'depo' ? 'deposits' : 'withdrawals';
+        $item = $pdo->prepare("SELECT u.username FROM {$table} t JOIN users u ON u.id=t.user_id WHERE t.id=?");
+        $item->execute([$id]);
+        $uname = $item->fetchColumn() ?: 'Unknown';
+
         // Edit the prompt message to confirm the reason was received
         if ($prompt_msg_id) {
             edit_msg($token, $chat_id, $prompt_msg_id,
-                "{$icon} <b>" . strtoupper($type) . " #{$id} " . ($action==='hold'?'di-hold':'ditolak') . "</b>\n📝 Alasan: <i>" . htmlspecialchars($reason) . "</i>");
+                "{$icon} <b>" . strtoupper($type) . " #{$id} (User: {$uname}) " . ($action==='hold'?'di-hold':'ditolak') . "</b>\n📝 Alasan: <i>" . htmlspecialchars($reason) . "</i>");
         }
     } else {
         send_msg($token, $chat_id, "⚠️ Gagal: {$res}");

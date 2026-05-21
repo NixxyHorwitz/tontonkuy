@@ -62,8 +62,11 @@ require __DIR__ . '/partials/header.php';
     $icons  = ['🆓','🥈','🥇','💎'];
     $color  = $colors[min($p['sort_order'], 3)];
     $icon   = $icons[min($p['sort_order'], 3)];
-    $activeUsers = $pdo->prepare("SELECT COUNT(*) FROM users WHERE membership_id=? AND membership_expires_at>NOW()");
-    $activeUsers->execute([$p['id']]); $activeUsers = $activeUsers->fetchColumn();
+    $activeUsersStmt = $pdo->prepare("SELECT username FROM users WHERE membership_id=? AND membership_expires_at>NOW()");
+    $activeUsersStmt->execute([$p['id']]);
+    $activeUsernames = $activeUsersStmt->fetchAll(PDO::FETCH_COLUMN);
+    $activeUsersCount = count($activeUsernames);
+    $activeUsersList = $activeUsersCount > 0 ? implode(', ', $activeUsernames) : 'Belum ada user';
   ?>
   <div class="col-md-6 col-xl-3">
     <div class="c-card h-100">
@@ -90,9 +93,10 @@ require __DIR__ . '/partials/header.php';
           <?php if ($p['description']): ?><div>ℹ️ <?= htmlspecialchars($p['description']) ?></div><?php endif; ?>
         </div>
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid #1f2235;font-size:12px;color:#666">
-          👥 <strong style="color:#e0e0f0"><?= $activeUsers ?></strong> user aktif
+          👥 <strong style="color:#e0e0f0"><?= $activeUsersCount ?></strong> user aktif
           · <?= $p['is_active']?'<span style="color:#4CAF82">Aktif</span>':'<span style="color:#F44E3B">Nonaktif</span>' ?>
           <?= $p['wd_hold'] ? '· <span style="color:#FFC107;font-weight:bold" title="User dengan paket ini jika WD akan masuk status Hold">⏸ Hold</span>' : '' ?>
+          <div style="font-size:10px;color:#888;margin-top:4px;line-height:1.4">👤 <?= htmlspecialchars($activeUsersList) ?></div>
         </div>
       </div>
     </div>

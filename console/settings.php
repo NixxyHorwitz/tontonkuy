@@ -16,12 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'save_general') {
         $keys = ['site_name','site_tagline','free_watch_limit','referral_bonus',
-                 'referral_commission_percent','checkin_reward','min_deposit','wd_min_level'];
+                 'referral_commission_percent','checkin_reward','min_deposit','wd_min_level',
+                 'depo_unique_code_min','depo_unique_code_max'];
         foreach ($keys as $k) {
             if (isset($_POST[$k])) setting_set($pdo, $k, trim($_POST[$k]));
         }
         // Toggle checkbox
         setting_set($pdo, 'wd_require_level', isset($_POST['wd_require_level']) ? '1' : '0');
+        setting_set($pdo, 'depo_unique_code_enabled', isset($_POST['depo_unique_code_enabled']) ? '1' : '0');
         $flash = 'Pengaturan umum berhasil disimpan!';
     }
 
@@ -205,6 +207,24 @@ $tabs = [
             
             <div class="c-form-group"><label class="c-label">Bonus Referral Registrasi (Rp) <small style="color:#888">(opsional)</small></label>
               <input type="number" name="referral_bonus" class="c-form-control" value="<?= $s('referral_bonus','1000') ?>" min="0"></div>
+            
+            <div style="border-top:1px solid #2d3149;margin:20px 0 16px;"></div>
+            
+            <h6 style="font-weight:800;font-size:14px;margin-bottom:12px;color:var(--brand)">🔢 Kode Unik Deposit</h6>
+            <div class="c-form-group mb-2">
+              <div class="form-check ms-1">
+                <input class="form-check-input" type="checkbox" name="depo_unique_code_enabled" id="depo_unique_code_enabled" value="1" <?= $s('depo_unique_code_enabled','0')==='1'?'checked':'' ?>>
+                <label class="form-check-label text-secondary" for="depo_unique_code_enabled" style="font-size:13px;font-weight:700">
+                  Aktifkan Kode Unik (Otomatis ditambahkan ke nominal transfer)
+                </label>
+              </div>
+            </div>
+            <div class="row g-2">
+              <div class="col-md-6"><div class="c-form-group"><label class="c-label">Range Kode Unik (Min)</label>
+                <input type="number" name="depo_unique_code_min" class="c-form-control" value="<?= $s('depo_unique_code_min','1') ?>" min="1"></div></div>
+              <div class="col-md-6"><div class="c-form-group"><label class="c-label">Range Kode Unik (Max)</label>
+                <input type="number" name="depo_unique_code_max" class="c-form-control" value="<?= $s('depo_unique_code_max','999') ?>" min="1"></div></div>
+            </div>
             
             <button type="submit" class="btn btn-sm text-white mt-2" style="background:var(--brand)">Simpan Pengaturan</button>
           </form>

@@ -95,7 +95,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->commit();
             $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
             
-            $msg = "<b>💸 WITHDRAW BARU</b>\nUser: {$user['username']}\nAmount: " . format_rp((float)$amount) . "\nBank: {$bank} - {$accnum}\na/n: {$accname}\nStatus: " . ucfirst($wd_status);
+            $levelInfo = $user_mem ? ($user_mem['name'] ?? 'Paket ID '.$user['membership_id']) : 'Gratis';
+            $msg = "<b>💸 WITHDRAW BARU</b>\nUser: {$user['username']}\nLevel: {$levelInfo}\nAmount: " . format_rp((float)$amount) . "\nBank: {$bank} - {$accnum}\na/n: {$accname}\nStatus: " . ucfirst($wd_status);
             $kb = [
                 [['text'=>'✅ Approve', 'callback_data'=>'wd_approve_'.$wd_id], ['text'=>'❌ Reject', 'callback_data'=>'wd_reject_'.$wd_id]],
                 [['text'=>'⏸ Hold (Selesai non-refund)', 'callback_data'=>'wd_hold_'.$wd_id]],
@@ -290,15 +291,18 @@ require dirname(__DIR__) . '/partials/header.php';
       return;
     }
 
-    // Standard double-click confirmation
-    if (btn && !form.dataset.confirmed) {
+    // Modal confirmation
+    if (!form.dataset.confirmed) {
       e.preventDefault();
-      const display = amt ? ' Rp ' + amt.toLocaleString('id-ID') : '';
-      nToast('Klik Ajukan lagi untuk konfirmasi penarikan' + display, 'warn', 3500);
-      form.dataset.confirmed = '1';
-      setTimeout(() => delete form.dataset.confirmed, 4000);
+      document.getElementById('brutal-confirm-amt').innerText = 'Rp ' + amt.toLocaleString('id-ID');
+      document.getElementById('brutal-confirm').style.display = 'flex';
     }
   });
+
+  window.confirmBrutalWd = function() {
+    form.dataset.confirmed = '1';
+    form.submit();
+  };
 })();
 </script>
 
@@ -328,5 +332,26 @@ require dirname(__DIR__) . '/partials/header.php';
   <?php endforeach; ?>
 </div></div>
 <?php endif; ?>
+
+<!-- Neobrutalism Modal Confirm -->
+<div id="brutal-confirm" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px);">
+  <div class="card card--mint" style="width:100%;max-width:340px;box-shadow:6px 6px 0 var(--ink);border:3px solid var(--ink);border-radius:12px;animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+    <div class="card__header" style="background:var(--brand);border-bottom:3px solid var(--ink);border-radius:9px 9px 0 0;padding:12px 16px;">
+      <div class="card__title" style="color:var(--ink);font-weight:900;font-size:16px;">💸 Konfirmasi Withdraw</div>
+    </div>
+    <div class="card__body" style="padding:16px;background:#fff;border-radius:0 0 9px 9px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#333;text-align:center;">Kamu akan melakukan penarikan sebesar:</div>
+      <div id="brutal-confirm-amt" style="font-size:26px;font-weight:900;color:var(--brand);margin-bottom:12px;text-align:center;letter-spacing:-0.5px;"></div>
+      <div style="font-size:12px;color:#666;margin-bottom:20px;font-weight:600;text-align:center;">Pastikan data rekening bank tujuan sudah benar.<br>Apakah kamu ingin melanjutkan?</div>
+      <div style="display:flex;gap:12px;">
+        <button type="button" onclick="document.getElementById('brutal-confirm').style.display='none'" class="btn" style="flex:1;background:#eee;color:var(--ink);border:2.5px solid var(--ink);font-weight:800;border-radius:8px;">Batal</button>
+        <button type="button" onclick="confirmBrutalWd()" class="btn btn--primary" style="flex:1.5;background:var(--brand);color:var(--ink);border:2.5px solid var(--ink);font-weight:900;border-radius:8px;box-shadow:2px 2px 0 var(--ink);">Ya, Tarik Dana</button>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+</style>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
