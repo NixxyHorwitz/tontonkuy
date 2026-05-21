@@ -109,6 +109,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 end_reg:
 
+// Detect referral from URL param
+$ref_from_url = strtoupper(trim($_GET['ref'] ?? ''));
+
 // Generate CAPTCHA token for this page load
 $cap_ts  = time();
 $cap_tok = hash_hmac('sha256', (string)$cap_ts, 'TONTON_CAP_' . session_id());
@@ -263,13 +266,24 @@ $final_og_desc = $_seo_desc;
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">Kode Referral <span style="color:#aaa;font-weight:600">(opsional)</span></label>
+          <label class="form-label">Kode Referral
+            <?php if ($ref_from_url): ?>
+              <span style="color:#4CAF82;font-weight:700;font-size:10px">✅ Terhubung</span>
+            <?php else: ?>
+              <span style="color:#aaa;font-weight:600">(opsional)</span>
+            <?php endif; ?>
+          </label>
           <div class="input-wrap">
             <svg class="input-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
             <input class="form-control" type="text" name="referral"
-              value="<?= htmlspecialchars($_POST['referral'] ?? $_GET['ref'] ?? '') ?>"
-              placeholder="XXXXXXXX" style="text-transform:uppercase;letter-spacing:2px">
+              value="<?= htmlspecialchars($_POST['referral'] ?? $ref_from_url) ?>"
+              placeholder="XXXXXXXX" style="text-transform:uppercase;letter-spacing:2px<?= $ref_from_url ? ';background:var(--mint,#e8f5e9);color:#388e3c;font-weight:800' : '' ?>"
+              <?= $ref_from_url ? 'disabled readonly' : '' ?>>
           </div>
+          <?php if ($ref_from_url): ?>
+          <div class="form-hint" style="color:#4CAF82">🔗 Kamu mendaftar melalui link referral. Kode tidak dapat diubah.</div>
+          <input type="hidden" name="referral" value="<?= htmlspecialchars($ref_from_url) ?>">
+          <?php endif; ?>
         </div>
         <div style="display:flex;gap:8px">
           <button type="button" class="btn btn--ghost" onclick="goStep(1)" style="flex:0 0 auto">← Kembali</button>
