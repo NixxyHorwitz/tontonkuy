@@ -16,6 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $days     = (int)($_POST['duration_days'] ?? 30);
         $desc     = trim($_POST['description'] ?? '');
         $active   = isset($_POST['is_active']) ? 1 : 0;
+        $wd_hold  = isset($_POST['wd_hold']) ? 1 : 0;
         $sort     = (int)($_POST['sort_order'] ?? 0);
         $min_wd   = (float)preg_replace('/[^\d.]/', '', $_POST['min_wd'] ?? '50000');
         $max_wd   = (float)preg_replace('/[^\d.]/', '', $_POST['max_wd'] ?? '0');
@@ -23,12 +24,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$name) { $flash = 'Nama paket wajib diisi.'; $flashType = 'error'; }
         else {
             if ($action === 'add') {
-                $pdo->prepare("INSERT INTO memberships (name,price,watch_limit,duration_days,description,is_active,sort_order,min_wd,max_wd) VALUES (?,?,?,?,?,?,?,?,?)")
-                    ->execute([$name, $price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd]);
+                $pdo->prepare("INSERT INTO memberships (name,price,watch_limit,duration_days,description,is_active,sort_order,min_wd,max_wd,wd_hold) VALUES (?,?,?,?,?,?,?,?,?,?)")
+                    ->execute([$name, $price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd, $wd_hold]);
                 $flash = "Paket {$name} ditambahkan.";
             } else {
-                $pdo->prepare("UPDATE memberships SET name=?,price=?,watch_limit=?,duration_days=?,description=?,is_active=?,sort_order=?,min_wd=?,max_wd=? WHERE id=?")
-                    ->execute([$name, $price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd, $id]);
+                $pdo->prepare("UPDATE memberships SET name=?,price=?,watch_limit=?,duration_days=?,description=?,is_active=?,sort_order=?,min_wd=?,max_wd=?,wd_hold=? WHERE id=?")
+                    ->execute([$name, $price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd, $wd_hold, $id]);
                 $flash = "Paket berhasil diperbarui.";
             }
         }
@@ -91,6 +92,7 @@ require __DIR__ . '/partials/header.php';
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid #1f2235;font-size:12px;color:#666">
           👥 <strong style="color:#e0e0f0"><?= $activeUsers ?></strong> user aktif
           · <?= $p['is_active']?'<span style="color:#4CAF82">Aktif</span>':'<span style="color:#F44E3B">Nonaktif</span>' ?>
+          <?= $p['wd_hold'] ? '· <span style="color:#FFC107;font-weight:bold" title="User dengan paket ini jika WD akan masuk status Hold">⏸ Hold</span>' : '' ?>
         </div>
       </div>
     </div>
@@ -157,6 +159,8 @@ function editPlan(p) {
     </div>
     <div class="c-form-group mb-3"><label class="c-label">Deskripsi</label>
       <input type="text" name="description" class="c-form-control" value="${escH(p.description||'')}"></div>
+    <div class="form-check ms-1 mb-2"><input class="form-check-input" type="checkbox" name="wd_hold" id="ep-wd-hold" ${p.wd_hold==1?'checked':''}>
+      <label class="form-check-label text-warning fw-bold" for="ep-wd-hold" style="font-size:13px">Tahan Withdraw (Auto Hold)</label></div>
     <div class="form-check ms-1"><input class="form-check-input" type="checkbox" name="is_active" id="ep-active" ${p.is_active==1?'checked':''}>
       <label class="form-check-label text-secondary" for="ep-active" style="font-size:13px">Aktif</label></div>`;
   new bootstrap.Modal(document.getElementById('editPlanModal')).show();

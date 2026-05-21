@@ -14,14 +14,14 @@ $membership_active = $user['membership_id']
     && strtotime((string)$user['membership_expires_at']) > time();
 
 if ($membership_active) {
-    $stmt = $pdo->prepare("SELECT min_wd, max_wd FROM memberships WHERE id = ? AND is_active = 1");
+    $stmt = $pdo->prepare("SELECT min_wd, max_wd, wd_hold FROM memberships WHERE id = ? AND is_active = 1");
     $stmt->execute([$user['membership_id']]);
     $user_mem = $stmt->fetch() ?: null;
 }
 
 // Fallback ke paket gratis jika tidak ada membership aktif
 if (!$user_mem) {
-    $stmt = $pdo->prepare("SELECT min_wd, max_wd FROM memberships WHERE price = 0 AND is_active = 1 ORDER BY sort_order ASC LIMIT 1");
+    $stmt = $pdo->prepare("SELECT min_wd, max_wd, wd_hold FROM memberships WHERE price = 0 AND is_active = 1 ORDER BY sort_order ASC LIMIT 1");
     $stmt->execute();
     $user_mem = $stmt->fetch() ?: null;
 }
@@ -86,14 +86,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user['account_number'] = $accnum;
                 $user['account_name'] = $accname;
             }
+            $wd_status = (isset($user_mem['wd_hold']) && $user_mem['wd_hold'] == 1) ? 'hold' : 'pending';
+            
             $pdo->prepare("UPDATE users SET balance_wd=balance_wd-? WHERE id=?")->execute([$amount, $user['id']]);
-            $pdo->prepare("INSERT INTO withdrawals (user_id,amount,bank_name,account_number,account_name) VALUES (?,?,?,?,?)")
-                ->execute([$user['id'], $amount, $bank, $accnum, $accname]);
+            $pdo->prepare("INSERT INTO withdrawals (user_id,amount,bank_name,account_number,account_name,status) VALUES (?,?,?,?,?,?)")
+                ->execute([$user['id'], $amount, $bank, $accnum, $accname, $wd_status]);
             $wd_id = $pdo->lastInsertId();
             $pdo->commit();
             $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
             
-            $msg = "<b>💸 WITHDRAW BARU</b>\nUser: {$user['username']}\nAmount: " . format_rp((float)$amount) . "\nBank: {$bank} - {$accnum}\na/n: {$accname}\nStatus: Pending";
+            $msg = "<b>💸 WITHDRAW BARU</b>\nUser: {$user['username']}\nAmount: " . format_rp((float)$amount) . "\nBank: {$bank} - {$accnum}\na/n: {$accname}\nStatus: " . ucfirst($wd_status);
             $kb = [
                 [['text'=>'✅ Approve', 'callback_data'=>'wd_approve_'.$wd_id], ['text'=>'❌ Reject', 'callback_data'=>'wd_reject_'.$wd_id]],
                 [['text'=>'⏸ Hold (Selesai non-refund)', 'callback_data'=>'wd_hold_'.$wd_id]],

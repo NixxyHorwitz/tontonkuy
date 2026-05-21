@@ -37,6 +37,10 @@
   <label class="c-label">Deskripsi Singkat</label>
   <input type="text" name="description" class="c-form-control" placeholder="Opsional">
 </div>
+<div class="form-check ms-1 mb-2">
+  <input class="form-check-input" type="checkbox" name="wd_hold" id="plan_wd_hold_add">
+  <label class="form-check-label text-warning fw-bold" for="plan_wd_hold_add" style="font-size:13px">Tahan Withdraw (Auto Hold)</label>
+</div>
 <div class="form-check ms-1">
   <input class="form-check-input" type="checkbox" name="is_active" id="plan_active_add" checked>
   <label class="form-check-label text-secondary" for="plan_active_add" style="font-size:13px">Aktif</label>
