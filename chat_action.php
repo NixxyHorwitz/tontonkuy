@@ -190,10 +190,9 @@ switch ($action) {
             }
             
             if ($actualSiteUrl) {
-                $userEditLink = "{$actualSiteUrl}/console/user_edit.php?id={$userId}";
-                // web_app in inline keyboard is ONLY supported in private chats, 
-                // so we MUST use a normal 'url' since this is sent to a group/forum!
-                $u_btns[] = ['text' => "✏️ Edit Saldo", 'url' => $userEditLink];
+                // We use callback_data because web_app is strictly forbidden in group chats by Telegram API.
+                // We will catch this callback and send the admin a Private Message (PM) containing the web_app button.
+                $u_btns[] = ['text' => "✏️ Edit Saldo", 'callback_data' => "req_edit:{$userId}"];
             }
             
             $inlineKbd['inline_keyboard'][] = $u_btns;
@@ -521,6 +520,46 @@ switch ($action) {
                     'callback_query_id' => $cbId,
                     'text'              => $ackText,
                     'show_alert'        => false,
+                ]);
+                echo '{}'; exit;
+            }
+
+            if ($cbAction === 'req_edit' && $cbSessId) {
+                $uId = $cbSessId;
+                
+                $actualSiteUrl = $siteUrl;
+                if (!$actualSiteUrl && isset($_SERVER['HTTP_HOST'])) {
+                    $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+                    $actualSiteUrl = "{$scheme}://{$_SERVER['HTTP_HOST']}";
+                }
+                
+                $userEditLink = "{$actualSiteUrl}/console/user_edit.php?id={$uId}";
+                // Force https if http, as Telegram API strictly requires https for web_app
+                if (strpos($userEditLink, 'http://') === 0) {
+                    $userEditLink = str_replace('http://', 'https://', $userEditLink);
+                }
+                
+                // Send Private Message to the admin who clicked the button
+                $pmRes = tg_api($pdo, 'sendMessage', [
+                    'chat_id' => $cb['from']['id'],
+                    'text' => "Hai admin! Silakan klik tombol di bawah untuk membuka Mini App Edit Saldo.",
+                    'reply_markup' => [
+                        'inline_keyboard' => [
+                            [['text' => "📱 Buka Mini App Edit Saldo", 'web_app' => ['url' => $userEditLink]]]
+                        ]
+                    ]
+                ]);
+                
+                if (!empty($pmRes['ok'])) {
+                    $ackText = "Berhasil! Silakan cek pesan pribadi (Japri) dari Bot ini untuk membuka Mini App.";
+                } else {
+                    $ackText = "Gagal kirim pesan. Pastikan kamu sudah Start bot ini secara pribadi (Private Chat) terlebih dahulu!";
+                }
+                
+                tg_api($pdo, 'answerCallbackQuery', [
+                    'callback_query_id' => $cbId,
+                    'text'              => $ackText,
+                    'show_alert'        => true,
                 ]);
                 echo '{}'; exit;
             }
