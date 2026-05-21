@@ -646,6 +646,8 @@ require dirname(__DIR__) . '/partials/header.php';
       <?php endforeach; ?>
     </div></div>
   <?php endif; ?>
+</div>
+
 <!-- Modal Panduan Investasi -->
 <div id="guide-modal-el" class="guide-modal" style="display:none;">
   <div class="guide-modal__card">
@@ -766,30 +768,52 @@ function switchTab(btn, tabId) {
 // Purchase Confirmation Modal
 const userBalanceDep = <?= (float)$user['balance_dep'] ?>;
 function confirmPurchase(pkg) {
-  document.getElementById('buy-pkg-id').value = pkg.id;
-  document.getElementById('buy-pkg-name').textContent = pkg.name;
-  
-  const price = parseFloat(pkg.price);
-  const roiTotal = (price * parseFloat(pkg.roi_percent)) / 100;
-  
-  document.getElementById('buy-pkg-price').textContent = 'Rp ' + Math.round(price).toLocaleString('id-ID');
-  document.getElementById('buy-pkg-roi').textContent = 'Rp ' + Math.round(roiTotal).toLocaleString('id-ID');
-  
-  const submitBtn = document.getElementById('purchase-submit-btn');
-  const topupBtn = document.getElementById('purchase-topup-btn');
-  const noticeEl = document.getElementById('insufficient-balance-notice');
-  
-  if (userBalanceDep < price) {
-    submitBtn.style.display = 'none';
-    topupBtn.style.display = 'inline-flex';
-    noticeEl.style.display = 'block';
-  } else {
-    submitBtn.style.display = 'inline-flex';
-    topupBtn.style.display = 'none';
-    noticeEl.style.display = 'none';
+  try {
+    console.log("Launching confirmPurchase for:", pkg);
+    
+    const idEl = document.getElementById('buy-pkg-id');
+    const nameEl = document.getElementById('buy-pkg-name');
+    const priceEl = document.getElementById('buy-pkg-price');
+    const roiEl = document.getElementById('buy-pkg-roi');
+    const modalEl = document.getElementById('buy-confirm-modal');
+    const submitBtn = document.getElementById('purchase-submit-btn');
+    const topupBtn = document.getElementById('purchase-topup-btn');
+    const noticeEl = document.getElementById('insufficient-balance-notice');
+
+    if (!idEl) throw new Error("Element '#buy-pkg-id' tidak ditemukan!");
+    if (!nameEl) throw new Error("Element '#buy-pkg-name' tidak ditemukan!");
+    if (!priceEl) throw new Error("Element '#buy-pkg-price' tidak ditemukan!");
+    if (!roiEl) throw new Error("Element '#buy-pkg-roi' tidak ditemukan!");
+    if (!modalEl) throw new Error("Element '#buy-confirm-modal' tidak ditemukan!");
+    if (!submitBtn) throw new Error("Element '#purchase-submit-btn' tidak ditemukan!");
+    if (!topupBtn) throw new Error("Element '#purchase-topup-btn' tidak ditemukan!");
+    if (!noticeEl) throw new Error("Element '#insufficient-balance-notice' tidak ditemukan!");
+
+    idEl.value = pkg.id;
+    nameEl.textContent = pkg.name;
+    
+    const price = parseFloat(pkg.price);
+    const roiTotal = (price * parseFloat(pkg.roi_percent)) / 100;
+    
+    priceEl.textContent = 'Rp ' + Math.round(price).toLocaleString('id-ID');
+    roiEl.textContent = 'Rp ' + Math.round(roiTotal).toLocaleString('id-ID');
+    
+    if (userBalanceDep < price) {
+      submitBtn.style.display = 'none';
+      topupBtn.style.display = 'inline-flex';
+      noticeEl.style.display = 'block';
+    } else {
+      submitBtn.style.display = 'inline-flex';
+      topupBtn.style.display = 'none';
+      noticeEl.style.display = 'none';
+    }
+    
+    modalEl.style.display = 'flex';
+    console.log("Modal successfully displayed.");
+  } catch (err) {
+    alert("⚠️ Gagal memuat modal pembelian:\n" + err.message);
+    console.error("confirmPurchase error:", err);
   }
-  
-  document.getElementById('buy-confirm-modal').style.display = 'flex';
 }
 
 function closePurchaseModal() {
@@ -805,21 +829,38 @@ function closeGuideModal() {
   localStorage.setItem('invest_guide_viewed_v1', 'true');
 }
 
-// Portfolio Timers & Auto-guide Trigger
-document.addEventListener("DOMContentLoaded", () => {
+// Portfolio Timers & Auto-guide Trigger & Secure Event Binding
+function initInvestPage() {
+  console.log("initInvestPage called. ReadyState:", document.readyState);
+  
+  // Debug check on elements
+  const buyBtns = document.querySelectorAll(".buy-pkg-trigger-btn");
+  console.log("Found buy buttons count:", buyBtns.length);
+
   // Check if first time to show guide
-  const viewed = localStorage.getItem('invest_guide_viewed_v1');
-  if (!viewed) {
-    openGuideModal();
+  try {
+    const viewed = localStorage.getItem('invest_guide_viewed_v1');
+    if (!viewed) {
+      openGuideModal();
+    }
+  } catch (e) {
+    console.error("LocalStorage error:", e);
   }
 
   // Handle Buy Package Click Events
-  document.querySelectorAll(".buy-pkg-trigger-btn").forEach(btn => {
-    btn.addEventListener("click", () => {
+  buyBtns.forEach((btn, idx) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      console.log(`Buy button index ${idx} clicked! data-pkg:`, btn.dataset.pkg);
       try {
+        if (!btn.dataset.pkg) {
+          throw new Error("data-pkg attribute is empty or missing!");
+        }
         const pkg = JSON.parse(btn.dataset.pkg);
+        console.log("Parsed package:", pkg);
         confirmPurchase(pkg);
       } catch (err) {
+        alert("⚠️ Debug Error Saat Klik Beli:\n" + err.message + "\n\nData pkg: " + btn.dataset.pkg);
         console.error("Failed to parse package data:", err);
       }
     });
@@ -888,7 +929,14 @@ document.addEventListener("DOMContentLoaded", () => {
   
   updateTimers();
   setInterval(updateTimers, 1000);
-});
+}
+
+// Robust execution that handles DOM already parsed state
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initInvestPage);
+} else {
+  initInvestPage();
+}
 </script>
 
 <style>
