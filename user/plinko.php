@@ -176,6 +176,23 @@ require dirname(__DIR__) . '/partials/header.php';
     
     <!-- Game Control Console -->
     <div style="width:100%; max-width:400px; margin-top:14px; background:#fff; border:3px solid var(--ink); border-radius:12px; box-shadow:3px 3px 0 var(--ink); padding:12px;">
+      
+      <!-- Total Coin Display inside Game Control Panel Card -->
+      <div style="
+        display: flex; 
+        justify-content: space-between; 
+        align-items: center; 
+        background: var(--yellow); 
+        border: 2.5px solid var(--ink); 
+        border-radius: 8px; 
+        padding: 8px 12px; 
+        margin-bottom: 12px; 
+        box-shadow: 2px 2px 0 var(--ink);
+      ">
+        <span style="font-size: 11px; font-weight: 800; color: var(--ink);">🪙 TOTAL KOIN ANDA:</span>
+        <span style="font-size: 13px; font-weight: 900; color: var(--ink);" id="control-disp-coins"><?= number_format((int)$user['plinko_coins']) ?> Koin</span>
+      </div>
+
       <div style="font-size:11px; font-weight:900; color:#555; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; text-align:center; display: flex; align-items: center; justify-content: center; gap: 4px;">💵 Pilih Taruhan (Koin Plinko)</div>
       <div style="display:flex; gap:6px; justify-content:center;">
         <?php foreach ([10, 25, 50, 100] as $bSize): ?>
@@ -624,6 +641,8 @@ function animateGameLoop() {
 
 function updateBalances(data) {
   document.getElementById('disp-coins').innerText = '🪙 ' + data.new_coins.toLocaleString('id-ID');
+  const controlCoins = document.getElementById('control-disp-coins');
+  if (controlCoins) controlCoins.innerText = data.new_coins.toLocaleString('id-ID') + ' Koin';
   const topCoins = document.getElementById('user-coins');
   if (topCoins) topCoins.innerText = data.new_coins;
 }
