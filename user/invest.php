@@ -503,6 +503,11 @@ require dirname(__DIR__) . '/partials/header.php';
         💸 Klaim Semua Profit Sekarang
       </button>
     </form>
+    
+    <!-- Info Penjelasan Sistem Profit Real-Time -->
+    <div style="font-size:10.5px;font-weight:700;color:#222;margin-top:8px;line-height:1.45;background:rgba(255,255,255,0.45);padding:8px 10px;border-radius:8px;border:1.5px solid var(--ink);box-shadow:1px 1px 0 var(--ink);">
+      ⚡ <strong>Sistem Laba Real-Time:</strong> Saldo profit Anda bertambah otomatis setiap detik secara presisi! Anda tidak perlu menunggu 24 jam penuh atau menunggu kontrak selesai untuk melakukan penarikan. Cukup klik tombol klaim di atas untuk memindahkan hasil investasi langsung ke Saldo WD Anda secara proporsional kapan saja.
+    </div>
   </div>
 </div>
 
