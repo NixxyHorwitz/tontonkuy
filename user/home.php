@@ -133,7 +133,7 @@ require dirname(__DIR__) . '/partials/header.php';
 <!-- CTA Investasi Banner -->
 <div style="
   margin-top: 10px;
-  background: var(--yellow);
+  background: var(--lavender);
   border: 2.5px solid var(--ink);
   border-radius: 12px;
   box-shadow: 3px 3px 0 var(--ink);
@@ -144,7 +144,7 @@ require dirname(__DIR__) . '/partials/header.php';
   <!-- Small badge -->
   <div style="
     display: inline-block;
-    background: var(--sky);
+    background: var(--yellow);
     color: var(--ink);
     border: 1.5px solid var(--ink);
     border-radius: 6px;
