@@ -20,7 +20,7 @@ try {
 } catch(\Throwable) { $pending_wd = $pending_dep = $pending_upg = 0; }
 
 $_favicon    = setting($pdo, 'favicon_path', '');
-$absolute_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : base_url(ltrim($_favicon, '/'))) : '';
+$absolute_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : '/' . ltrim($_favicon, '/')) : '';
 ?>
 <!DOCTYPE html>
 <html lang="id" data-bs-theme="dark">
@@ -29,7 +29,7 @@ $absolute_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon :
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title><?= htmlspecialchars($pageTitle) ?> — TontonKuy Admin</title>
 <?php if ($absolute_fav): ?>
-<link rel="icon" type="image/png" href="<?= htmlspecialchars($absolute_fav) ?>?v=<?= @filemtime(dirname(__DIR__, 2) . $_favicon) ?: time() ?>">
+<link rel="icon" href="<?= htmlspecialchars($absolute_fav) ?>?v=<?= @filemtime(dirname(__DIR__, 2) . $_favicon) ?: time() ?>">
 <link rel="apple-touch-icon" href="<?= htmlspecialchars($absolute_fav) ?>?v=<?= @filemtime(dirname(__DIR__, 2) . $_favicon) ?: time() ?>">
 <?php endif; ?>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">

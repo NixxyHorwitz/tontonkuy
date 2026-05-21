@@ -538,7 +538,7 @@ require dirname(__DIR__) . '/partials/header.php';
           </div>
         </div>
         
-        <button type="button" class="btn btn--primary btn--full btn--sm" onclick='confirmPurchase(<?= json_encode($pkg) ?>)'>
+        <button type="button" class="btn btn--primary btn--full btn--sm buy-pkg-trigger-btn" data-pkg="<?= htmlspecialchars(json_encode($pkg), ENT_QUOTES, 'UTF-8') ?>">
           🛒 Beli Paket Investasi
         </button>
       </div>
@@ -812,6 +812,18 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!viewed) {
     openGuideModal();
   }
+
+  // Handle Buy Package Click Events
+  document.querySelectorAll(".buy-pkg-trigger-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+      try {
+        const pkg = JSON.parse(btn.dataset.pkg);
+        confirmPurchase(pkg);
+      } catch (err) {
+        console.error("Failed to parse package data:", err);
+      }
+    });
+  });
 
   const cards = document.querySelectorAll(".active-portfolio-card");
   

@@ -29,9 +29,9 @@ error_log('[LiveChat] page loaded, user=' . ($user['username'] ?? 'null')
 <meta name="theme-color" content="#FFE566">
 <title>Live Chat — <?= htmlspecialchars($_seo_title) ?></title>
 <?php
-$_abs_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : base_url(ltrim($_favicon, '/'))) : '';
+$_abs_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : '/' . ltrim($_favicon, '/')) : '';
 if ($_abs_fav): ?>
-<link rel="icon" type="image/png" href="<?= htmlspecialchars($_abs_fav) ?>">
+<link rel="icon" href="<?= htmlspecialchars($_abs_fav) ?>">
 <link rel="apple-touch-icon" href="<?= htmlspecialchars($_abs_fav) ?>">
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css">
