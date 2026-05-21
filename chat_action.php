@@ -538,6 +538,13 @@ switch ($action) {
                 if (strpos($userEditLink, 'http://') === 0) {
                     $userEditLink = str_replace('http://', 'https://', $userEditLink);
                 }
+                // Generate time-limited signed token (valid 30 minutes) so admin doesn't need to log in
+                $tok_exp    = time() + 1800;
+                $tok_secret = hash('sha256', 'TONTON_EDIT_' . ($_ENV['DB_PASSWORD'] ?? 'secret'));
+                $tok_sig    = hash_hmac('sha256', "uid={$uId}&exp={$tok_exp}", $tok_secret);
+                $tok_b64    = base64_encode("uid={$uId}&exp={$tok_exp}&sig={$tok_sig}");
+                $userEditLink = rtrim(str_replace('http://', 'https://', $actualSiteUrl ?: ''), '/')
+                              . "/console/user_edit.php?tok=" . urlencode($tok_b64);
                 
                 // Fetch user info for context
                 $euStmt = $pdo->prepare("SELECT u.*, m.name as mem_name FROM users u LEFT JOIN memberships m ON m.id=u.membership_id WHERE u.id=?");
