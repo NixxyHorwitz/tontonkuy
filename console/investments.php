@@ -92,9 +92,12 @@ require __DIR__ . '/partials/header.php';
     <h5 class="mb-0 fw-bold">📈 Kelola Investasi Ponzi</h5>
     <p class="text-muted mb-0" style="font-size:12px">Kelola produk investasi, lihat portofolio user, dan audit klaim profit.</p>
   </div>
-  <?php if ($active_tab === 'packages'): ?>
-  <button class="btn btn-sm text-white" style="background:var(--brand)" data-bs-toggle="modal" data-bs-target="#addPackageModal">+ Tambah Paket</button>
-  <?php endif; ?>
+  <div class="d-flex gap-2">
+    <button class="btn btn-sm btn-success text-white px-3 py-2 fw-bold" onclick="openShareProfitModal()" style="border-radius:8px">⚙️ Run Share Profit</button>
+    <?php if ($active_tab === 'packages'): ?>
+    <button class="btn btn-sm text-white px-3 py-2 fw-bold" style="background:var(--brand);border-radius:8px" data-bs-toggle="modal" data-bs-target="#addPackageModal">+ Tambah Paket</button>
+    <?php endif; ?>
+  </div>
 </div>
 
 <?php if ($flash): ?>
@@ -390,6 +393,96 @@ require __DIR__ . '/partials/header.php';
   </div></div>
 </div>
 
+<!-- Share Profit Modal -->
+<div class="modal fade" id="shareProfitModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="background:#1a1d27;border:2px solid var(--brand);box-shadow: 0 0 15px rgba(255, 107, 53, 0.25);">
+      <div class="modal-header border-0 pb-0">
+        <h5 class="modal-title fw-bold text-white">⚙️ Run Share Profit (Bagi Hasil)</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" id="share-profit-close-btn"></button>
+      </div>
+      <div class="modal-body pt-3">
+        <!-- Step 1: Mode Selection -->
+        <div id="sp-step-select">
+          <p class="text-secondary" style="font-size:13px">Sistem akan membagikan profit harian (+1 hari siklus) secara merata ke seluruh kontrak investasi pengguna yang saat ini masih berstatus <strong class="text-white">Aktif</strong>.</p>
+          
+          <div class="p-3 mb-4" style="background:rgba(255,255,255,0.02);border:1px solid #2d3149;border-radius:8px">
+            <span class="text-muted" style="font-size:11px;text-transform:uppercase;font-weight:700">📊 Ringkasan Saat Ini</span>
+            <div class="row g-2 mt-1">
+              <div class="col-6">
+                <div class="p-2 text-center" style="background:#0f1117;border-radius:6px">
+                  <div style="font-size:11px;color:#666">Aktif Portofolio</div>
+                  <div class="fw-bold text-white" id="sp-count-active" style="font-size:18px">-</div>
+                </div>
+              </div>
+              <div class="col-6">
+                <div class="p-2 text-center" style="background:#0f1117;border-radius:6px">
+                  <div style="font-size:11px;color:#666">Estimasi Total Profit/Hari</div>
+                  <div class="fw-bold text-success" id="sp-est-profit" style="font-size:18px">-</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="row g-3">
+            <!-- Option 1: Animated Run -->
+            <div class="col-md-6">
+              <div class="p-3 h-100 d-flex flex-column justify-content-between text-start" style="background:rgba(255,107,53,0.05);border:2px solid var(--brand);border-radius:10px;cursor:pointer;transition:transform 0.2s" onclick="startShareProfit('animated')">
+                <div>
+                  <h6 class="fw-bold text-white mb-2">🚀 Animated Run</h6>
+                  <p class="text-secondary mb-0" style="font-size:12px">Menampilkan visual pembagian keuntungan real-time per user secara berurutan dengan animasi premium yang memukau!</p>
+                </div>
+                <div class="mt-3 text-end">
+                  <span class="btn btn-sm text-white" style="background:var(--brand);font-size:11px;font-weight:700">Mulai Animasi →</span>
+                </div>
+              </div>
+            </div>
+            <!-- Option 2: Background Run -->
+            <div class="col-md-6">
+              <div class="p-3 h-100 d-flex flex-column justify-content-between text-start" style="background:rgba(25,135,84,0.05);border:2px solid #198754;border-radius:10px;cursor:pointer;transition:transform 0.2s" onclick="startShareProfit('background')">
+                <div>
+                  <h6 class="fw-bold text-white mb-2">⚡ Background Run</h6>
+                  <p class="text-secondary mb-0" style="font-size:12px">Memproses seluruh pembagian profit secara instan di latar belakang server. Sangat cepat dan cocok untuk data berskala besar.</p>
+                </div>
+                <div class="mt-3 text-end">
+                  <span class="btn btn-sm text-white btn-success" style="font-size:11px;font-weight:700">Eksekusi Instan →</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Step 2: Processing (Animated) -->
+        <div id="sp-step-processing" style="display:none">
+          <div class="text-center mb-3">
+            <h6 class="fw-bold text-white" id="sp-process-title">Sedang mendistribusikan profit harian...</h6>
+            <div class="progress mt-2" style="height:12px;background:#0f1117;border-radius:6px;border:1px solid #2d3149">
+              <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning" id="sp-progress-bar" role="progressbar" style="width: 0%"></div>
+            </div>
+            <div class="d-flex justify-content-between mt-1" style="font-size:11px;color:#888">
+              <span id="sp-progress-text">Memproses: 0 / 0</span>
+              <span id="sp-progress-percent">0%</span>
+            </div>
+          </div>
+          
+          <!-- Animated terminal log console -->
+          <div class="p-3" style="background:#090a0f;border:1px solid #1f2235;border-radius:8px;font-family:monospace;font-size:11px;max-height:220px;overflow-y:auto;text-align:left;color:#a0a0c0" id="sp-terminal-log">
+            <!-- logs will appear here -->
+          </div>
+        </div>
+        
+        <!-- Step 3: Success Summary -->
+        <div id="sp-step-success" style="display:none" class="text-center py-3">
+          <span style="font-size:48px">🎉</span>
+          <h4 class="fw-bold text-white mt-3 mb-2">Proses Selesai!</h4>
+          <p class="text-secondary mb-4" id="sp-success-desc" style="font-size:13px">Semua profit berhasil dibagikan.</p>
+          <button type="button" class="btn btn-sm btn-success px-4" data-bs-dismiss="modal" onclick="window.location.reload()">Selesai & Muat Ulang Halaman</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 // JS dynamic ROI calculator helper
 function calculateYield(priceId, roiId, daysId, dailyTextId, totalTextId, netTextId) {
@@ -444,6 +537,179 @@ function editPackage(p) {
   calculateYield('ep-price', 'ep-roi', 'ep-days', 'ep-calc-daily', 'ep-calc-total', 'ep-calc-net');
 
   new bootstrap.Modal(document.getElementById('editPackageModal')).show();
+}
+
+// Share Profit Functions
+let activeInvestments = [];
+let csrfToken = '<?= csrf_token() ?>';
+
+function openShareProfitModal() {
+  const modal = new bootstrap.Modal(document.getElementById('shareProfitModal'));
+  
+  // Reset UI steps
+  document.getElementById('sp-step-select').style.display = 'block';
+  document.getElementById('sp-step-processing').style.display = 'none';
+  document.getElementById('sp-step-success').style.display = 'none';
+  document.getElementById('share-profit-close-btn').style.display = 'block';
+  document.getElementById('sp-terminal-log').innerHTML = '';
+  document.getElementById('sp-progress-bar').style.width = '0%';
+  document.getElementById('sp-progress-bar').className = 'progress-bar progress-bar-striped progress-bar-animated bg-warning';
+  
+  // Show Modal
+  modal.show();
+  
+  // Fetch active summary
+  const fd = new FormData();
+  fd.append('action', 'get_active');
+  fd.append('_csrf', csrfToken);
+  
+  fetch('/console/ajax_share_profit.php', {
+    method: 'POST',
+    body: fd
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.status === 'success') {
+      activeInvestments = res.data;
+      document.getElementById('sp-count-active').textContent = activeInvestments.length + ' Kontrak';
+      
+      let estProfit = 0;
+      activeInvestments.forEach(item => {
+        estProfit += parseFloat(item.daily_profit);
+      });
+      document.getElementById('sp-est-profit').textContent = 'Rp ' + Math.round(estProfit).toLocaleString('id-ID');
+    } else {
+      alert('Gagal memuat data aktif investasi: ' + res.message);
+    }
+  })
+  .catch(err => {
+    console.error(err);
+    alert('Error fetching active investments data.');
+  });
+}
+
+function appendLog(html, color = '#a0a0c0') {
+  const logEl = document.getElementById('sp-terminal-log');
+  const div = document.createElement('div');
+  div.style.color = color;
+  div.style.marginBottom = '4px';
+  div.innerHTML = html;
+  logEl.appendChild(div);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function startShareProfit(mode) {
+  if (activeInvestments.length === 0) {
+    alert('Tidak ada kontrak investasi aktif untuk diproses.');
+    return;
+  }
+  
+  // Switch to processing step
+  document.getElementById('sp-step-select').style.display = 'none';
+  document.getElementById('sp-step-processing').style.display = 'block';
+  document.getElementById('share-profit-close-btn').style.display = 'none'; // Lock closing
+  
+  if (mode === 'background') {
+    // Run background batch
+    appendLog('⚡ Memulai pemrosesan background batch...');
+    appendLog('🔄 Mengirim data ke server...');
+    
+    const fd = new FormData();
+    fd.append('action', 'process_all_background');
+    fd.append('_csrf', csrfToken);
+    
+    fetch('/console/ajax_share_profit.php', {
+      method: 'POST',
+      body: fd
+    })
+    .then(r => r.json())
+    .then(res => {
+      if (res.status === 'success') {
+        appendLog('✅ Sukses memproses batch di background!', '#198754');
+        appendLog(`📊 Total kontrak diproses: ${res.data.total_processed}`);
+        appendLog(`💰 Total profit dibagikan: Rp ${Math.round(res.data.total_profit).toLocaleString('id-ID')}`);
+        
+        setTimeout(() => {
+          document.getElementById('sp-step-processing').style.display = 'none';
+          document.getElementById('sp-step-success').style.display = 'block';
+          document.getElementById('sp-success-desc').innerHTML = `Berhasil memproses <strong>${res.data.total_processed}</strong> kontrak investasi dengan total profit dibagikan sebesar <strong>Rp ${Math.round(res.data.total_profit).toLocaleString('id-ID')}</strong>.`;
+        }, 1200);
+      } else {
+        appendLog('❌ Error: ' + res.message, '#dc3545');
+        document.getElementById('share-profit-close-btn').style.display = 'block'; // Unlock closing
+      }
+    })
+    .catch(err => {
+      appendLog('❌ Network Error.', '#dc3545');
+      document.getElementById('share-profit-close-btn').style.display = 'block';
+    });
+  } else {
+    // Animated sequential run
+    appendLog('🚀 Memulai pembagian profit sekuensial (Animated)...');
+    runSequentialAnimation(0, 0);
+  }
+}
+
+function runSequentialAnimation(index, totalProfitShared) {
+  const total = activeInvestments.length;
+  if (index >= total) {
+    appendLog('🎉 Semua kontrak aktif berhasil diproses!', '#198754');
+    appendLog(`📊 Total Kontrak Selesai: ${total}`);
+    appendLog(`💰 Total Profit Dibagikan: Rp ${Math.round(totalProfitShared).toLocaleString('id-ID')}`);
+    
+    document.getElementById('sp-progress-bar').className = 'progress-bar bg-success';
+    
+    setTimeout(() => {
+      document.getElementById('sp-step-processing').style.display = 'none';
+      document.getElementById('sp-step-success').style.display = 'block';
+      document.getElementById('sp-success-desc').innerHTML = `Berhasil membagikan profit ke <strong>${total}</strong> kontrak investasi aktif dengan total nilai <strong>Rp ${Math.round(totalProfitShared).toLocaleString('id-ID')}</strong>!`;
+    }, 1500);
+    return;
+  }
+  
+  const item = activeInvestments[index];
+  const percent = Math.round(((index + 1) / total) * 100);
+  
+  appendLog(`🔄 [${index + 1}/${total}] Memproses portfolio user <strong>@${item.username}</strong> (${item.package_name})...`);
+  
+  const fd = new FormData();
+  fd.append('action', 'process_single');
+  fd.append('id', item.id);
+  fd.append('_csrf', csrfToken);
+  
+  fetch('/console/ajax_share_profit.php', {
+    method: 'POST',
+    body: fd
+  })
+  .then(r => r.json())
+  .then(res => {
+    if (res.status === 'success') {
+      const pft = parseFloat(item.daily_profit);
+      appendLog(`💸 Sukses: @${item.username} menerima profit harian <strong>+Rp ${Math.round(pft).toLocaleString('id-ID')}</strong> (Hari ${res.detail.new_days_passed}/${item.duration_days})`, '#198754');
+      
+      // Update progress bar
+      document.getElementById('sp-progress-bar').style.width = percent + '%';
+      document.getElementById('sp-progress-text').textContent = `Memproses: ${index + 1} / ${total}`;
+      document.getElementById('sp-progress-percent').textContent = percent + '%';
+      
+      // Continue to next with delay for animation effect
+      setTimeout(() => {
+        runSequentialAnimation(index + 1, totalProfitShared + pft);
+      }, 500); // 500ms delay per user for aesthetic animation
+    } else {
+      appendLog(`❌ Gagal memproses @${item.username}: ${res.message}`, '#dc3545');
+      // Continue anyway
+      setTimeout(() => {
+        runSequentialAnimation(index + 1, totalProfitShared);
+      }, 500);
+    }
+  })
+  .catch(err => {
+    appendLog(`❌ Network Error pada portfolio @${item.username}`, '#dc3545');
+    setTimeout(() => {
+      runSequentialAnimation(index + 1, totalProfitShared);
+    }, 500);
+  });
 }
 </script>
 

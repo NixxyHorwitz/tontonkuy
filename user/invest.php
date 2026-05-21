@@ -811,7 +811,6 @@ function confirmPurchase(pkg) {
     modalEl.style.display = 'flex';
     console.log("Modal successfully displayed.");
   } catch (err) {
-    alert("⚠️ Gagal memuat modal pembelian:\n" + err.message);
     console.error("confirmPurchase error:", err);
   }
 }
@@ -860,7 +859,6 @@ function initInvestPage() {
         console.log("Parsed package:", pkg);
         confirmPurchase(pkg);
       } catch (err) {
-        alert("⚠️ Debug Error Saat Klik Beli:\n" + err.message + "\n\nData pkg: " + btn.dataset.pkg);
         console.error("Failed to parse package data:", err);
       }
     });
