@@ -156,18 +156,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $pageTitle  = 'Lapak Koin Plinko — TontonKuy';
 $activePage = 'plinko-shop';
 require dirname(__DIR__) . '/partials/header.php';
+
+$today = date('Y-m-d');
+$already_claimed = $user['last_plinko_claim'] === $today;
 ?>
 
-<!-- Premium Header (Neo-Brutalist Neon Layout) -->
-<div class="page-title-bar" style="
-  background: var(--brand);
-  border: 3px solid var(--ink);
-  border-radius: 14px;
-  box-shadow: 5px 5px 0 var(--ink);
-  padding: 18px 16px;
-  margin-bottom: 20px;
-  color: #fff;
-  position: relative;
   overflow: hidden;
 ">
   <div style="font-size: 24px; position: absolute; right: 12px; top: 12px; opacity: 0.25;">🛒</div>
