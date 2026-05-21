@@ -34,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($lname = $ls->fetchColumn()) $msg_parts[] = 'Level: ' . $lname;
         }
         
-        echo json_encode(['ok' => true, 'details' => implode("\\n- ", $msg_parts)]);
+        echo json_encode(['ok' => true, 'details' => $msg_parts]);
         exit;
     }
     // -- End AJAX Check --
@@ -170,7 +170,38 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
 
+<!-- Neobrutalism Modal Confirm -->
+<div id="brutal-confirm" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px);">
+  <div class="card card--mint" style="width:100%;max-width:340px;box-shadow:6px 6px 0 var(--ink);border:3px solid var(--ink);border-radius:12px;animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+    <div class="card__header" style="background:var(--brand);border-bottom:3px solid var(--ink);border-radius:9px 9px 0 0;padding:12px 16px;">
+      <div class="card__title" style="color:var(--ink);font-weight:900;font-size:16px;">🎁 Konfirmasi Klaim</div>
+    </div>
+    <div class="card__body" style="padding:16px;background:#fff;border-radius:0 0 9px 9px;">
+      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#333;">Kode ini berisi reward berikut:</div>
+      <ul id="brutal-confirm-list" style="margin:0 0 16px 20px;padding:0;font-size:14px;font-weight:900;color:var(--brand);">
+      </ul>
+      <div style="font-size:12px;color:#666;margin-bottom:20px;font-weight:600;">Apakah kamu yakin ingin mengklaimnya sekarang?</div>
+      <div style="display:flex;gap:12px;">
+        <button type="button" onclick="document.getElementById('brutal-confirm').style.display='none'" class="btn" style="flex:1;background:#eee;color:var(--ink);border:2.5px solid var(--ink);font-weight:800;border-radius:8px;">Batal</button>
+        <button type="button" onclick="confirmBrutalClaim()" class="btn btn--primary" style="flex:1.5;background:var(--brand);color:var(--ink);border:2.5px solid var(--ink);font-weight:900;border-radius:8px;box-shadow:2px 2px 0 var(--ink);">Klaim Sekarang</button>
+      </div>
+    </div>
+  </div>
+</div>
+<style>
+@keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+</style>
+
 <script>
+let tempForm = null;
+
+function confirmBrutalClaim() {
+    if (tempForm) {
+        tempForm.onsubmit = null;
+        tempForm.submit();
+    }
+}
+
 function checkRedeem(e) {
     e.preventDefault();
     const form = document.getElementById('form-claim');
@@ -190,18 +221,26 @@ function checkRedeem(e) {
         btn.disabled = false;
         btn.innerText = 'Cek & Klaim';
         if (res.error) {
-            alert(res.error);
-        } else {
-            if (confirm("🎁 Kode ini berisi reward berikut:\n\n- " + res.details + "\n\nApakah kamu yakin ingin mengklaimnya sekarang?")) {
-                form.onsubmit = null;
-                form.submit();
+            if (typeof nToast !== 'undefined') {
+                nToast(res.error, 'error');
+            } else {
+                alert(res.error);
             }
+        } else {
+            const list = document.getElementById('brutal-confirm-list');
+            list.innerHTML = res.details.map(d => `<li style="margin-bottom:6px;">${d}</li>`).join('');
+            tempForm = form;
+            document.getElementById('brutal-confirm').style.display = 'flex';
         }
     })
     .catch(e => {
         btn.disabled = false;
         btn.innerText = 'Cek & Klaim';
-        alert('Terjadi kesalahan jaringan.');
+        if (typeof nToast !== 'undefined') {
+            nToast('Terjadi kesalahan jaringan.', 'error');
+        } else {
+            alert('Terjadi kesalahan jaringan.');
+        }
     });
 }
 </script>
