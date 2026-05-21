@@ -85,6 +85,41 @@ function is_head_admin(): bool {
     return !empty($_SESSION['admin']);
 }
 
+/**
+ * Returns the best "home" URL for the current session.
+ * Head admin → /console/, staff → first permitted page.
+ */
+function staff_home_url(): string {
+    if (!empty($_SESSION['admin'])) return '/console/';
+
+    $perm_map = [
+        'dashboard'       => '/console/',
+        'withdrawals'     => '/console/withdrawals.php',
+        'deposits'        => '/console/deposits.php',
+        'users'           => '/console/users.php',
+        'videos'          => '/console/videos.php',
+        'upgrades'        => '/console/upgrades.php',
+        'livechat'        => '/console/livechat.php',
+        'memberships'     => '/console/memberships.php',
+        'redeem'          => '/console/redeem.php',
+        'analytics'       => '/console/analytics.php',
+        'video_analytics' => '/console/video_analytics.php',
+        'notifications'   => '/console/notifications',
+        'panduan'         => '/console/panduan',
+        'contacts'        => '/console/contacts',
+        'payment'         => '/console/payment.php',
+        'seo'             => '/console/seo.php',
+        'settings'        => '/console/settings.php',
+        'orders'          => '/console/orders.php',
+    ];
+
+    $perms = $_SESSION['staff_permissions'] ?? [];
+    foreach ($perm_map as $perm => $url) {
+        if (in_array($perm, $perms, true)) return $url;
+    }
+    return '/console/login'; // no permissions at all
+}
+
 // ── Rotate session every 30 min ────────────────────────────────────────────
 $_rot_key = $_is_head_admin ? 'admin_last_rotate' : 'staff_last_rotate';
 if (empty($_SESSION[$_rot_key]) || (time() - $_SESSION[$_rot_key]) > 1800) {

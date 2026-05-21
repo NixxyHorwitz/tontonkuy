@@ -51,6 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $has_bank = !empty($user['bank_name']) && !empty($user['account_number']) && !empty($user['account_name']);
 
+// Load available payment channels
+$channels = $pdo->query("SELECT name, type FROM payment_channels WHERE is_active=1 ORDER BY type ASC, sort_order ASC, name ASC")->fetchAll();
+$banks    = array_filter($channels, fn($c) => $c['type'] === 'bank');
+$ewallets = array_filter($channels, fn($c) => $c['type'] === 'ewallet');
+
 $pageTitle  = 'Edit Rekening — TontonKuy';
 $activePage = 'profile';
 require dirname(__DIR__) . '/partials/header.php';
@@ -153,10 +158,24 @@ require dirname(__DIR__) . '/partials/header.php';
     <form method="POST" id="edit-rek-form">
       <?= csrf_field() ?>
       <div class="form-group" style="margin-bottom:8px">
-        <label class="form-label" style="font-size:12px">Nama Bank / E-Wallet</label>
-        <input class="form-control" type="text" name="bank_name"
-               value="<?= htmlspecialchars($user['bank_name'] ?? '') ?>"
-               placeholder="BCA, GoPay, OVO, Dana, DANA..." required>
+        <label class="form-label" style="font-size:12px">Bank / E-Wallet</label>
+        <select class="form-control" name="bank_name" required>
+          <option value="">— Pilih Bank / E-Wallet —</option>
+          <?php if (!empty($banks)): ?>
+          <optgroup label="🏦 Bank">
+            <?php foreach ($banks as $ch): ?>
+            <option value="<?= htmlspecialchars($ch['name']) ?>" <?= ($user['bank_name'] ?? '') === $ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($ch['name']) ?></option>
+            <?php endforeach; ?>
+          </optgroup>
+          <?php endif; ?>
+          <?php if (!empty($ewallets)): ?>
+          <optgroup label="📱 E-Wallet">
+            <?php foreach ($ewallets as $ch): ?>
+            <option value="<?= htmlspecialchars($ch['name']) ?>" <?= ($user['bank_name'] ?? '') === $ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($ch['name']) ?></option>
+            <?php endforeach; ?>
+          </optgroup>
+          <?php endif; ?>
+        </select>
       </div>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Nomor Rekening / Akun</label>

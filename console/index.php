@@ -1,7 +1,11 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/auth.php';
-staff_require('dashboard');
+
+// Dashboard: if staff doesn't have permission, redirect to their first accessible page
+if (!staff_can('dashboard')) {
+    redirect(staff_home_url());
+}
 
 try {
     $totalUsers    = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();

@@ -37,7 +37,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $sp->execute([$staff['role_id']]);
         $_SESSION['staff_permissions'] = $sp->fetchAll(PDO::FETCH_COLUMN) ?: [];
         $pdo->prepare("UPDATE staff SET last_login=NOW() WHERE id=?")->execute([$staff['id']]);
-        redirect($next);
+        // Need auth.php helpers loaded to call staff_home_url()
+        // But auth.php redirects if not logged in — load bootstrap only
+        require_once dirname(__DIR__) . '/bootstrap.php';
+        // Manually compute first accessible page
+        $perm_priority = ['dashboard','withdrawals','deposits','users','videos','upgrades',
+            'livechat','memberships','redeem','analytics','video_analytics',
+            'notifications','panduan','contacts','payment','seo','settings','orders'];
+        $perm_urls = [
+            'dashboard'=>'/console/','withdrawals'=>'/console/withdrawals.php',
+            'deposits'=>'/console/deposits.php','users'=>'/console/users.php',
+            'videos'=>'/console/videos.php','upgrades'=>'/console/upgrades.php',
+            'livechat'=>'/console/livechat.php','memberships'=>'/console/memberships.php',
+            'redeem'=>'/console/redeem.php','analytics'=>'/console/analytics.php',
+            'video_analytics'=>'/console/video_analytics.php',
+            'notifications'=>'/console/notifications','panduan'=>'/console/panduan',
+            'contacts'=>'/console/contacts','payment'=>'/console/payment.php',
+            'seo'=>'/console/seo.php','settings'=>'/console/settings.php','orders'=>'/console/orders.php',
+        ];
+        $staff_perms = $_SESSION['staff_permissions'];
+        $home = '/console/';
+        foreach ($perm_priority as $p) {
+            if (in_array($p, $staff_perms, true)) { $home = $perm_urls[$p]; break; }
+        }
+        redirect($next !== '/console/' ? $next : $home);
     }
 
     $error = 'Username atau password salah.';

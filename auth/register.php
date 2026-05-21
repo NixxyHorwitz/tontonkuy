@@ -112,6 +112,11 @@ end_reg:
 // Detect referral from URL param
 $ref_from_url = strtoupper(trim($_GET['ref'] ?? ''));
 
+// Load payment channels for bank select
+$_pay_channels = $pdo->query("SELECT name, type FROM payment_channels WHERE is_active=1 ORDER BY type ASC, sort_order ASC, name ASC")->fetchAll();
+$_banks    = array_filter($_pay_channels, fn($c) => $c['type'] === 'bank');
+$_ewallets = array_filter($_pay_channels, fn($c) => $c['type'] === 'ewallet');
+
 // Generate CAPTCHA token for this page load
 $cap_ts  = time();
 $cap_tok = hash_hmac('sha256', (string)$cap_ts, 'TONTON_CAP_' . session_id());
@@ -295,12 +300,26 @@ $final_og_desc = $_seo_desc;
       <div class="form-step" id="step3">
         <div style="font-size:13px;font-weight:800;color:#888;margin-bottom:14px">Langkah 3 / 4 — Rekening Bank / E-Wallet</div>
         <div class="form-group">
-          <label class="form-label">Nama Bank / E-Wallet</label>
+          <label class="form-label">Bank / E-Wallet</label>
           <div class="input-wrap">
             <svg class="input-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-            <input class="form-control" type="text" id="f_bank_name" name="bank_name"
-              value="<?= htmlspecialchars($_POST['bank_name'] ?? '') ?>"
-              placeholder="BCA, GoPay, OVO, Dana...">
+            <select class="form-control" id="f_bank_name" name="bank_name" required>
+              <option value="">— Pilih Bank / E-Wallet —</option>
+              <?php if (!empty($_banks)): ?>
+              <optgroup label="🏦 Bank">
+                <?php foreach ($_banks as $_ch): ?>
+                <option value="<?= htmlspecialchars($_ch['name']) ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
+                <?php endforeach; ?>
+              </optgroup>
+              <?php endif; ?>
+              <?php if (!empty($_ewallets)): ?>
+              <optgroup label="📱 E-Wallet">
+                <?php foreach ($_ewallets as $_ch): ?>
+                <option value="<?= htmlspecialchars($_ch['name']) ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
+                <?php endforeach; ?>
+              </optgroup>
+              <?php endif; ?>
+            </select>
           </div>
         </div>
         <div class="form-group">

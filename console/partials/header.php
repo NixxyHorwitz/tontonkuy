@@ -320,7 +320,11 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
     <?php if (staff_can('payment')): ?>
     <a href="/console/payment.php" class="c-nav-link <?= $activePage==='payment'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-      Rekening & QRIS
+      Rekening &amp; QRIS
+    </a>
+    <a href="/console/banks" class="c-nav-link <?= $activePage==='banks'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Bank &amp; E-Wallet
     </a>
     <?php endif; ?>
     <?php if (staff_can('seo')): ?>
