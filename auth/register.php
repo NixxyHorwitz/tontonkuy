@@ -86,8 +86,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             // Notif Telegram
-            $msg = "<b>🆕 USER BARU</b>\nUser: {$username}\nEmail: {$email}\nWA: {$whatsapp}\nWaktu: " . date('Y-m-d H:i:s');
-            send_telegram_notif($pdo, $msg);
+            $msg = "<b>🆕 USER BARU DAFTAR</b>\n"
+                 . "👤 Username: <b>{$username}</b>\n"
+                 . "📧 Email: {$email}\n"
+                 . "📱 WhatsApp: {$whatsapp}\n"
+                 . "🏦 Bank: {$bank_name} · {$account_number} (a.n. {$account_name})\n"
+                 . "🔗 Referral: " . ($ref_by ? "dari kode <b>{$ref_by}</b>" : "Langsung (tanpa referral)") . "\n"
+                 . "🎫 Kode Ref-nya: <code>{$code}</code>\n"
+                 . "🌐 Sumber: Website\n"
+                 . "🕐 Waktu: " . date('d M Y H:i:s');
+            $site_url = rtrim(setting($pdo, 'lc_site_url', ''), '/');
+            $kb_reg = $site_url ? [[['text' => '👤 Lihat Detail User', 'url' => "{$site_url}/console/user_detail.php?id={$new_id}"]]] : [];
+            send_telegram_notif($pdo, $msg, $kb_reg);
             
             // Reset rate limit
             unset($_SESSION[$ip_key . '_attempts'], $_SESSION[$ip_key . '_lock']);
