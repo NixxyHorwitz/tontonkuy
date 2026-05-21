@@ -454,6 +454,18 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Hero Stats Card -->
 <div class="invest-hero">
+  <!-- User Balances Grid -->
+  <div class="invest-stat-grid" style="margin-bottom:10px">
+    <div class="invest-stat-box" style="background:#fff; border-color:var(--ink);">
+      <div class="invest-stat-box__lbl">📥 Saldo Deposit (Untuk Beli)</div>
+      <div class="invest-stat-box__val" style="color:var(--blue)"><?= format_rp((float)$user['balance_dep']) ?></div>
+    </div>
+    <div class="invest-stat-box" style="background:#fff; border-color:var(--ink);">
+      <div class="invest-stat-box__lbl">📤 Saldo WD (Hasil Klaim)</div>
+      <div class="invest-stat-box__val" style="color:var(--brand)"><?= format_rp((float)$user['balance_wd']) ?></div>
+    </div>
+  </div>
+
   <div class="invest-stat-grid">
     <div class="invest-stat-box invest-stat-box--active">
       <div class="invest-stat-box__lbl">🔥 Aktif Investasi</div>
