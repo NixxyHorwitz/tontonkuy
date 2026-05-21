@@ -30,8 +30,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($tab === 'close_session') {
         $sid = (int)($_POST['session_id'] ?? 0);
         if ($sid) {
+            $reason = trim($_POST['close_reason'] ?? '');
+            $closeMsg = $reason ? "Sesi ditutup oleh Admin. Alasan: {$reason}" : "Sesi ditutup oleh Admin.";
             $pdo->prepare("UPDATE chat_sessions SET status='closed' WHERE id=?")->execute([$sid]);
-            $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','Sesi ditutup oleh Admin.')")->execute([$sid]);
+            $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?, 'system', ?)")->execute([$sid, $closeMsg]);
         }
     }
 
@@ -235,12 +237,13 @@ require_once __DIR__ . '/partials/header.php';
                 <a href="/console/livechat.php?view=<?= $s['id'] ?>" class="btn btn-sm"
                    style="background:#1f2235;border:1px solid #2a2d3e;color:#ccc;padding:3px 10px;font-size:11px;border-radius:6px;text-decoration:none;">Detail</a>
                 <?php if ($s['status']==='open'): ?>
-                <form method="post" style="margin:0;">
-                  <input type="hidden" name="tab" value="close_session">
-                  <input type="hidden" name="session_id" value="<?= $s['id'] ?>">
-                  <button type="submit" onclick="return confirm('Tutup sesi ini?')"
-                    style="background:rgba(244,78,59,.15);border:1px solid rgba(244,78,59,.3);color:#F44E3B;padding:3px 10px;font-size:11px;border-radius:6px;cursor:pointer;">Tutup</button>
-                </form>
+                 <form method="post" style="margin:0;" onsubmit="return promptCloseSession(this);">
+                   <input type="hidden" name="tab" value="close_session">
+                   <input type="hidden" name="session_id" value="<?= $s['id'] ?>">
+                   <input type="hidden" name="close_reason" value="">
+                   <button type="submit"
+                     style="background:rgba(244,78,59,.15);border:1px solid rgba(244,78,59,.3);color:#F44E3B;padding:3px 10px;font-size:11px;border-radius:6px;cursor:pointer;">Tutup</button>
+                 </form>
                 <?php endif; ?>
               </div>
             </div>
@@ -287,6 +290,13 @@ require_once __DIR__ . '/partials/header.php';
       document.getElementById('bulk-bar').style.display = '';
     }
   });
+
+  function promptCloseSession(form) {
+    const reason = prompt("Masukkan alasan penutupan sesi chat (opsional/bisa dikosongkan):", "");
+    if (reason === null) return false; // Cancel clicked
+    form.querySelector('input[name="close_reason"]').value = reason.trim();
+    return true;
+  }
   </script>
 
   <!-- Detail panel -->

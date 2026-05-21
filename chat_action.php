@@ -482,10 +482,13 @@ switch ($action) {
         $sess = get_chat_session($pdo, $sessionKey);
         if (!$sess) json_err('Sesi tidak valid.');
 
+        $reason = trim($_POST['reason'] ?? $_GET['reason'] ?? '');
+        $closeMsg = $reason ? "Sesi chat telah ditutup. Alasan: {$reason}" : "Sesi chat telah ditutup.";
+
         $pdo->prepare("UPDATE chat_sessions SET status='closed' WHERE id=?")->execute([$sess['id']]);
         $pdo->prepare(
-            "INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','Sesi chat telah ditutup.')"
-        )->execute([$sess['id']]);
+            "INSERT INTO chat_messages (session_id,sender,message) VALUES (?, 'system', ?)"
+        )->execute([$sess['id'], $closeMsg]);
 
         $chatId = setting($pdo, 'lc_tg_chat_id', '');
         if ($chatId && $sess['tg_thread_id']) {
