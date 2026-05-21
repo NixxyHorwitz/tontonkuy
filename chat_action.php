@@ -539,10 +539,28 @@ switch ($action) {
                     $userEditLink = str_replace('http://', 'https://', $userEditLink);
                 }
                 
+                // Fetch user info for context
+                $euStmt = $pdo->prepare("SELECT u.*, m.name as mem_name FROM users u LEFT JOIN memberships m ON m.id=u.membership_id WHERE u.id=?");
+                $euStmt->execute([$uId]);
+                $euInfo = $euStmt->fetch();
+                
+                $pmText = "✏️ <b>Edit Saldo User</b>\n";
+                if ($euInfo) {
+                    $lvlName = $euInfo['mem_name'] ?: 'Free';
+                    $pmText .= "👤 Username: <b>{$euInfo['username']}</b>\n";
+                    $pmText .= "🏅 Level: {$lvlName}\n";
+                    $pmText .= "💰 Saldo WD: Rp" . number_format((float)$euInfo['balance_wd'], 0, ',', '.') . "\n";
+                    $pmText .= "💳 Saldo Depo: Rp" . number_format((float)$euInfo['balance_dep'], 0, ',', '.') . "\n";
+                } else {
+                    $pmText .= "User ID: {$uId}\n";
+                }
+                $pmText .= "\nKlik tombol di bawah untuk membuka Mini App Edit Saldo.";
+                
                 // Send Private Message to the admin who clicked the button
                 $pmRes = tg_api($pdo, 'sendMessage', [
-                    'chat_id' => $cb['from']['id'],
-                    'text' => "Hai admin! Silakan klik tombol di bawah untuk membuka Mini App Edit Saldo.",
+                    'chat_id'    => $cb['from']['id'],
+                    'text'       => $pmText,
+                    'parse_mode' => 'HTML',
                     'reply_markup' => [
                         'inline_keyboard' => [
                             [['text' => "📱 Buka Mini App Edit Saldo", 'web_app' => ['url' => $userEditLink]]]
