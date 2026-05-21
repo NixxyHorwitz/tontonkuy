@@ -373,6 +373,46 @@ require dirname(__DIR__) . '/partials/header.php';
 
 </div>
 
+<style>
+/* Preset tile card hover transitions */
+.btn--ghost {
+  transition: transform 0.1s, box-shadow 0.1s, background-color 0.1s;
+  cursor: pointer;
+}
+.btn--ghost:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--ink) !important;
+  background: var(--yellow) !important;
+}
+.btn--ghost:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink) !important;
+}
+
+/* Form control inputs focus */
+.form-control {
+  transition: border-color 0.1s, box-shadow 0.1s;
+}
+.form-control:focus {
+  outline: none;
+  border-color: var(--brand) !important;
+  box-shadow: 4px 4px 0 var(--ink) !important;
+}
+
+/* Action button micro-animations */
+#btn-claim-daily, #btn-buy, #btn-sell {
+  transition: transform 0.1s, box-shadow 0.1s;
+}
+#btn-claim-daily:hover:not(:disabled), #btn-buy:hover:not(:disabled), #btn-sell:hover:not(:disabled) {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--ink) !important;
+}
+#btn-claim-daily:active:not(:disabled), #btn-buy:active:not(:disabled), #btn-sell:active:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 var(--ink) !important;
+}
+</style>
+
 <script>
 const _csrf = "<?= csrf_token() ?>";
 const BUY_RATE = <?= (float)$plinko_buy_rate ?>;

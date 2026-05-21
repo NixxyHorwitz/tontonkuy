@@ -261,14 +261,9 @@ $_psvg = [
   <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="opacity:.35"><polyline points="9 18 15 12 9 6"/></svg>
 </a>
 <?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>
-<a href="/plinko" class="contact-item">
-  <div class="contact-icon" style="background:var(--yellow);color:#fff;font-size:16px;font-weight:normal">🎮</div>
-  <div style="flex:1;font-weight:800;font-size:13px">Mini Game Plinko</div>
-  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="opacity:.35"><polyline points="9 18 15 12 9 6"/></svg>
-</a>
-<a href="/plinko-shop" class="contact-item">
-  <div class="contact-icon" style="background:var(--mint);color:#ink;font-size:16px;font-weight:normal">🛒</div>
-  <div style="flex:1;font-weight:800;font-size:13px">Lapak Koin Plinko</div>
+<a href="/events" class="contact-item">
+  <div class="contact-icon" style="background:var(--yellow);color:#1A1A1A;font-size:16px;font-weight:normal">🏆</div>
+  <div style="flex:1;font-weight:800;font-size:13px">Event Plinko & Lapak</div>
   <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="opacity:.35"><polyline points="9 18 15 12 9 6"/></svg>
 </a>
 <?php endif; ?>

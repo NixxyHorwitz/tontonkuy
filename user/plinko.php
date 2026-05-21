@@ -188,7 +188,7 @@ require dirname(__DIR__) . '/partials/header.php';
             border-radius:8px;
             cursor:pointer;
             background:#f0f0f0;
-            box-shadow:1.5px 1.5px 0 var(--ink);
+            box-shadow:3px 3px 0 var(--ink);
             transition:transform .1s, background .1s;
           ">
             <?= $bSize ?>
@@ -252,15 +252,36 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <style>
 /* Bet button active states */
+.btn-bet-selector {
+  transition: transform 0.1s, box-shadow 0.1s, background-color 0.1s;
+}
+.btn-bet-selector:hover:not(.active) {
+  transform: translate(-1.5px, -1.5px);
+  box-shadow: 4.5px 4.5px 0 var(--ink) !important;
+  background: #f7f7f7 !important;
+}
 .btn-bet-selector.active {
   background: var(--yellow) !important;
   color: var(--ink) !important;
-  transform: translate(1px, 1px);
-  box-shadow: 0px 0px 0 var(--ink) !important;
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink) !important;
 }
 .btn-bet-selector:active {
-  transform: translate(1.5px, 1.5px);
+  transform: translate(3px, 3px);
   box-shadow: 0px 0px 0 var(--ink) !important;
+}
+
+/* Launch button transitions */
+#btn-drop {
+  transition: transform 0.1s, box-shadow 0.1s, background-color 0.1s;
+}
+#btn-drop:hover:not(:disabled) {
+  transform: translate(-2.5px, -2.5px);
+  box-shadow: 5.5px 5.5px 0 var(--ink) !important;
+}
+#btn-drop:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink) !important;
 }
 </style>
 
@@ -384,6 +405,22 @@ function drawBoard() {
   ctx.fillStyle = '#111';
   ctx.fillRect(0, 0, BOARD_WIDTH, BOARD_HEIGHT);
   
+  // Draw subtle premium cyber grid background
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.035)';
+  ctx.lineWidth = 1;
+  for (let x = 0; x < BOARD_WIDTH; x += 20) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, BOARD_HEIGHT);
+    ctx.stroke();
+  }
+  for (let y = 0; y < BOARD_HEIGHT; y += 20) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(BOARD_WIDTH, y);
+    ctx.stroke();
+  }
+  
   ctx.lineWidth = 1;
   ctx.strokeStyle = '#222';
   for (let r = 0; r < totalRows; r++) {
@@ -406,7 +443,7 @@ function drawBoard() {
     const bx = startBucketX + b * bucketWidth;
     
     ctx.fillStyle = '#000';
-    ctx.strokeStyle = '#fff';
+    ctx.strokeStyle = bucketColors[b]; // Neon outer borders matching multiplier!
     ctx.lineWidth = 2.5;
     
     ctx.beginPath();
@@ -418,7 +455,7 @@ function drawBoard() {
     ctx.fillRect(bx + 4, bucketY + 2, bucketWidth - 8, 4);
     
     ctx.fillStyle = bucketColors[b];
-    ctx.font = '900 10px monospace';
+    ctx.font = '900 11px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(bucketsMultipliers[b] + 'x', bx + bucketWidth/2, bucketY + 22);
   }
@@ -451,6 +488,12 @@ function drawBoard() {
       ctx.fill();
       ctx.stroke();
       ctx.shadowBlur = 0;
+      
+      // Draw tiny inner dot for professional vector graphic detail
+      ctx.beginPath();
+      ctx.arc(px, y, 1.2, 0, Math.PI * 2);
+      ctx.fillStyle = glow ? '#fff' : '#111';
+      ctx.fill();
     }
   }
 }

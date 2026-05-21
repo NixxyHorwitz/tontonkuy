@@ -97,10 +97,6 @@ require dirname(__DIR__) . '/partials/header.php';
     <a href="/upgrade"      class="hero-card__btn" style="flex:1;min-width:70px">👑 Upgrade</a>
     <a href="/redeem"       class="hero-card__btn" style="flex:1;min-width:70px">🎁 Redeem</a>
     <a href="/checkin"      class="hero-card__btn" style="flex:1;min-width:70px">📅 Absen</a>
-    <?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>
-    <a href="/plinko"       class="hero-card__btn" style="flex:1;min-width:70px;background:var(--yellow);color:var(--ink)">🎮 Plinko</a>
-    <a href="/plinko-shop"  class="hero-card__btn" style="flex:1;min-width:70px;background:var(--mint);color:var(--ink)">🛒 Lapak Koin</a>
-    <?php endif; ?>
     <a href="/panduan"      class="hero-card__btn" style="flex:1;min-width:70px;background:var(--white);color:var(--brand);border-color:var(--brand)">📖 Panduan</a>
   </div>
 </div>
@@ -134,6 +130,7 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 <div id="ref-toast" style="display:none;text-align:center;font-size:11px;font-weight:800;color:var(--green);margin-top:4px">✓ Kode disalin!</div>
 
+<?php if (setting($pdo, 'investment_enabled', '1') === '1'): ?>
 <!-- CTA Investasi Banner -->
 <div style="
   margin-top: 10px;
@@ -186,6 +183,62 @@ require dirname(__DIR__) . '/partials/header.php';
     </a>
   </div>
 </div>
+<?php endif; ?>
+
+<?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>
+<!-- CTA Plinko Event Banner -->
+<div style="
+  margin-top: 10px;
+  background: var(--mint);
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 14px 16px;
+  position: relative;
+  overflow: hidden;
+">
+  <!-- Small badge -->
+  <div style="
+    display: inline-block;
+    background: var(--yellow);
+    color: var(--ink);
+    border: 1.5px solid var(--ink);
+    border-radius: 6px;
+    font-size: 9px;
+    font-weight: 800;
+    padding: 2px 6px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+    box-shadow: 1px 1px 0 var(--ink);
+  ">
+    🎮 EVENT SERU AKTIF
+  </div>
+  
+  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+    <div style="flex: 1;">
+      <h4 style="font-size: 14px; font-weight: 900; color: var(--ink); margin: 0 0 2px 0;">🎯 Event Plinko Arcade</h4>
+      <p style="font-size: 11px; color: #333; font-weight: 700; margin: 0; line-height: 1.4;">
+        Jatuhkan bola neon, klaim koin harian gratis, atau jual kembali koin kemenanganmu langsung menjadi <strong style="color:var(--brand)">Saldo WD</strong>!
+      </p>
+    </div>
+    <a href="/events" class="btn btn--primary btn--sm" style="
+      flex-shrink: 0;
+      font-size: 11px;
+      font-weight: 900;
+      background: var(--brand);
+      color: #fff;
+      border: 2px solid var(--ink);
+      box-shadow: 2px 2px 0 var(--ink);
+      text-decoration: none;
+      padding: 6px 12px;
+      height: fit-content;
+      white-space: nowrap;
+    ">
+      🏆 Buka Event
+    </a>
+  </div>
+</div>
+<?php endif; ?>
 
 <?php if (!empty($notif_preview)): ?>
 <!-- Notification Preview -->
