@@ -2,8 +2,17 @@
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
-// Rate: 1 Coin = Rp 100 WD Balance
-define('COIN_VAL', 100.0);
+// Guard: Check if Plinko feature is enabled globally
+$plinko_enabled = setting($pdo, 'plinko_enabled', '1') === '1';
+if (!$plinko_enabled) {
+    $_SESSION['flash_home_err'] = '⚠️ Mini Game Plinko sedang dinonaktifkan oleh Administrator.';
+    redirect('/home');
+}
+
+// Rates: Read dynamically from settings
+$plinko_buy_rate  = (float)setting($pdo, 'plinko_buy_rate', '100.0');
+$plinko_sell_rate = (float)setting($pdo, 'plinko_sell_rate', '100.0');
+
 $multipliers = [10.0, 3.0, 1.5, 0.8, 0.2, 0.8, 1.5, 3.0, 10.0]; // 8 rows -> 9 buckets
 
 $flash = $flashType = '';
@@ -63,7 +72,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         
-        $cost = $qty * 100.0; // 1 Coin = Rp 100
+        $cost = $qty * $plinko_buy_rate;
         
         try {
             $pdo->beginTransaction();
@@ -101,7 +110,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    // 3. PLAY PLINKO (DROP BALL)
+    // 3. SELL COINS FOR WD BALANCE [NEW!]
+    if ($action === 'sell_coins') {
+        header('Content-Type: application/json');
+        csrf_verify() or die(json_encode(['error' => 'Invalid CSRF token.']));
+        
+        $qty = (int)($_POST['qty'] ?? 0);
+        if ($qty < 1) {
+            echo json_encode(['error' => 'Kuantitas koin yang dijual tidak valid.']);
+            exit;
+        }
+        
+        $earnings = $qty * $plinko_sell_rate;
+        
+        try {
+            $pdo->beginTransaction();
+            
+            // Lock user row
+            $stmt = $pdo->prepare("SELECT plinko_coins FROM users WHERE id = ? FOR UPDATE");
+            $stmt->execute([$user['id']]);
+            $current_coins = (int)$stmt->fetchColumn();
+            
+            if ($current_coins < $qty) {
+                $pdo->rollBack();
+                echo json_encode(['error' => 'Koin Plinko tidak mencukupi. Kamu hanya memiliki ' . $current_coins . ' koin.']);
+                exit;
+            }
+            
+            // Deduct coins and add to WD balance + total_earned
+            $pdo->prepare("UPDATE users SET plinko_coins = plinko_coins - ?, balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id = ?")
+                ->execute([$qty, $earnings, $earnings, $user['id']]);
+                
+            $pdo->commit();
+            
+            // Fetch fresh balances
+            $fresh = $pdo->query("SELECT plinko_coins, balance_wd FROM users WHERE id = {$user['id']}")->fetch();
+            echo json_encode([
+                'ok' => true,
+                'new_coins' => (int)$fresh['plinko_coins'],
+                'new_balance_wd' => format_rp((float)$fresh['balance_wd']),
+                'message' => '✓ Sukses menjual ' . $qty . ' Koin seharga ' . format_rp($earnings) . ' ke Saldo WD!'
+            ]);
+            
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
+            echo json_encode(['error' => 'Gagal memproses penjualan koin: ' . $e->getMessage()]);
+        }
+        exit;
+    }
+
+    // 4. PLAY PLINKO (DROP BALL)
     if ($action === 'play') {
         header('Content-Type: application/json');
         csrf_verify() or die(json_encode(['error' => 'Invalid CSRF token.']));
@@ -137,20 +195,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
             
             $mult = $multipliers[$bucket];
-            $reward_wd = $bet * $mult * COIN_VAL;
+            $reward_coins = (int)round($bet * $mult);
             
-            // Update user row (deduct coins, add winnings to WD balance)
+            // Update user row (deduct bet coins, add reward coins)
             $pdo->prepare("
                 UPDATE users 
-                SET plinko_coins = plinko_coins - ?, balance_wd = balance_wd + ?, total_earned = total_earned + ? 
+                SET plinko_coins = plinko_coins - ? + ?
                 WHERE id = ?
-            ")->execute([$bet, $reward_wd, $reward_wd, $user['id']]);
+            ")->execute([$bet, $reward_coins, $user['id']]);
             
-            // Write to Plinko History Log
+            // Write to Plinko History Log (reward_wd is set to 0.00, reward_coins tracks actual coins gained)
             $pdo->prepare("
-                INSERT INTO plinko_history (user_id, coins_bet, multiplier, reward_wd) 
-                VALUES (?, ?, ?, ?)
-            ")->execute([$user['id'], $bet, $mult, $reward_wd]);
+                INSERT INTO plinko_history (user_id, coins_bet, multiplier, reward_wd, reward_coins) 
+                VALUES (?, ?, ?, 0.00, ?)
+            ")->execute([$user['id'], $bet, $mult, $reward_coins]);
             
             $pdo->commit();
             
@@ -162,8 +220,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'path' => $path,
                 'bucket' => $bucket,
                 'multiplier' => $mult,
-                'reward_wd' => $reward_wd,
-                'reward_wd_fmt' => format_rp($reward_wd),
+                'reward_coins' => $reward_coins,
                 'new_coins' => (int)$fresh['plinko_coins'],
                 'new_balance_wd' => format_rp((float)$fresh['balance_wd'])
             ]);
@@ -305,15 +362,17 @@ require dirname(__DIR__) . '/partials/header.php';
 
   <!-- Buy Coins Card -->
   <div class="card" style="box-shadow:4px 4px 0 var(--ink); border:2.5px solid var(--ink);">
-    <div class="card__header" style="border-bottom:2.5px solid var(--ink); background:var(--brand); padding:10px 14px;"><div class="card__title" style="color:#fff; font-weight:900; font-size:13px;">🪙 Beli Koin Plinko</div></div>
+    <div class="card__header" style="border-bottom:2.5px solid var(--ink); background:var(--brand); padding:10px 14px;"><div class="card__title" style="color:#fff; font-weight:900; font-size:13px;">🪙 Lapak Beli Koin (Beli Koin Plinko)</div></div>
     <div class="card__body" style="padding:14px; background:#fff;">
       <div style="font-size:12px; color:#555; line-height:1.5; margin-bottom:12px;">
-        Konversi <strong>Saldo Deposit</strong> menjadi koin Plinko untuk bermain. Rate konversi: <strong>1 Koin = Rp 100</strong>.
+        Konversi <strong>Saldo Deposit</strong> menjadi koin Plinko untuk bermain. Rate konversi: <strong>1 Koin = Rp <?= number_format($plinko_buy_rate, 0, ',', '.') ?></strong>.
       </div>
       
       <!-- Preset packages -->
       <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-bottom:12px;">
-        <?php foreach ([50 => '5.000', 100 => '10.000', 250 => '25.000', 500 => '50.000'] as $coinsQty => $priceFmt): ?>
+        <?php foreach ([50, 100, 250, 500] as $coinsQty): 
+          $priceVal = $coinsQty * $plinko_buy_rate;
+        ?>
           <button type="button" onclick="setBuyQty(<?= $coinsQty ?>)" class="btn btn--ghost" style="
             font-size:11px;
             font-weight:800;
@@ -323,7 +382,7 @@ require dirname(__DIR__) . '/partials/header.php';
             background:#fcfcfc;
             box-shadow:1.5px 1.5px 0 var(--ink);
           ">
-            🪙 <?= $coinsQty ?> Koin (Rp <?= $priceFmt ?>)
+            🪙 <?= $coinsQty ?> Koin (Rp <?= number_format($priceVal, 0, ',', '.') ?>)
           </button>
         <?php endforeach; ?>
       </div>
@@ -358,8 +417,64 @@ require dirname(__DIR__) . '/partials/header.php';
       </form>
     </div>
   </div>
-  
-</div>
+
+  <!-- Sell Coins Card [NEW!] -->
+  <div class="card card--mint" style="box-shadow:4px 4px 0 var(--ink); border:2.5px solid var(--ink);">
+    <div class="card__header" style="border-bottom:2.5px solid var(--ink); background:var(--mint); padding:10px 14px;"><div class="card__title" style="color:var(--ink); font-weight:900; font-size:13px;">💰 Lapak Jual Koin (Jual Koin Plinko)</div></div>
+    <div class="card__body" style="padding:14px; background:#fff;">
+      <div style="font-size:12px; color:#555; line-height:1.5; margin-bottom:12px;">
+        Tukarkan kembali koin Plinko milikmu menjadi <strong>Saldo WD</strong> siap tarik. Rate konversi: <strong>1 Koin = Rp <?= number_format($plinko_sell_rate, 0, ',', '.') ?></strong>.
+      </div>
+      
+      <!-- Preset packages -->
+      <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-bottom:12px;">
+        <?php foreach ([50, 100, 250, 500] as $coinsQty): 
+          $earningsVal = $coinsQty * $plinko_sell_rate;
+        ?>
+          <button type="button" onclick="setSellQty(<?= $coinsQty ?>)" class="btn btn--ghost" style="
+            font-size:11px;
+            font-weight:800;
+            padding:6px;
+            border:1.5px solid var(--ink);
+            border-radius:6px;
+            background:#fcfcfc;
+            box-shadow:1.5px 1.5px 0 var(--ink);
+          ">
+            🪙 <?= $coinsQty ?> Koin (Rp <?= number_format($earningsVal, 0, ',', '.') ?>)
+          </button>
+        <?php endforeach; ?>
+      </div>
+      
+      <!-- Sell Input Form -->
+      <form id="form-sell-coins" onsubmit="sellCoins(event)">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="sell_coins">
+        <div style="display:flex; gap:8px; margin-bottom:10px;">
+          <input type="number" name="qty" id="sell-qty" class="form-control" placeholder="Min. 1 koin" min="1" required style="
+            flex:1;
+            padding:8px 10px;
+            border:2px solid var(--ink);
+            border-radius:8px;
+            font-size:12px;
+            font-weight:700;
+          ">
+          <button type="submit" id="btn-sell" class="btn btn--primary" style="
+            background:var(--mint);
+            color:var(--ink);
+            border:2px solid var(--ink);
+            box-shadow:2px 2px 0 var(--ink);
+            font-weight:900;
+            font-size:12px;
+            padding:0 16px;
+            border-radius:8px;
+          ">
+            💰 Jual
+          </button>
+        </div>
+        <div id="sell-summary" style="font-size:11px; font-weight:800; color:var(--green); text-align:right;"></div>
+      </form>
+    </div>
+  </div>
 
 <!-- History Log Card -->
 <div class="card" style="margin-bottom:16px; box-shadow:4px 4px 0 var(--ink); border:2.5px solid var(--ink);">
@@ -379,7 +494,13 @@ require dirname(__DIR__) . '/partials/header.php';
                   <div style="font-size:10px; color:#888; margin-top:2px;"><?= date('d M Y H:i', strtotime($h['created_at'])) ?></div>
                 </div>
               </div>
-              <div style="font-weight:900; color:var(--green); font-size:13px;">+<?= format_rp((float)$h['reward_wd']) ?> WD</div>
+              <div style="font-weight:900; color:var(--green); font-size:13px;">
+                <?php if (isset($h['reward_coins']) && $h['reward_coins'] > 0): ?>
+                  +<?= number_format((int)$h['reward_coins']) ?> Koin
+                <?php else: ?>
+                  +<?= format_rp((float)$h['reward_wd']) ?> WD
+                <?php endif; ?>
+              </div>
             </div>
           <?php endforeach; ?>
         </div>
@@ -405,6 +526,8 @@ require dirname(__DIR__) . '/partials/header.php';
 <script>
 // CSRF Helper
 const _csrf = "<?= csrf_token() ?>";
+const BUY_RATE = <?= (float)$plinko_buy_rate ?>;
+const SELL_RATE = <?= (float)$plinko_sell_rate ?>;
 
 // Web Audio API Synthesizer Context
 let audioCtx = null;
@@ -465,7 +588,7 @@ function toggleSound(btn) {
   btn.style.background = soundEnabled ? 'var(--yellow)' : '#ddd';
 }
 
-// Preset values updates
+// Preset values updates (Buy)
 function setBuyQty(qty) {
   const inp = document.getElementById('buy-qty');
   inp.value = qty;
@@ -479,8 +602,34 @@ document.getElementById('buy-qty').addEventListener('input', function() {
 function updateBuySummary(qty) {
   const sum = document.getElementById('buy-summary');
   if (qty >= 10) {
-    const cost = qty * 100;
+    const cost = qty * BUY_RATE;
     sum.innerText = 'Total Biaya: Rp ' + cost.toLocaleString('id-ID');
+  } else {
+    sum.innerText = '';
+  }
+}
+
+// Preset values updates (Sell) [NEW!]
+function setSellQty(qty) {
+  const inp = document.getElementById('sell-qty');
+  inp.value = qty;
+  updateSellSummary(qty);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const sellQtyInp = document.getElementById('sell-qty');
+  if (sellQtyInp) {
+    sellQtyInp.addEventListener('input', function() {
+      updateSellSummary(parseInt(this.value) || 0);
+    });
+  }
+});
+
+function updateSellSummary(qty) {
+  const sum = document.getElementById('sell-summary');
+  if (qty >= 1) {
+    const earnings = qty * SELL_RATE;
+    sum.innerText = 'Perkiraan Hasil: Rp ' + earnings.toLocaleString('id-ID');
   } else {
     sum.innerText = '';
   }
@@ -767,7 +916,7 @@ function animateGameLoop() {
       
       // Fire visual success toast
       if (typeof nToast !== 'undefined') {
-        nToast('🎯 Bola Mendarat! Multiplier ' + mult + 'x · Menang ' + finalWinData.reward_wd_fmt + ' Saldo WD!', 'success', 5000);
+        nToast('🎯 Bola Mendarat! Multiplier ' + mult + 'x · Menang ' + finalWinData.reward_coins + ' Koin Plinko!', 'success', 5000);
       }
       
       // Update stats text balances immediately
@@ -808,7 +957,7 @@ function prependHistoryRow(data) {
         <div style="font-size:10px; color:#888; margin-top:2px;">${timeStr}</div>
       </div>
     </div>
-    <div style="font-weight:900; color:var(--green); font-size:13px;">+${data.reward_wd_fmt} WD</div>
+    <div style="font-weight:900; color:var(--green); font-size:13px;">+${data.reward_coins.toLocaleString('id-ID')} Koin</div>
   `;
   
   if (container.firstChild && container.firstChild.className === 'list-item') {
@@ -974,6 +1123,57 @@ function buyCoins(e) {
   .catch(() => {
     btn.disabled = false;
     btn.innerText = '💳 Beli';
+    nToast('Koneksi terputus.', 'error');
+  });
+}
+
+// ── SELL COINS AJAX ACTION ───────────────────────────────────
+function sellCoins(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btn-sell');
+  const qty = document.getElementById('sell-qty').value;
+  btn.disabled = true;
+  btn.innerText = 'Memproses...';
+  
+  fetch('', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: 'action=sell_coins&qty=' + qty + '&_csrf=' + encodeURIComponent(_csrf)
+  })
+  .then(r => r.json())
+  .then(res => {
+    btn.disabled = false;
+    btn.innerText = '💰 Jual';
+    if (res.error) {
+      if (typeof nToast !== 'undefined') {
+        nToast(res.error, 'error');
+      } else {
+        alert(res.error);
+      }
+    } else {
+      document.getElementById('sell-qty').value = '';
+      document.getElementById('sell-summary').innerText = '';
+      
+      // Update coins & wd balances
+      document.getElementById('disp-coins').innerText = '🪙 ' + res.new_coins.toLocaleString('id-ID');
+      document.getElementById('disp-wd').innerText = res.new_balance_wd;
+      
+      const topCoins = document.getElementById('user-coins');
+      if (topCoins) topCoins.innerText = res.new_coins;
+      
+      // Synthesize sound
+      playWinChime(true);
+      
+      if (typeof nToast !== 'undefined') {
+        nToast(res.message, 'success');
+      } else {
+        alert(res.message);
+      }
+    }
+  })
+  .catch(() => {
+    btn.disabled = false;
+    btn.innerText = '💰 Jual';
     nToast('Koneksi terputus.', 'error');
   });
 }

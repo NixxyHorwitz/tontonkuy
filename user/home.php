@@ -97,7 +97,9 @@ require dirname(__DIR__) . '/partials/header.php';
     <a href="/upgrade"      class="hero-card__btn" style="flex:1;min-width:70px">👑 Upgrade</a>
     <a href="/redeem"       class="hero-card__btn" style="flex:1;min-width:70px">🎁 Redeem</a>
     <a href="/checkin"      class="hero-card__btn" style="flex:1;min-width:70px">📅 Absen</a>
+    <?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>
     <a href="/plinko"       class="hero-card__btn" style="flex:1;min-width:70px;background:var(--yellow);color:var(--ink)">🎮 Plinko</a>
+    <?php endif; ?>
     <a href="/panduan"      class="hero-card__btn" style="flex:1;min-width:70px;background:var(--white);color:var(--brand);border-color:var(--brand)">📖 Panduan</a>
   </div>
 </div>

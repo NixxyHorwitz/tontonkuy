@@ -78,10 +78,12 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
           <span class="topbar__bal-label">DEP</span>
           <span class="topbar__bal-val"><?= fmt_short((float)$user['balance_dep']) ?></span>
         </div>
+        <?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>
         <div class="topbar__bal-item" style="background:var(--yellow) !important; border-color:var(--ink) !important;" title="Koin Plinko: <?= (int)$user['plinko_coins'] ?>">
           <span class="topbar__bal-label" style="color:var(--ink) !important;">🪙</span>
           <span class="topbar__bal-val" id="user-coins" style="color:var(--ink) !important; font-weight:900;"><?= (int)$user['plinko_coins'] ?></span>
         </div>
+        <?php endif; ?>
       </div>
       <a href="/notifications" class="topbar__avatar" title="Notifikasi"
          id="notif-bell-btn"
