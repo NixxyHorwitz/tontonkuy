@@ -33,11 +33,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         try {
             $pdo->beginTransaction();
             
-            // Lock user row
-            $stmt = $pdo->prepare("SELECT plinko_coins, balance_wd FROM users WHERE id = ? FOR UPDATE");
+            // Lock user row (including plinko_rtp override)
+            $stmt = $pdo->prepare("SELECT plinko_coins, balance_wd, plinko_rtp FROM users WHERE id = ? FOR UPDATE");
             $stmt->execute([$user['id']]);
             $usrData = $stmt->fetch();
             $current_coins = (int)$usrData['plinko_coins'];
+            $user_rtp = $usrData['plinko_rtp'];
             
             if ($current_coins < $bet) {
                 $pdo->rollBack();
@@ -45,14 +46,70 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 exit;
             }
             
-            // Generate Binomial Path (8 rows)
-            $path = [];
-            $bucket = 0; // Starts at 0, goes to 8
-            for ($r = 0; $r < 8; $r++) {
-                $step = random_int(0, 1); // 0 = Left, 1 = Right
-                $path[] = $step;
-                $bucket += $step;
+            // Determine target RTP: check user override first, then global settings
+            $default_rtp = (float)setting($pdo, 'plinko_default_rtp', '99.8');
+            $rtp = $user_rtp !== null ? (float)$user_rtp : $default_rtp;
+            
+            // Mathematical bias engine for targeted Return to Player (RTP)
+            $binom_coeffs = [1, 8, 28, 56, 70, 56, 28, 8, 1];
+            $target = $rtp / 100.0;
+            $target = max(0.2, min(10.0, $target)); // Clamp within physical limits [0.2x, 10.0x]
+            
+            // Binary search to find optimal p bias factor
+            $low = 0.0001;
+            $high = 1000.0;
+            for ($i = 0; $i < 30; $i++) {
+                $mid = ($low + $high) / 2.0;
+                $sum_weight = 0.0;
+                $sum_rtp = 0.0;
+                for ($k = 0; $k <= 8; $k++) {
+                    $weight = $binom_coeffs[$k] * pow($mid, abs($k - 4));
+                    $sum_weight += $weight;
+                    $sum_rtp += $weight * $multipliers[$k];
+                }
+                $expected = $sum_rtp / $sum_weight;
+                if ($expected < $target) {
+                    $low = $mid;
+                } else {
+                    $high = $mid;
+                }
             }
+            $p_factor = ($low + $high) / 2.0;
+            
+            // Normalized probability distribution
+            $probs = [];
+            $sum_weight = 0.0;
+            for ($k = 0; $k <= 8; $k++) {
+                $weight = $binom_coeffs[$k] * pow($p_factor, abs($k - 4));
+                $probs[$k] = $weight;
+                $sum_weight += $weight;
+            }
+            for ($k = 0; $k <= 8; $k++) {
+                $probs[$k] /= $sum_weight;
+            }
+            
+            // Choose landing bucket
+            $rand = random_int(0, 1000000) / 1000000.0;
+            $cumulative = 0.0;
+            $bucket = 8; // fallback
+            for ($k = 0; $k <= 8; $k++) {
+                $cumulative += $probs[$k];
+                if ($rand <= $cumulative) {
+                    $bucket = $k;
+                    break;
+                }
+            }
+            
+            // Generate standard steps path corresponding to the landing bucket
+            $steps = [];
+            for ($i = 0; $i < $bucket; $i++) {
+                $steps[] = 1;
+            }
+            for ($i = 0; $i < (8 - $bucket); $i++) {
+                $steps[] = 0;
+            }
+            shuffle($steps);
+            $path = $steps;
             
             $mult = $multipliers[$bucket];
             $reward_coins = (int)round($bet * $mult);
@@ -711,6 +768,30 @@ function playPlinko() {
       nToast(res.error, 'error');
     } else {
       finalWinData = res;
+      
+      // Get current coin balance from UI elements
+      const topCoinsEl = document.getElementById('user-coins');
+      let currentCoins = 0;
+      if (topCoinsEl) {
+        currentCoins = parseInt(topCoinsEl.innerText.replace(/[^0-9]/g, '')) || 0;
+      } else {
+        const controlCoinsEl = document.getElementById('control-disp-coins');
+        if (controlCoinsEl) {
+          currentCoins = parseInt(controlCoinsEl.innerText.replace(/[^0-9]/g, '')) || 0;
+        }
+      }
+      
+      const deductedCoins = Math.max(0, currentCoins - activeBet);
+      
+      // Update UI displays immediately to show deducted balance
+      const dispCoinsEl = document.getElementById('disp-coins');
+      if (dispCoinsEl) dispCoinsEl.innerText = '🪙 ' + deductedCoins.toLocaleString('id-ID');
+      
+      const controlCoinsEl = document.getElementById('control-disp-coins');
+      if (controlCoinsEl) controlCoinsEl.innerText = deductedCoins.toLocaleString('id-ID') + ' Koin';
+      
+      if (topCoinsEl) topCoinsEl.innerText = deductedCoins;
+      
       ball.targetFrames = generateFramesForPath(res.path, res.bucket);
       ball.currentFrameIdx = 0;
       isPlaying = true;

@@ -91,6 +91,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $flash = 'Password admin berhasil diubah.';
         }
     }
+    if ($action === 'save_rtp') {
+        if (isset($_POST['plinko_default_rtp'])) {
+            setting_set($pdo, 'plinko_default_rtp', trim($_POST['plinko_default_rtp']));
+        }
+        $flash = 'Pengaturan RTP Plinko berhasil disimpan!';
+    }
 }
 
 $s = fn($k, $d='') => setting($pdo, $k, $d);
@@ -140,6 +146,7 @@ $tabs = [
     'bank'    => ['icon' => '🏦', 'label' => 'Rekening'],
     'wd'      => ['icon' => '🔒', 'label' => 'Jam Lock WD'],
     'system'  => ['icon' => '🔧', 'label' => 'Sistem & TG'],
+    'rtp'     => ['icon' => '🎯', 'label' => 'RTP Plinko'],
 ];
 ?>
 
@@ -405,6 +412,26 @@ $tabs = [
         </div>
       </div>
     </div>
+  <!-- TAB RTP -->
+  <div class="stab-pane <?= $active_tab==='rtp'?'active':'' ?>" id="tab-rtp">
+    <div class="row g-3"><div class="col-md-6">
+      <div class="c-card mb-3">
+        <div class="c-card-header"><span class="c-card-title">🎯 Pengaturan RTP Default Plinko</span></div>
+        <div class="c-card-body">
+          <form method="POST">
+            <?= csrf_field() ?><input type="hidden" name="action" value="save_rtp">
+            <div class="c-form-group">
+              <label class="c-label">RTP Default Plinko (%)</label>
+              <input type="number" name="plinko_default_rtp" class="c-form-control" 
+                     value="<?= htmlspecialchars($s('plinko_default_rtp','99.8')) ?>" 
+                     step="0.1" min="1" max="500" required>
+              <small class="text-secondary" style="font-size:11px">Mengatur rata-rata persentase kemenangan default game Plinko di sistem secara global. Bisa diatur di atas 100% (contoh: 120.0%).</small>
+            </div>
+            <button type="submit" class="btn btn-sm text-white mt-2" style="background:var(--brand)">Simpan Pengaturan RTP</button>
+          </form>
+        </div>
+      </div>
+    </div></div>
   </div>
 </div>
 

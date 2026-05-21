@@ -62,9 +62,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $wd   = (float)preg_replace('/\D/', '', $_POST['balance_wd']         ?? '0');
     $dep  = (float)preg_replace('/\D/', '', $_POST['balance_dep']        ?? '0');
     $ebdm = (int)  preg_replace('/\D/', '', $_POST['edit_bank_deposit_min'] ?? '50000');
+    $plinko_rtp = isset($_POST['plinko_rtp']) && $_POST['plinko_rtp'] !== '' ? (float)$_POST['plinko_rtp'] : null;
 
-    $pdo->prepare("UPDATE users SET balance_wd=?, balance_dep=?, edit_bank_deposit_min=? WHERE id=?")
-        ->execute([$wd, $dep, $ebdm, $uid]);
+    $pdo->prepare("UPDATE users SET balance_wd=?, balance_dep=?, edit_bank_deposit_min=?, plinko_rtp=? WHERE id=?")
+        ->execute([$wd, $dep, $ebdm, $plinko_rtp, $uid]);
 
     $flash = "✅ Saldo berhasil diupdate!";
     $flashType = "success";
@@ -182,6 +183,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <input type="number" name="edit_bank_deposit_min" class="form-control"
                        value="<?= (int)($u['edit_bank_deposit_min'] ?? 50000) ?>">
                 <div class="hint">Jika level user mengizinkan edit rekening, user wajib punya saldo deposit minimal ini. Default: 50.000</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="section-title">🎯 RTP Plinko Khusus User</div>
+            <div class="mb-3">
+                <label>Setting RTP User (%)</label>
+                <input type="number" name="plinko_rtp" class="form-control"
+                       value="<?= $u['plinko_rtp'] !== null ? (float)$u['plinko_rtp'] : '' ?>" step="0.1" min="0" max="500" placeholder="Kosongkan untuk mengikuti RTP Default">
+                <div class="hint">Kosongkan jika ingin mengikuti RTP Default sistem. Bisa diatur di atas 100% (contoh: 120.5).</div>
             </div>
         </div>
 
