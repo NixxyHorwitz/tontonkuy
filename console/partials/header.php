@@ -1,7 +1,16 @@
 <?php
 $pageTitle  = $pageTitle  ?? 'Console';
 $activePage = $activePage ?? '';
-$admin      = $_SESSION['admin'] ?? ['username'=>'Admin'];
+// Support both admin and staff sessions
+if (!empty($_SESSION['admin'])) {
+    $admin = $_SESSION['admin'];
+    $adminLabel = 'Head Admin';
+    $adminInitial = strtoupper(substr($admin['username'], 0, 1));
+} else {
+    $admin = ['username' => $_SESSION['staff_display'] ?? $_SESSION['staff_username'] ?? 'Staff'];
+    $adminLabel = 'Staff';
+    $adminInitial = strtoupper(substr($admin['username'], 0, 1));
+}
 
 // Pending counts for badges
 try {
@@ -210,49 +219,68 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
 
   <nav class="c-sidebar__nav">
     <div class="c-sidebar__label">Utama</div>
+    <?php if (staff_can('dashboard')): ?>
     <a href="/console/" class="c-nav-link <?= $activePage==='dashboard'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       Dashboard
     </a>
+    <?php endif; ?>
+    <?php if (staff_can('videos')): ?>
     <a href="/console/videos.php" class="c-nav-link <?= $activePage==='videos'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
       Manajemen Video
     </a>
+    <?php endif; ?>
+    <?php if (staff_can('users')): ?>
     <a href="/console/users.php" class="c-nav-link <?= $activePage==='users'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
       Pengguna
     </a>
+    <?php endif; ?>
 
     <div class="c-sidebar__label" style="margin-top:6px">Keuangan</div>
+    <?php if (staff_can('deposits')): ?>
     <a href="/console/deposits.php" class="c-nav-link <?= $activePage==='deposits'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
       Deposit
       <?php if ($pending_dep > 0): ?><span class="badge-dot"><?= $pending_dep ?></span><?php endif; ?>
     </a>
+    <?php endif; ?>
+    <?php if (staff_can('withdrawals')): ?>
     <a href="/console/withdrawals.php" class="c-nav-link <?= $activePage==='withdrawals'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg>
       Withdraw
       <?php if ($pending_wd > 0): ?><span class="badge-dot"><?= $pending_wd ?></span><?php endif; ?>
     </a>
+    <?php endif; ?>
+    <?php if (staff_can('upgrades')): ?>
     <a href="/console/upgrades.php" class="c-nav-link <?= $activePage==='upgrades'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
       Upgrade Orders
       <?php if ($pending_upg > 0): ?><span class="badge-dot"><?= $pending_upg ?></span><?php endif; ?>
     </a>
+    <?php endif; ?>
 
     <div class="c-sidebar__label" style="margin-top:6px">Analitik & Interaksi</div>
+    <?php if (staff_can('redeem')): ?>
     <a href="/console/redeem.php" class="c-nav-link <?= $activePage==='redeem'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 12v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><path d="M12 14v4"/><path d="M9 16h6"/><rect x="4" y="12" width="16" height="10" rx="2"/></svg>
       Kode Redeem
     </a>
+    <?php endif; ?>
+    <?php if (staff_can('video_analytics')): ?>
     <a href="/console/video_analytics.php" class="c-nav-link <?= $activePage==='video_analytics'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
       Analisis Video
     </a>
+    <?php endif; ?>
+    <?php if (staff_can('analytics')): ?>
     <a href="/console/analytics.php" class="c-nav-link <?= $activePage==='analytics'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Traffic Analytics
     </a>
+    <?php endif; ?>
+    <?php if (staff_can('livechat')): ?>
     <a href="/console/livechat.php" class="c-nav-link <?= $activePage==='livechat'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
       Live Chat
@@ -260,38 +288,59 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
         try { $pending_chat = (int)$pdo->query("SELECT COUNT(*) FROM chat_sessions WHERE status='open'")->fetchColumn(); } catch(\Throwable) { $pending_chat = 0; }
         if ($pending_chat > 0): ?><span class="badge-dot"><?= $pending_chat ?></span><?php endif; ?>
     </a>
+    <?php endif; ?>
+    <?php if (staff_can('notifications')): ?>
     <a href="/console/notifications" class="c-nav-link <?= $activePage==='notifications'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
       Push Notifikasi
     </a>
+    <?php endif; ?>
 
     <div class="c-sidebar__label" style="margin-top:6px">Tampilan & Konten</div>
+    <?php if (staff_can('memberships')): ?>
     <a href="/console/memberships.php" class="c-nav-link <?= $activePage==='memberships'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/></svg>
       Paket Membership
     </a>
+    <?php endif; ?>
+    <?php if (staff_can('panduan')): ?>
     <a href="/console/panduan" class="c-nav-link <?= $activePage==='panduan'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
       Panduan &amp; Popup
     </a>
+    <?php endif; ?>
+    <?php if (staff_can('contacts')): ?>
     <a href="/console/contacts" class="c-nav-link <?= $activePage==='contacts'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
       Tombol Kontak
     </a>
+    <?php endif; ?>
 
     <div class="c-sidebar__label" style="margin-top:6px">Sistem & Pengaturan</div>
+    <?php if (staff_can('payment')): ?>
     <a href="/console/payment.php" class="c-nav-link <?= $activePage==='payment'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
       Rekening & QRIS
     </a>
+    <?php endif; ?>
+    <?php if (staff_can('seo')): ?>
     <a href="/console/seo.php" class="c-nav-link <?= $activePage==='seo'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       SEO Management
     </a>
+    <?php endif; ?>
+    <?php if (staff_can('settings')): ?>
     <a href="/console/settings.php" class="c-nav-link <?= $activePage==='settings'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
       Pengaturan Umum
     </a>
+    <?php endif; ?>
+    <?php if (is_head_admin()): ?>
+    <a href="/console/staff.php" class="c-nav-link <?= $activePage==='staff'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>
+      Kelola Staff
+    </a>
+    <?php endif; ?>
   </nav>
 
   <div class="c-sidebar__footer">
@@ -313,6 +362,12 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
     </button>
     <div class="c-topbar__title"><?= htmlspecialchars($pageTitle) ?></div>
     <div class="c-topbar__clock" id="c-clock"></div>
-    <div class="c-topbar__avatar"><?= strtoupper(substr($admin['username'],0,1)) ?></div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="text-align:right">
+        <div style="font-size:12px;font-weight:700;color:#e0e0f0"><?= htmlspecialchars($admin['username']) ?></div>
+        <div style="font-size:10px;color:#555"><?= is_head_admin() ? '👑 Head Admin' : '🧑‍💼 Staff' ?></div>
+      </div>
+      <div class="c-topbar__avatar"><?= $adminInitial ?></div>
+    </div>
   </header>
   <div class="c-content">

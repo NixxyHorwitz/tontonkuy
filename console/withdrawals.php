@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/auth.php';
+staff_require('withdrawals');
 csrf_enforce();
 
 $flash = $flashType = '';

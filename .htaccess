@@ -49,6 +49,8 @@ RewriteRule ^console/contacts/?$      console/contacts.php      [L,QSA]
 RewriteRule ^console/analytics/?$     console/analytics.php     [L,QSA]
 RewriteRule ^console/notifications/?$ console/notifications.php [L,QSA]
 RewriteRule ^console/livechat/?$      console/livechat.php      [L,QSA]
+RewriteRule ^console/staff/?$         console/staff.php         [L,QSA]
+RewriteRule ^console/staff_roles/?$   console/staff_roles.php   [L,QSA]
 
 # ── Custom error pages ─────────────────────
 ErrorDocument 404 /404.php

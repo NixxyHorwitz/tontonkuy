@@ -1,6 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once __DIR__ . '/auth.php';
+staff_require('analytics');
 
 $range = (int)($_GET['range'] ?? 7);
 $range = in_array($range, [7,14,30]) ? $range : 7;

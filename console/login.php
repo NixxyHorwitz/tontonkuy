@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
-if (!empty($_SESSION['admin'])) redirect('/console/');
+if (!empty($_SESSION['admin']) || !empty($_SESSION['staff_id'])) redirect('/console/');
 csrf_enforce();
 
 $error = '';
@@ -10,6 +10,8 @@ $next  = preg_replace('/[^\\/a-zA-Z0-9_.?=&%-]/', '', $_GET['next'] ?? '/console
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username'] ?? '');
     $password = $_POST['password'] ?? '';
+
+    // 1. Try head admin
     $stmt = $pdo->prepare("SELECT * FROM admins WHERE username=?");
     $stmt->execute([$username]);
     $admin = $stmt->fetch();
@@ -19,6 +21,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['admin_last_rotate'] = time();
         redirect($next);
     }
+
+    // 2. Try staff
+    $stmt2 = $pdo->prepare("SELECT * FROM staff WHERE username=? AND is_active=1");
+    $stmt2->execute([$username]);
+    $staff = $stmt2->fetch();
+    if ($staff && password_verify($password, $staff['password_hash'])) {
+        session_regenerate_id(true);
+        $_SESSION['staff_id']          = $staff['id'];
+        $_SESSION['staff_username']    = $staff['username'];
+        $_SESSION['staff_display']     = $staff['display_name'];
+        $_SESSION['staff_last_rotate'] = time();
+        // Load permissions
+        $sp = $pdo->prepare("SELECT p.permission FROM staff_role_permissions p WHERE p.role_id = ?");
+        $sp->execute([$staff['role_id']]);
+        $_SESSION['staff_permissions'] = $sp->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        $pdo->prepare("UPDATE staff SET last_login=NOW() WHERE id=?")->execute([$staff['id']]);
+        redirect($next);
+    }
+
     $error = 'Username atau password salah.';
 }
 
