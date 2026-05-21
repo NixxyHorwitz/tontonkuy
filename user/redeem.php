@@ -183,7 +183,7 @@ function checkRedeem(e) {
     fetch('', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: 'action=check&code=' + encodeURIComponent(code) + '&csrf_token=' + encodeURIComponent(form.querySelector('input[name="csrf_token"]')?.value || '')
+        body: 'action=check&code=' + encodeURIComponent(code) + '&_csrf=' + encodeURIComponent(form.querySelector('input[name="_csrf"]')?.value || '')
     })
     .then(r => r.json())
     .then(res => {
