@@ -41,13 +41,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // But auth.php redirects if not logged in — load bootstrap only
         require_once dirname(__DIR__) . '/bootstrap.php';
         // Manually compute first accessible page
-        $perm_priority = ['dashboard','withdrawals','deposits','users','videos','upgrades',
+        $perm_priority = ['dashboard','withdrawals','deposits','users','user_txns','videos','upgrades',
             'livechat','memberships','redeem','analytics','video_analytics',
             'notifications','panduan','contacts','payment','seo','settings','orders'];
         $perm_urls = [
             'dashboard'=>'/console/','withdrawals'=>'/console/withdrawals.php',
             'deposits'=>'/console/deposits.php','users'=>'/console/users.php',
-            'videos'=>'/console/videos.php','upgrades'=>'/console/upgrades.php',
+            'user_txns'=>'/console/user_txns','videos'=>'/console/videos.php','upgrades'=>'/console/upgrades.php',
             'livechat'=>'/console/livechat.php','memberships'=>'/console/memberships.php',
             'redeem'=>'/console/redeem.php','analytics'=>'/console/analytics.php',
             'video_analytics'=>'/console/video_analytics.php',

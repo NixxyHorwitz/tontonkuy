@@ -7,6 +7,7 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 define('STAFF_PERMISSIONS', [
     'dashboard'       => 'Dashboard',
     'users'           => 'Pengguna',
+    'user_txns'       => 'Transaksi User',
     'videos'          => 'Manajemen Video',
     'deposits'        => 'Deposit',
     'withdrawals'     => 'Withdraw',
@@ -97,6 +98,7 @@ function staff_home_url(): string {
         'withdrawals'     => '/console/withdrawals.php',
         'deposits'        => '/console/deposits.php',
         'users'           => '/console/users.php',
+        'user_txns'       => '/console/user_txns',
         'videos'          => '/console/videos.php',
         'upgrades'        => '/console/upgrades.php',
         'livechat'        => '/console/livechat.php',
