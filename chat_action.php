@@ -177,16 +177,28 @@ switch ($action) {
             $inlineKbd['inline_keyboard'][] = [['text' => "🖥️ Buka Console", 'url' => $consoleLink]];
         }
         if ($userId) {
-            $userDetailLink = $siteUrl ? "{$siteUrl}/console/user_detail.php?id={$userId}" : null;
-            $userEditLink = $siteUrl ? "{$siteUrl}/console/user_edit.php?id={$userId}" : null;
-            
             $u_btns = [];
-            if ($userDetailLink) $u_btns[] = ['text' => "ℹ️ Cek Detail", 'callback_data' => "uinfo:{$userId}"];
-            if ($userEditLink) $u_btns[] = ['text' => "✏️ Edit Saldo", 'web_app' => ['url' => $userEditLink]];
             
-            if (!empty($u_btns)) {
-                $inlineKbd['inline_keyboard'][] = $u_btns;
+            // Cek Detail always available via callback
+            $u_btns[] = ['text' => "ℹ️ Cek Detail", 'callback_data' => "uinfo:{$userId}"];
+            
+            // Fallback siteUrl if empty
+            $actualSiteUrl = $siteUrl;
+            if (!$actualSiteUrl && isset($_SERVER['HTTP_HOST'])) {
+                $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+                $actualSiteUrl = "{$scheme}://{$_SERVER['HTTP_HOST']}";
             }
+            
+            if ($actualSiteUrl) {
+                $userEditLink = "{$actualSiteUrl}/console/user_edit.php?id={$userId}";
+                if (strpos($actualSiteUrl, 'https://') === 0) {
+                    $u_btns[] = ['text' => "✏️ Edit Saldo", 'web_app' => ['url' => $userEditLink]];
+                } else {
+                    $u_btns[] = ['text' => "✏️ Edit Saldo", 'url' => $userEditLink];
+                }
+            }
+            
+            $inlineKbd['inline_keyboard'][] = $u_btns;
         }
         $inlineKbd['inline_keyboard'][] = [
             ['text' => "🔒 Tutup", 'callback_data' => "close_sess:{$sessId}"],
