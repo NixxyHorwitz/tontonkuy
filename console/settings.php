@@ -412,6 +412,8 @@ $tabs = [
         </div>
       </div>
     </div>
+  </div><!-- end tab-system -->
+
   <!-- TAB RTP -->
   <div class="stab-pane <?= $active_tab==='rtp'?'active':'' ?>" id="tab-rtp">
     <div class="row g-3"><div class="col-md-6">
