@@ -294,12 +294,155 @@ require dirname(__DIR__) . '/partials/header.php';
 .portfolio-card__progress-lbl { font-size: 11px; font-weight: 800; color: #444; display: flex; justify-content: space-between; margin-bottom: 4px; }
 .portfolio-card__bar { width: 100%; height: 8px; background: #ddd; border-radius: 4px; border: 1.5px solid var(--ink); overflow: hidden; }
 .portfolio-card__fill { height: 100%; background: var(--green); border-radius: 3px; }
+
+/* ── Invest Empty Card ─────────────────── */
+.invest-empty-card {
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px 16px;
+  text-align: center;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.invest-empty-card__icon {
+  font-size: 32px;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.invest-empty-card__title {
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 0;
+}
+.invest-empty-card__desc {
+  font-size: 12px;
+  color: #666;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* ── Guide Modal ───────────────────────── */
+.guide-modal {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  backdrop-filter: blur(3px);
+}
+.guide-modal__card {
+  width: 100%;
+  max-width: 420px;
+  background: var(--white);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 6px 6px 0 var(--ink);
+  overflow: hidden;
+  animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+}
+.guide-modal__header {
+  background: var(--yellow);
+  border-bottom: 3px solid var(--ink);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.guide-modal__title {
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--ink);
+  margin: 0;
+}
+.guide-modal__close {
+  background: transparent;
+  border: none;
+  font-size: 20px;
+  font-weight: 900;
+  cursor: pointer;
+  color: var(--ink);
+  padding: 0;
+  line-height: 1;
+}
+.guide-modal__body {
+  padding: 16px;
+  overflow-y: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.guide-step {
+  display: flex;
+  gap: 12px;
+  background: rgba(0, 0, 0, 0.02);
+  border: 2px solid var(--ink);
+  border-radius: 10px;
+  padding: 12px;
+  box-shadow: 2px 2px 0 var(--ink);
+  text-align: left;
+}
+.guide-step__num {
+  width: 28px;
+  height: 28px;
+  background: var(--mint);
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 900;
+  flex-shrink: 0;
+  box-shadow: 1px 1px 0 var(--ink);
+}
+.guide-step__content {
+  flex: 1;
+}
+.guide-step__title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+  margin: 0 0 4px 0;
+}
+.guide-step__text {
+  font-size: 11px;
+  color: #555;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.4;
+}
+.guide-modal__footer {
+  padding: 12px 16px;
+  border-top: 3px dashed #ccc;
+  background: #fdfdfd;
+}
 </style>
 
 <!-- Page Header Title -->
-<div class="page-title-bar">
-  <h1>📈 Portal Investasi</h1>
-  <p>Tumbuhkan saldo Anda dengan kontrak investasi yield tinggi.</p>
+<div class="page-title-bar" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+  <div>
+    <h1 style="margin:0">📈 Portal Investasi</h1>
+    <p style="margin:2px 0 0 0">Tumbuhkan saldo Anda dengan kontrak investasi yield tinggi.</p>
+  </div>
+  <button type="button" onclick="openGuideModal()" class="btn btn--sm" style="background:var(--lavender); color:var(--ink); border:2.5px solid var(--ink); box-shadow:2px 2px 0 var(--ink); font-weight:800; font-size:12px; padding:6px 12px; display:inline-flex; align-items:center; gap:4px; height:fit-content; white-space:nowrap;">
+    📖 Panduan
+  </button>
 </div>
 
 <!-- Flash Alert -->
@@ -353,10 +496,10 @@ require dirname(__DIR__) . '/partials/header.php';
 <!-- Tab 1: Packages Store -->
 <div id="packages-tab" class="tab-content-invest active">
   <?php if (empty($packages)): ?>
-    <div class="card p-4 text-center">
-      <span style="font-size:32px">📭</span>
-      <h6 class="fw-bold mt-2" style="font-weight:800">Paket investasi kosong</h6>
-      <p style="font-size:12px;color:#666">Saat ini tidak ada paket investasi aktif yang tersedia.</p>
+    <div class="invest-empty-card">
+      <span class="invest-empty-card__icon">📭</span>
+      <h6 class="invest-empty-card__title">Paket investasi kosong</h6>
+      <p class="invest-empty-card__desc">Saat ini tidak ada paket investasi aktif yang tersedia.</p>
     </div>
   <?php else: ?>
     <?php foreach ($packages as $pkg): ?>
@@ -398,10 +541,10 @@ require dirname(__DIR__) . '/partials/header.php';
   </div>
   
   <?php if (empty($active_portfolios)): ?>
-    <div class="card p-4 text-center" style="background:#fff">
-      <span style="font-size:32px">💼</span>
-      <h6 style="font-weight:800;margin-top:8px;font-size:14px">Belum Ada Portofolio Aktif</h6>
-      <p style="font-size:12px;color:#666">Anda belum memiliki kontrak investasi yang berjalan saat ini. Silakan beli paket di Toko.</p>
+    <div class="invest-empty-card">
+      <span class="invest-empty-card__icon">💼</span>
+      <h6 class="invest-empty-card__title">Belum Ada Portofolio Aktif</h6>
+      <p class="invest-empty-card__desc">Anda belum memiliki kontrak investasi yang berjalan saat ini. Silakan beli paket di Toko.</p>
     </div>
   <?php else: ?>
     <?php foreach ($active_portfolios as $ui): ?>
@@ -470,10 +613,10 @@ require dirname(__DIR__) . '/partials/header.php';
   </div>
   
   <?php if (empty($profit_logs)): ?>
-    <div class="card p-4 text-center" style="background:#fff">
-      <span style="font-size:32px">📜</span>
-      <h6 style="font-weight:800;margin-top:8px;font-size:14px">Belum Ada Riwayat Klaim</h6>
-      <p style="font-size:12px;color:#666">Riwayat klaim keuntungan portofolio Anda akan dicatat di sini.</p>
+    <div class="invest-empty-card">
+      <span class="invest-empty-card__icon">📜</span>
+      <h6 class="invest-empty-card__title">Belum Ada Riwayat Klaim</h6>
+      <p class="invest-empty-card__desc">Riwayat klaim keuntungan portofolio Anda akan dicatat di sini.</p>
     </div>
   <?php else: ?>
     <div class="card"><div class="card__body" style="padding:4px 0">
@@ -491,6 +634,60 @@ require dirname(__DIR__) . '/partials/header.php';
       <?php endforeach; ?>
     </div></div>
   <?php endif; ?>
+<!-- Modal Panduan Investasi -->
+<div id="guide-modal-el" class="guide-modal" style="display:none;">
+  <div class="guide-modal__card">
+    <div class="guide-modal__header">
+      <h3 class="guide-modal__title">📖 Panduan Pemula Investasi</h3>
+      <button type="button" onclick="closeGuideModal()" class="guide-modal__close">×</button>
+    </div>
+    <div class="guide-modal__body">
+      <div style="font-size:12px; font-weight:700; color:#444; line-height:1.5; text-align:center; margin-bottom:4px;">
+        Selamat datang di **Portal Investasi TontonKuy**! Pelajari 4 langkah mudah untuk mulai melipatgandakan saldo Anda:
+      </div>
+      
+      <!-- Step 1 -->
+      <div class="guide-step">
+        <div class="guide-step__num">1</div>
+        <div class="guide-step__content">
+          <h4 class="guide-step__title">Top Up Saldo Deposit</h4>
+          <p class="guide-step__text">Beli paket investasi menggunakan **Saldo Deposit**. Lakukan isi ulang terlebih dahulu via menu Deposit jika saldo Anda belum mencukupi.</p>
+        </div>
+      </div>
+      
+      <!-- Step 2 -->
+      <div class="guide-step">
+        <div class="guide-step__num">2</div>
+        <div class="guide-step__content">
+          <h4 class="guide-step__title">Aktifkan Kontrak Pilihan</h4>
+          <p class="guide-step__text">Pilih paket investasi terbaik di **Toko Paket** sesuai budget Anda. Tiap paket memiliki harga, durasi hari, dan persentase keuntungan (ROI) yang berbeda.</p>
+        </div>
+      </div>
+      
+      <!-- Step 3 -->
+      <div class="guide-step">
+        <div class="guide-step__num">3</div>
+        <div class="guide-step__content">
+          <h4 class="guide-step__title">Pantau Keuntungan Real-time</h4>
+          <p class="guide-step__text">Setelah membeli, kontrak Anda berjalan otomatis. Pantau hitung mundur siklus profit harian 24-jam di tab **Porto Anda**.</p>
+        </div>
+      </div>
+      
+      <!-- Step 4 -->
+      <div class="guide-step">
+        <div class="guide-step__num">4</div>
+        <div class="guide-step__content">
+          <h4 class="guide-step__title">Klaim Profit ke Saldo Penarikan</h4>
+          <p class="guide-step__text">Klaim profit harian Anda kapan saja dengan tombol **Klaim Semua Profit**. Keuntungan akan langsung masuk ke **Saldo WD** Anda dan siap ditarik tunai!</p>
+        </div>
+      </div>
+    </div>
+    <div class="guide-modal__footer">
+      <button type="button" onclick="closeGuideModal()" class="btn btn--primary btn--full btn--sm" style="background:var(--brand); color:#fff; border:2.5px solid var(--ink); box-shadow:3px 3px 0 var(--ink); font-weight:900;">
+        🚀 Saya Mengerti, Mulai Investasi!
+      </button>
+    </div>
+  </div>
 </div>
 
 <!-- Modal Beli Confirmation -->
@@ -509,7 +706,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <div id="buy-pkg-name" style="font-size:18px;font-weight:900;color:var(--ink);margin-bottom:4px;">Nama Paket</div>
         <div id="buy-pkg-price" style="font-size:24px;font-weight:900;color:var(--brand);margin-bottom:12px;">Rp 0</div>
         
-        <div class="p-3 mb-3" style="background:rgba(255,107,53,0.05);border:1.5px dashed var(--brand);border-radius:8px;font-size:11px;color:#444;font-weight:700">
+        <div style="background:rgba(255,107,53,0.05);border:1.5px dashed var(--brand);border-radius:8px;font-size:11px;color:#444;font-weight:700;padding:12px;margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;margin-bottom:2px">
             <span>Sumber Saldo:</span>
             <span style="color:var(--blue)">Saldo Deposit</span>
@@ -587,8 +784,23 @@ function closePurchaseModal() {
   document.getElementById('buy-confirm-modal').style.display = 'none';
 }
 
-// Portfolio Timers
+// Guide Modal Handlers
+function openGuideModal() {
+  document.getElementById('guide-modal-el').style.display = 'flex';
+}
+function closeGuideModal() {
+  document.getElementById('guide-modal-el').style.display = 'none';
+  localStorage.setItem('invest_guide_viewed_v1', 'true');
+}
+
+// Portfolio Timers & Auto-guide Trigger
 document.addEventListener("DOMContentLoaded", () => {
+  // Check if first time to show guide
+  const viewed = localStorage.getItem('invest_guide_viewed_v1');
+  if (!viewed) {
+    openGuideModal();
+  }
+
   const cards = document.querySelectorAll(".active-portfolio-card");
   
   function updateTimers() {
