@@ -376,7 +376,7 @@ $final_og_desc = $_seo_desc;
 
         <div style="display:flex;gap:8px">
           <button type="button" class="btn btn--ghost" onclick="goStep(3)" style="flex:0 0 auto">← Kembali</button>
-          <button type="submit" id="submit-btn" class="btn btn--primary btn--full" disabled
+          <button type="submit" id="submit-btn" class="btn btn--primary btn--full no-dbl-submit" disabled
             style="opacity:.5;cursor:not-allowed">
             🎉 Daftar Sekarang
           </button>

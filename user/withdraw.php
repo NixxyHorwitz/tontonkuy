@@ -52,9 +52,20 @@ $pending_wd = $pdo->prepare("SELECT id FROM withdrawals WHERE user_id=? AND stat
 $pending_wd->execute([$user['id']]);
 $has_pending_wd = (bool)$pending_wd->fetchColumn();
 
-
+// ── Double-submit prevention ──────────────────────────────────────────────
+$_ftk_wd = 'wd_form_token';
+if (empty($_SESSION[$_ftk_wd])) $_SESSION[$_ftk_wd] = bin2hex(random_bytes(16));
+$_form_token_wd = $_SESSION[$_ftk_wd];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $submitted_ftk_wd = $_POST['form_token'] ?? '';
+    if (!hash_equals($_SESSION[$_ftk_wd] ?? '', $submitted_ftk_wd)) {
+        $flash = '⚠️ Permintaan sudah diproses atau tidak valid. Silakan refresh halaman.';
+        $flashType = 'error';
+        goto end_wd;
+    }
+    unset($_SESSION[$_ftk_wd]);
+
     if (!$user['can_withdraw']) {
         $flash = '❌ Akses Withdraw dibatasi. Hubungi admin untuk informasi lebih lanjut.'; $flashType = 'error';
     } elseif ($wd_locked) {
@@ -106,10 +117,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             send_telegram_notif($pdo, $msg, $kb);
             
+            // Regenerate token
+            $_SESSION[$_ftk_wd] = bin2hex(random_bytes(16));
             $flash = '✅ Permintaan withdraw dikirim! Proses 1-10 menit.';
         }
     }
 }
+end_wd:
 
 $wds = $pdo->prepare("SELECT * FROM withdrawals WHERE user_id=? ORDER BY created_at DESC LIMIT 6");
 $wds->execute([$user['id']]);
@@ -197,6 +211,7 @@ require dirname(__DIR__) . '/partials/header.php';
   <div class="card__body">
     <form method="POST" id="wd-form">
       <?= csrf_field() ?>
+      <input type="hidden" name="form_token" value="<?= htmlspecialchars($_form_token_wd) ?>">
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Jumlah Withdraw (Rp)</label>
         <input class="form-control" type="number" name="amount"
@@ -255,7 +270,7 @@ require dirname(__DIR__) . '/partials/header.php';
       <?php elseif ($wd_locked): ?>
         <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px">⏰ Sedang Ditutup</button>
       <?php else: ?>
-        <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full" style="font-size:13px">💸 Ajukan Penarikan</button>
+        <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full no-dbl-submit" style="font-size:13px">💸 Ajukan Penarikan</button>
       <?php endif; ?>
     </form>
   </div>

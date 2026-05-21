@@ -16,6 +16,22 @@ $u_min = (int)setting($pdo, 'depo_unique_code_min', '1');
 $u_max = (int)setting($pdo, 'depo_unique_code_max', '999');
 $unique_code = $u_enabled ? random_int(min($u_min, $u_max), max($u_min, $u_max)) : 0;
 
+// ── Double-submit prevention ──────────────────────────────────────────────
+$_ftk = 'dep_form_token';
+if (empty($_SESSION[$_ftk])) $_SESSION[$_ftk] = bin2hex(random_bytes(16));
+$_form_token = $_SESSION[$_ftk];
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $submitted_ftk = $_POST['form_token'] ?? '';
+    if (!hash_equals($_SESSION[$_ftk] ?? '', $submitted_ftk)) {
+        $flash = '⚠️ Permintaan sudah diproses atau tidak valid. Silakan refresh halaman.';
+        $flashType = 'error';
+        goto end_dep;
+    }
+    // Invalidate immediately to prevent double-submit
+    unset($_SESSION[$_ftk]);
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submit_bank') {
     $amount = (int) preg_replace('/\D/', '', $_POST['amount'] ?? '0');
     $u_code = (int) preg_replace('/\D/', '', $_POST['unique_code'] ?? '0');
@@ -51,6 +67,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
         ];
         send_telegram_notif($pdo, $msg, $kb);
         
+        // Success — regenerate token for next request
+        $_SESSION[$_ftk] = bin2hex(random_bytes(16));
         $flash = '✅ Bukti transfer dikirim! Admin akan memproses dalam 1×24 jam.';
     }
 }
@@ -155,6 +173,7 @@ require dirname(__DIR__) . '/partials/header.php';
     </div>
     <form method="POST" enctype="multipart/form-data">
       <?= csrf_field() ?>
+      <input type="hidden" name="form_token" value="<?= htmlspecialchars($_form_token) ?>">
       <input type="hidden" name="action" value="submit_bank">
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Jumlah Transfer (Rp)</label>
@@ -180,7 +199,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <label class="form-label" style="font-size:12px">Bukti Transfer <span style="font-weight:400;color:#888">(JPG/PNG)</span></label>
         <input class="form-control" type="file" name="proof" accept="image/*" style="padding:8px;font-size:12px">
       </div>
-      <button type="submit" class="btn btn--primary btn--full" style="font-size:13px">📤 Kirim Bukti Transfer</button>
+      <button type="submit" class="btn btn--primary btn--full no-dbl-submit" style="font-size:13px">📤 Kirim Bukti Transfer</button>
     </form>
   </div>
 </div>
@@ -201,6 +220,7 @@ require dirname(__DIR__) . '/partials/header.php';
   <div class="dep-method__bd" id="body-qris">
     <form method="POST" id="qris-form">
       <?= csrf_field() ?>
+      <input type="hidden" name="form_token" value="<?= htmlspecialchars($_form_token) ?>">
       <input type="hidden" name="action" value="submit_qris">
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Jumlah Deposit (Rp)</label>
@@ -225,7 +245,7 @@ require dirname(__DIR__) . '/partials/header.php';
       <div class="alert alert--info" style="margin-bottom:10px;font-size:11px;padding:8px 10px">
         📲 Kamu akan diarahkan ke halaman scan QR setelah klik Bayar.
       </div>
-      <button type="submit" class="btn btn--primary btn--full" style="font-size:13px">📲 Bayar via QRIS →</button>
+      <button type="submit" class="btn btn--primary btn--full no-dbl-submit" style="font-size:13px">📲 Bayar via QRIS →</button>
     </form>
   </div>
 </div>
