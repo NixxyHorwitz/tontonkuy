@@ -3,7 +3,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
 $flash = $flashType = '';
-$active_tab = 'profil'; // default
+$active_tab = 'profil'; // default — always open profil tab
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
@@ -44,10 +44,17 @@ $st = $pdo->prepare("SELECT COUNT(*) FROM watch_history WHERE user_id=?"); $st->
 $refs = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by=?"); $refs->execute([$user['referral_code']]); $refs = (int)$refs->fetchColumn();
 
 $membership_name = 'Free';
+$membership_allow_edit_bank = false;
 if ($user['membership_id'] && $user['membership_expires_at'] && strtotime($user['membership_expires_at']) > time()) {
-    $ms = $pdo->prepare("SELECT name FROM memberships WHERE id=?"); $ms->execute([$user['membership_id']]);
-    $membership_name = $ms->fetchColumn() ?: 'Free';
+    $ms = $pdo->prepare("SELECT name, allow_edit_bank FROM memberships WHERE id=?"); $ms->execute([$user['membership_id']]);
+    $ms = $ms->fetch();
+    $membership_name = $ms['name'] ?? 'Free';
+    $membership_allow_edit_bank = (bool)($ms['allow_edit_bank'] ?? false);
 }
+
+$edit_bank_min_dep = (int)($user['edit_bank_deposit_min'] ?? 50000);
+$dep_ok_for_edit   = (float)$user['balance_dep'] >= $edit_bank_min_dep;
+$show_edit_rek_btn = $membership_allow_edit_bank;
 
 // Contact buttons
 try {
@@ -137,10 +144,66 @@ $_psvg = [
   <button onclick="copyRef()" class="btn btn--secondary btn--sm" style="flex-shrink:0;font-size:11px;padding:4px 10px">Salin</button>
 </div>
 
-<!-- Tabs: Edit Profil | Ganti Password -->
+<!-- Tabs: Profil | Edit Profil | Ganti Password -->
 <div class="prof-tabs" role="tablist">
-  <button class="prof-tab <?= $active_tab === 'edit' ? 'active' : '' ?>" onclick="switchTab('edit')" id="tab-edit">✏️ Edit Profil</button>
+  <button class="prof-tab <?= $active_tab === 'profil' ? 'active' : '' ?>" onclick="switchTab('profil')" id="tab-profil">👤 Profil</button>
+  <button class="prof-tab <?= $active_tab === 'edit' ? 'active' : '' ?>" onclick="switchTab('edit')" id="tab-edit">✏️ Edit</button>
   <button class="prof-tab <?= $active_tab === 'password' ? 'active' : '' ?>" onclick="switchTab('password')" id="tab-password">🔐 Password</button>
+</div>
+
+<!-- Tab: Profil (default) -->
+<div class="prof-tab-panel <?= $active_tab === 'profil' ? 'active' : '' ?>" id="panel-profil">
+  <div class="card" style="margin-bottom:12px">
+    <div class="card__body">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div style="display:flex;justify-content:space-between;font-size:13px">
+          <span style="color:#888;font-weight:600">📝 Username</span>
+          <span style="font-weight:800"><?= htmlspecialchars($user['username']) ?></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px">
+          <span style="color:#888;font-weight:600">📧 Email</span>
+          <span style="font-weight:700;font-size:12px"><?= htmlspecialchars($user['email']) ?></span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px">
+          <span style="color:#888;font-weight:600">📱 WhatsApp</span>
+          <span style="font-weight:700"><?= htmlspecialchars($user['whatsapp']) ?></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <!-- Bank info -->
+  <div class="card" style="margin-bottom:12px">
+    <div class="card__header">
+      <div class="card__title" style="font-size:13px">🏦 Rekening Bank</div>
+    </div>
+    <div class="card__body">
+      <?php if (!empty($user['bank_name'])): ?>
+      <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:#888;font-weight:600">Bank</span><span style="font-weight:800"><?= htmlspecialchars($user['bank_name']) ?></span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:#888;font-weight:600">Nomor</span><span style="font-weight:800"><?= htmlspecialchars($user['account_number']) ?></span>
+        </div>
+        <div style="display:flex;justify-content:space-between">
+          <span style="color:#888;font-weight:600">A/N</span><span style="font-weight:800"><?= htmlspecialchars($user['account_name']) ?></span>
+        </div>
+      </div>
+      <?php else: ?>
+      <div style="color:#aaa;font-size:12px;text-align:center;padding:8px">Belum ada rekening tersimpan.</div>
+      <?php endif; ?>
+      <?php if ($show_edit_rek_btn): ?>
+      <div style="margin-top:12px;padding-top:10px;border-top:1px dashed #ddd">
+        <a href="/edit-rekening" class="btn btn--ghost btn--full" style="font-size:12px">
+          ✏️ Edit Rekening Bank
+          <?php if (!$dep_ok_for_edit): ?>
+          <span style="font-size:10px;color:#f59e0b;margin-left:4px">🔒 Butuh deposit Rp <?= number_format($edit_bank_min_dep,0,'','') ?></span>
+          <?php endif; ?>
+        </a>
+      </div>
+      <?php endif; ?>
+    </div>
+  </div>
 </div>
 
 <!-- Tab: Edit Profil -->
