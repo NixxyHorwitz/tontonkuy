@@ -140,7 +140,6 @@ require dirname(__DIR__) . '/partials/header.php';
 .wd-bal{border:2.5px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink);background:var(--mint);padding:14px 16px;margin-bottom:12px}
 .wd-bal__lbl{font-size:11px;font-weight:700;color:#444;margin-bottom:2px}
 .wd-bal__val{font-size:22px;font-weight:900}
-.wd-bal__min{font-size:11px;color:#555;margin-top:2px}
 .qty-pills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
 .qty-pills button{font-size:11px;padding:4px 10px}
 </style>
@@ -149,7 +148,10 @@ require dirname(__DIR__) . '/partials/header.php';
 <div class="wd-bal">
   <div class="wd-bal__lbl">💸 Saldo Penarikan</div>
   <div class="wd-bal__val"><?= format_rp((float)$user['balance_wd']) ?></div>
-  <div class="wd-bal__min">Min: <?= format_rp($min_withdraw) ?><?= $max_withdraw > 0 ? ' | Max: '.format_rp($max_withdraw) : '' ?></div>
+</div>
+
+<div class="alert" style="margin-bottom:12px;font-size:12px;background:rgba(88,86,214,0.1);border:1px solid rgba(88,86,214,0.3);color:var(--ink)">
+  ℹ️ <strong>Batas Penarikan:</strong> Minimal <?= format_rp($min_withdraw) ?><?= $max_withdraw > 0 ? ' & Maksimal ' . format_rp($max_withdraw) : '' ?>
 </div>
 
 <?php if ($flash): ?>
@@ -193,7 +195,6 @@ require dirname(__DIR__) . '/partials/header.php';
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Jumlah Withdraw (Rp)</label>
         <input class="form-control" type="number" name="amount"
-               min="<?= $min_withdraw ?>" max="<?= $max_available ?>"
                step="1000" placeholder="Min. <?= number_format($min_withdraw,0,'','') ?>" required>
       </div>
       <div class="qty-pills">
@@ -267,6 +268,18 @@ require dirname(__DIR__) . '/partials/header.php';
   form.addEventListener('submit', function(e) {
     const amtInput = document.querySelector('[name=amount]');
     const amt = amtInput ? parseFloat(amtInput.value) : 0;
+    const maxWd = <?= (float)$max_available ?>;
+
+    if (amt < minWd) {
+      e.preventDefault();
+      alert('Minimal withdraw Rp ' + minWd.toLocaleString('id-ID'));
+      return;
+    }
+    if (amt > maxWd) {
+      e.preventDefault();
+      alert('Maksimal withdraw Rp ' + maxWd.toLocaleString('id-ID'));
+      return;
+    }
 
     // Show level-blocked notice only when user has enough balance and tries to submit
     if (levelBlocked && balWd >= minWd) {

@@ -241,6 +241,10 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
     </a>
 
     <div class="c-sidebar__label" style="margin-top:6px">Analitik & Interaksi</div>
+    <a href="/console/redeem.php" class="c-nav-link <?= $activePage==='redeem'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20 12v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><path d="M12 14v4"/><path d="M9 16h6"/><rect x="4" y="12" width="16" height="10" rx="2"/></svg>
+      Kode Redeem
+    </a>
     <a href="/console/video_analytics.php" class="c-nav-link <?= $activePage==='video_analytics'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
       Analisis Video
