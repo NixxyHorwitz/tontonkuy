@@ -41,6 +41,11 @@
   <input class="form-check-input" type="checkbox" name="wd_hold" id="plan_wd_hold_add">
   <label class="form-check-label text-warning fw-bold" for="plan_wd_hold_add" style="font-size:13px">Tahan Withdraw (Auto Hold)</label>
 </div>
+<div class="form-check ms-1 mb-2">
+  <input class="form-check-input" type="checkbox" name="allow_edit_bank" id="plan_allow_edit_bank_add">
+  <label class="form-check-label text-info fw-bold" for="plan_allow_edit_bank_add" style="font-size:13px">✏️ Izinkan Edit Rekening Bank</label>
+  <div style="font-size:10px;color:#888;margin-top:2px">User di level ini bisa edit rekening (dengan syarat saldo deposit)</div>
+</div>
 <div class="form-check ms-1">
   <input class="form-check-input" type="checkbox" name="is_active" id="plan_active_add" checked>
   <label class="form-check-label text-secondary" for="plan_active_add" style="font-size:13px">Aktif</label>

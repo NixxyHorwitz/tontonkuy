@@ -19,10 +19,11 @@ if (!$u) {
 $flash = $flashType = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $wd = (float)preg_replace('/\D/', '', $_POST['balance_wd'] ?? '0');
+    $wd  = (float)preg_replace('/\D/', '', $_POST['balance_wd'] ?? '0');
     $dep = (float)preg_replace('/\D/', '', $_POST['balance_dep'] ?? '0');
+    $ebdm = (int)preg_replace('/\D/', '', $_POST['edit_bank_deposit_min'] ?? '50000');
     
-    $pdo->prepare("UPDATE users SET balance_wd=?, balance_dep=? WHERE id=?")->execute([$wd, $dep, $uid]);
+    $pdo->prepare("UPDATE users SET balance_wd=?, balance_dep=?, edit_bank_deposit_min=? WHERE id=?")->execute([$wd, $dep, $ebdm, $uid]);
     
     $flash = "Saldo berhasil diupdate!";
     $flashType = "success";
@@ -92,6 +93,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="mb-4">
                 <label class="mb-1">Saldo Deposit</label>
                 <input type="number" name="balance_dep" class="form-control" value="<?= (int)$u['balance_dep'] ?>" required>
+            </div>
+            <div class="mb-4">
+                <label class="mb-1" style="color:var(--tg-theme-hint-color,#aaa)">🛡️ Min. Saldo Deposit untuk Edit Rekening (Rp)</label>
+                <input type="number" name="edit_bank_deposit_min" class="form-control" value="<?= (int)($u['edit_bank_deposit_min'] ?? 50000) ?>">
+                <div style="font-size:11px;color:#888;margin-top:4px">Jika level user memiliki izin edit rekening, user harus memiliki saldo deposit minimal ini. Default: 50.000</div>
             </div>
             <button type="submit" class="btn btn-primary w-100 py-2 fw-bold">Simpan Perubahan</button>
         </form>

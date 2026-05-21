@@ -14,14 +14,14 @@ $membership_active = $user['membership_id']
     && strtotime((string)$user['membership_expires_at']) > time();
 
 if ($membership_active) {
-    $stmt = $pdo->prepare("SELECT min_wd, max_wd, wd_hold FROM memberships WHERE id = ? AND is_active = 1");
+    $stmt = $pdo->prepare("SELECT name, min_wd, max_wd, wd_hold, allow_edit_bank FROM memberships WHERE id = ? AND is_active = 1");
     $stmt->execute([$user['membership_id']]);
     $user_mem = $stmt->fetch() ?: null;
 }
 
 // Fallback ke paket gratis jika tidak ada membership aktif
 if (!$user_mem) {
-    $stmt = $pdo->prepare("SELECT min_wd, max_wd, wd_hold FROM memberships WHERE price = 0 AND is_active = 1 ORDER BY sort_order ASC LIMIT 1");
+    $stmt = $pdo->prepare("SELECT name, min_wd, max_wd, wd_hold, allow_edit_bank FROM memberships WHERE price = 0 AND is_active = 1 ORDER BY sort_order ASC LIMIT 1");
     $stmt->execute();
     $user_mem = $stmt->fetch() ?: null;
 }
@@ -51,6 +51,33 @@ if ($wd_require_level && $wd_min_level > 0) {
 $pending_wd = $pdo->prepare("SELECT id FROM withdrawals WHERE user_id=? AND status='pending' LIMIT 1");
 $pending_wd->execute([$user['id']]);
 $has_pending_wd = (bool)$pending_wd->fetchColumn();
+
+// Edit rekening logic
+$can_edit_bank    = (bool)($user_mem['allow_edit_bank'] ?? 0);
+$edit_bank_min_dep = (int)($user['edit_bank_deposit_min'] ?? 50000);
+$dep_ok_for_edit  = (float)$user['balance_dep'] >= $edit_bank_min_dep;
+$bank_editable    = $has_bank && $can_edit_bank && $dep_ok_for_edit;
+
+// Handle edit rekening POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'edit_bank') {
+    if (!$bank_editable) {
+        $flash = '❌ Tidak diizinkan untuk mengubah rekening.'; $flashType = 'error';
+    } else {
+        $new_bank    = trim($_POST['bank_name'] ?? '');
+        $new_accnum  = trim($_POST['account_number'] ?? '');
+        $new_accname = trim($_POST['account_name'] ?? '');
+        if (!$new_bank || !$new_accnum || !$new_accname) {
+            $flash = 'Semua field rekening wajib diisi.'; $flashType = 'error';
+        } else {
+            $pdo->prepare("UPDATE users SET bank_name=?, account_number=?, account_name=? WHERE id=?")
+                ->execute([$new_bank, $new_accnum, $new_accname, $user['id']]);
+            $flash = '✅ Rekening berhasil diperbarui!';
+            // Refresh user
+            $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
+            $has_bank = true;
+        }
+    }
+}
 
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -95,8 +122,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->commit();
             $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
             
-            $levelInfo = $user_mem ? ($user_mem['name'] ?? 'Paket ID '.$user['membership_id']) : 'Gratis';
-            $msg = "<b>💸 WITHDRAW BARU</b>\nUser: {$user['username']}\nLevel: {$levelInfo}\nAmount: " . format_rp((float)$amount) . "\nBank: {$bank} - {$accnum}\na/n: {$accname}\nStatus: " . ucfirst($wd_status);
+            $levelInfo = $user_mem ? ($user_mem['name'] ?? 'Free') : 'Free';
+            $wdHoldNote = ($user_mem['wd_hold'] ?? 0) ? ' ⏸ (Auto Hold)' : '';
+            $msg = "<b>💸 WITHDRAW BARU</b>\n👤 User: {$user['username']}\n🏅 Level: {$levelInfo}{$wdHoldNote}\n💰 Amount: " . format_rp((float)$amount) . "\n🏦 Bank: {$bank} - {$accnum}\n👨‍💼 a/n: {$accname}\n📋 Status: " . ucfirst($wd_status);
             $kb = [
                 [['text'=>'✅ Approve', 'callback_data'=>'wd_approve_'.$wd_id], ['text'=>'❌ Reject', 'callback_data'=>'wd_reject_'.$wd_id]],
                 [['text'=>'⏸ Hold (Selesai non-refund)', 'callback_data'=>'wd_hold_'.$wd_id]],
@@ -210,12 +238,48 @@ require dirname(__DIR__) . '/partials/header.php';
       <?php if ($has_bank): ?>
       <div class="card card--mint" style="margin-bottom:12px">
         <div class="card__body" style="padding:10px 12px">
-          <div style="font-size:12px;font-weight:800;color:#555;margin-bottom:4px">🏦 Bank Tujuan</div>
-          <div style="font-size:13px;font-weight:700">
-            <?= htmlspecialchars($user['bank_name']) ?><br>
-            <?= htmlspecialchars($user['account_number']) ?><br>
-            <?= htmlspecialchars($user['account_name']) ?>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div style="font-size:12px;font-weight:800;color:#555">🏦 Bank Tujuan</div>
+            <?php if ($can_edit_bank): ?>
+              <?php if ($dep_ok_for_edit): ?>
+              <button type="button" onclick="toggleEditBank()" class="btn btn--ghost btn--sm" style="font-size:10px;padding:3px 8px">✏️ Edit Rekening</button>
+              <?php else: ?>
+              <span title="Butuh saldo deposit minimal <?= format_rp($edit_bank_min_dep) ?>" style="font-size:10px;color:#f59e0b;font-weight:700;cursor:help">🔒 Min. Depo <?= format_rp($edit_bank_min_dep) ?></span>
+              <?php endif; ?>
+            <?php endif; ?>
           </div>
+          <!-- Tampilan normal -->
+          <div id="bank-display">
+            <div style="font-size:13px;font-weight:700">
+              <?= htmlspecialchars($user['bank_name']) ?><br>
+              <?= htmlspecialchars($user['account_number']) ?><br>
+              <?= htmlspecialchars($user['account_name']) ?>
+            </div>
+          </div>
+          <?php if ($bank_editable): ?>
+          <!-- Form edit rekening -->
+          <form id="bank-edit-form" method="POST" style="display:none;margin-top:10px;padding-top:10px;border-top:1.5px dashed #aaa">
+            <?= csrf_field() ?>
+            <input type="hidden" name="action" value="edit_bank">
+            <div class="form-group" style="margin-bottom:6px">
+              <label class="form-label" style="font-size:11px">Nama Bank</label>
+              <input class="form-control" type="text" name="bank_name" value="<?= htmlspecialchars($user['bank_name']) ?>" required style="font-size:12px">
+            </div>
+            <div class="form-group" style="margin-bottom:6px">
+              <label class="form-label" style="font-size:11px">Nomor Rekening</label>
+              <input class="form-control" type="text" name="account_number" value="<?= htmlspecialchars($user['account_number']) ?>" required style="font-size:12px">
+            </div>
+            <div class="form-group" style="margin-bottom:8px">
+              <label class="form-label" style="font-size:11px">Nama Pemilik</label>
+              <input class="form-control" type="text" name="account_name" value="<?= htmlspecialchars($user['account_name']) ?>" required style="font-size:12px">
+            </div>
+            <div style="font-size:10px;color:#e67e22;font-weight:700;margin-bottom:8px">⚠️ Pastikan rekening baru sudah benar sebelum disimpan!</div>
+            <div style="display:flex;gap:8px">
+              <button type="button" onclick="toggleEditBank()" class="btn btn--ghost btn--sm" style="flex:1;font-size:12px">Batal</button>
+              <button type="submit" class="btn btn--primary btn--sm" style="flex:2;font-size:12px">💾 Simpan Rekening</button>
+            </div>
+          </form>
+          <?php endif; ?>
         </div>
       </div>
       <?php else: ?>
@@ -304,6 +368,15 @@ require dirname(__DIR__) . '/partials/header.php';
     form.submit();
   };
 })();
+
+function toggleEditBank() {
+  const display  = document.getElementById('bank-display');
+  const editForm = document.getElementById('bank-edit-form');
+  if (!editForm) return;
+  const isHidden = editForm.style.display === 'none';
+  editForm.style.display  = isHidden ? 'block' : 'none';
+  if (display) display.style.display = isHidden ? 'none' : 'block';
+}
 </script>
 
 <!-- History -->
