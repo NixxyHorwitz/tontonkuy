@@ -87,14 +87,31 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 
 <?php if ($can_edit_bank && !$dep_ok_for_edit): ?>
-<!-- Deposit requirement notice -->
-<div class="alert alert--warn" style="margin-bottom:14px;font-size:12px">
-  🛡️ <strong>Syarat Saldo Deposit:</strong>
-  Kamu perlu memiliki saldo deposit minimal <strong>Rp <?= number_format($edit_bank_min_dep, 0, ',', '.') ?></strong> sebagai jaminan keamanan akun.<br>
-  <span style="font-size:11px;color:#666;margin-top:4px;display:block">
-    Saldo deposit kamu saat ini: <strong>Rp <?= number_format((float)$user['balance_dep'], 0, ',', '.') ?></strong>
-    · Butuh tambahan: <strong>Rp <?= number_format($edit_bank_min_dep - (float)$user['balance_dep'], 0, ',', '.') ?></strong>
-  </span>
+<?php
+  $dep_pct = min(100, (int)round(((float)$user['balance_dep'] / $edit_bank_min_dep) * 100));
+  $dep_kurang = $edit_bank_min_dep - (float)$user['balance_dep'];
+?>
+<div class="card" style="margin-bottom:14px;border:2px solid #f59e0b;box-shadow:3px 3px 0 #f59e0b">
+  <div class="card__body" style="padding:12px 14px">
+    <div style="font-size:11px;font-weight:800;color:#d97706;letter-spacing:.5px;margin-bottom:10px">🛡️ SYARAT SALDO DEPOSIT</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+        <span style="color:#888;font-weight:600">Minimal Deposit</span>
+        <span style="font-weight:900;color:var(--ink)">Rp <?= number_format($edit_bank_min_dep, 0, ',', '.') ?></span>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
+        <span style="color:#888;font-weight:600">Saldo Kamu</span>
+        <span style="font-weight:900;color:#e67e22">Rp <?= number_format((float)$user['balance_dep'], 0, ',', '.') ?></span>
+      </div>
+      <div style="height:6px;background:#f3f4f6;border-radius:99px;overflow:hidden;margin:2px 0">
+        <div style="height:100%;width:<?= $dep_pct ?>%;background:#f59e0b;border-radius:99px;transition:width .3s"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+        <span style="color:#aaa"><?= $dep_pct ?>% terpenuhi</span>
+        <span style="font-weight:700;color:#e67e22">Kurang Rp <?= number_format($dep_kurang, 0, ',', '.') ?></span>
+      </div>
+    </div>
+  </div>
 </div>
 <?php endif; ?>
 
