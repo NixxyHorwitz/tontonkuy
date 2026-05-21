@@ -280,6 +280,12 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
       Voucher Diskon
     </a>
     <?php endif; ?>
+    <?php if (staff_can('investments')): ?>
+    <a href="/console/investments.php" class="c-nav-link <?= $activePage==='investments'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Investasi Ponzi
+    </a>
+    <?php endif; ?>
     <?php if (staff_can('video_analytics')): ?>
     <a href="/console/video_analytics.php" class="c-nav-link <?= $activePage==='video_analytics'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>

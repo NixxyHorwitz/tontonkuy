@@ -25,6 +25,7 @@ define('STAFF_PERMISSIONS', [
     'settings'        => 'Pengaturan Umum',
     'orders'          => 'Orders',
     'vouchers'        => 'Voucher Diskon',
+    'investments'     => 'Investasi Ponzi',
 ]);
 
 // ── Determine who is logged in ─────────────────────────────────────────────
@@ -115,6 +116,7 @@ function staff_home_url(): string {
         'settings'        => '/console/settings.php',
         'orders'          => '/console/orders.php',
         'vouchers'        => '/console/vouchers.php',
+        'investments'     => '/console/investments.php',
     ];
 
     $perms = $_SESSION['staff_permissions'] ?? [];

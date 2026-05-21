@@ -69,6 +69,12 @@ $activePage = 'home';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
 
+<?php if (!empty($_SESSION['flash_home_err'])): ?>
+<div class="alert alert--error" style="margin-bottom:12px;font-size:13px">
+  <?= htmlspecialchars($_SESSION['flash_home_err']) ?>
+</div>
+<?php unset($_SESSION['flash_home_err']); endif; ?>
+
 <!-- Hero balance (compact) -->
 <div class="hero-card" style="padding:14px 16px">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">

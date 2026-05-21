@@ -25,6 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Toggle checkbox
         setting_set($pdo, 'wd_require_level', isset($_POST['wd_require_level']) ? '1' : '0');
         setting_set($pdo, 'depo_unique_code_enabled', isset($_POST['depo_unique_code_enabled']) ? '1' : '0');
+        setting_set($pdo, 'investment_enabled', isset($_POST['investment_enabled']) ? '1' : '0');
         $flash = 'Pengaturan umum berhasil disimpan!';
     }
 
@@ -204,6 +205,17 @@ $tabs = [
                 </label>
               </div>
               <small style="color:#888;font-size:11px">Jika dimatikan, semua user bisa WD tanpa syarat level.</small>
+            </div>
+            
+            <div class="c-form-group">
+              <label class="c-label">Fitur Investasi Ponzi</label>
+              <div class="form-check ms-1">
+                <input class="form-check-input" type="checkbox" name="investment_enabled" id="investment_enabled_chk" value="1" <?= $s('investment_enabled','1')==='1'?'checked':'' ?>>
+                <label class="form-check-label text-secondary" for="investment_enabled_chk" style="font-size:13px;font-weight:700">
+                  Aktifkan Fitur Investasi Ponzi untuk Pengguna
+                </label>
+              </div>
+              <small style="color:#888;font-size:11px">Jika dimatikan, seluruh menu dan halaman investasi tidak akan dapat diakses oleh user.</small>
             </div>
             
             <div class="c-form-group"><label class="c-label">Bonus Referral Registrasi (Rp) <small style="color:#888">(opsional)</small></label>

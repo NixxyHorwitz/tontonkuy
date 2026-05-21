@@ -1,0 +1,662 @@
+<?php
+declare(strict_types=1);
+require_once dirname(__DIR__) . '/auth/guard.php';
+
+// Guard: Check if investment feature is enabled globally
+$investment_enabled = setting($pdo, 'investment_enabled', '1') === '1';
+if (!$investment_enabled) {
+    $_SESSION['flash_home_err'] = '⚠️ Fitur investasi sedang dinonaktifkan oleh Administrator.';
+    redirect('/home');
+}
+
+$flash = $_SESSION['invest_flash'] ?? '';
+$flashType = $_SESSION['invest_flash_type'] ?? '';
+unset($_SESSION['invest_flash'], $_SESSION['invest_flash_type']);
+
+// Handle POST request (buy or claim)
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    
+    if ($action === 'buy') {
+        $package_id = (int)($_POST['package_id'] ?? 0);
+        
+        $pdo->beginTransaction();
+        try {
+            // Lock user balance
+            $stmt = $pdo->prepare("SELECT id, balance_dep FROM users WHERE id = ? FOR UPDATE");
+            $stmt->execute([$user['id']]);
+            $db_user = $stmt->fetch();
+            
+            if (!$db_user) {
+                throw new Exception('Pengguna tidak ditemukan.');
+            }
+            
+            // Lock package
+            $stmt = $pdo->prepare("SELECT * FROM investment_packages WHERE id = ? AND is_active = 1 FOR UPDATE");
+            $stmt->execute([$package_id]);
+            $pkg = $stmt->fetch();
+            
+            if (!$pkg) {
+                throw new Exception('Paket investasi tidak aktif atau tidak ditemukan.');
+            }
+            
+            $price = (float)$pkg['price'];
+            if ((float)$db_user['balance_dep'] < $price) {
+                throw new Exception('Saldo deposit Anda tidak mencukupi. Silakan lakukan isi ulang terlebih dahulu.');
+            }
+            
+            // Deduct deposit balance
+            $upd = $pdo->prepare("UPDATE users SET balance_dep = balance_dep - ? WHERE id = ?");
+            $upd->execute([$price, $user['id']]);
+            
+            // Insert active investment contract
+            $ins = $pdo->prepare("
+                INSERT INTO user_investments (user_id, package_id, amount, daily_profit, roi_percent, duration_days, days_passed, last_profit_claimed_at, status, created_at)
+                VALUES (?, ?, ?, ?, ?, ?, 0, NOW(), 'active', NOW())
+            ");
+            $ins->execute([
+                $user['id'],
+                $pkg['id'],
+                $price,
+                $pkg['daily_profit'],
+                $pkg['roi_percent'],
+                $pkg['duration_days']
+            ]);
+            
+            $pdo->commit();
+            
+            // Refresh user session array
+            $us = $pdo->prepare("SELECT * FROM users WHERE id=?");
+            $us->execute([$user['id']]);
+            $user = $us->fetch();
+            
+            $_SESSION['invest_flash'] = "🎉 Berhasil mengaktifkan kontrak '" . htmlspecialchars($pkg['name']) . "' seharga " . format_rp($price) . "!";
+            $_SESSION['invest_flash_type'] = 'success';
+            redirect('/invest');
+            
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $_SESSION['invest_flash'] = '❌ ' . $e->getMessage();
+            $_SESSION['invest_flash_type'] = 'error';
+            redirect('/invest');
+        }
+    }
+    
+    if ($action === 'claim') {
+        $pdo->beginTransaction();
+        try {
+            // Lock user balance
+            $stmt = $pdo->prepare("SELECT id, balance_wd FROM users WHERE id = ? FOR UPDATE");
+            $stmt->execute([$user['id']]);
+            $db_user = $stmt->fetch();
+            
+            if (!$db_user) {
+                throw new Exception('Pengguna tidak ditemukan.');
+            }
+            
+            // Lock active user investments
+            $stmt = $pdo->prepare("SELECT * FROM user_investments WHERE user_id = ? AND status = 'active' FOR UPDATE");
+            $stmt->execute([$user['id']]);
+            $investments = $stmt->fetchAll();
+            
+            $total_claim_amount = 0.0;
+            
+            foreach ($investments as $inv) {
+                $purchase_time = strtotime($inv['created_at']);
+                $elapsed_days = (int)floor((time() - $purchase_time) / 86400);
+                $capped_days = min($elapsed_days, (int)$inv['duration_days']);
+                $claimable_days = max(0, $capped_days - (int)$inv['days_passed']);
+                
+                if ($claimable_days > 0) {
+                    $profit = $claimable_days * (float)$inv['daily_profit'];
+                    $total_claim_amount += $profit;
+                    
+                    $new_days_passed = (int)$inv['days_passed'] + $claimable_days;
+                    $new_status = ($new_days_passed >= (int)$inv['duration_days']) ? 'completed' : 'active';
+                    
+                    // Update user investment status
+                    $upd = $pdo->prepare("UPDATE user_investments SET days_passed = ?, last_profit_claimed_at = NOW(), status = ? WHERE id = ?");
+                    $upd->execute([$new_days_passed, $new_status, $inv['id']]);
+                    
+                    // Write to profit logs
+                    $log = $pdo->prepare("INSERT INTO investment_profit_logs (user_id, user_investment_id, amount, days_claimed, claimed_at) VALUES (?, ?, ?, ?, NOW())");
+                    $log->execute([$user['id'], $inv['id'], $profit, $claimable_days]);
+                }
+            }
+            
+            if ($total_claim_amount > 0) {
+                // Add to balance_wd and total_earned
+                $upd_user = $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id = ?");
+                $upd_user->execute([$total_claim_amount, $total_claim_amount, $user['id']]);
+                
+                $pdo->commit();
+                
+                // Refresh user session array
+                $us = $pdo->prepare("SELECT * FROM users WHERE id=?");
+                $us->execute([$user['id']]);
+                $user = $us->fetch();
+                
+                $_SESSION['invest_flash'] = '✅ Berhasil mengklaim total profit ' . format_rp($total_claim_amount) . ' ke saldo WD!';
+                $_SESSION['invest_flash_type'] = 'success';
+                redirect('/invest');
+            } else {
+                $pdo->rollBack();
+                $_SESSION['invest_flash'] = 'ℹ️ Belum ada profit harian baru yang siap diklaim.';
+                $_SESSION['invest_flash_type'] = 'info';
+                redirect('/invest');
+            }
+            
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            $_SESSION['invest_flash'] = '❌ Gagal mengklaim profit: ' . $e->getMessage();
+            $_SESSION['invest_flash_type'] = 'error';
+            redirect('/invest');
+        }
+    }
+}
+
+// Fetch Investment Data
+$packages = $pdo->query("SELECT * FROM investment_packages WHERE is_active = 1 ORDER BY price ASC, id ASC")->fetchAll();
+
+$user_investments = $pdo->prepare("
+    SELECT ui.*, IFNULL(ip.name, 'Paket Investasi') as package_name
+    FROM user_investments ui
+    LEFT JOIN investment_packages ip ON ui.package_id = ip.id
+    WHERE ui.user_id = ?
+    ORDER BY ui.created_at DESC
+");
+$user_investments->execute([$user['id']]);
+$user_investments = $user_investments->fetchAll();
+
+// Calculate totals
+$total_active_invested = 0.0;
+$total_claimed_profit = (float)$pdo->query("SELECT SUM(amount) FROM investment_profit_logs WHERE user_id = {$user['id']}")->fetchColumn();
+$total_claimable_profit = 0.0;
+
+$active_portfolios = [];
+$completed_portfolios = [];
+
+foreach ($user_investments as $ui) {
+    if ($ui['status'] === 'active') {
+        $purchase_time = strtotime($ui['created_at']);
+        $elapsed_days = (int)floor((time() - $purchase_time) / 86400);
+        $capped_days = min($elapsed_days, (int)$ui['duration_days']);
+        $claimable_days = max(0, $capped_days - (int)$ui['days_passed']);
+        $claimable_profit = $claimable_days * (float)$ui['daily_profit'];
+        
+        $ui['claimable_days'] = $claimable_days;
+        $ui['claimable_profit'] = $claimable_profit;
+        
+        $total_active_invested += (float)$ui['amount'];
+        $total_claimable_profit += $claimable_profit;
+        
+        $active_portfolios[] = $ui;
+    } else {
+        $completed_portfolios[] = $ui;
+    }
+}
+
+// Fetch Profit Claim Logs
+$profit_logs = $pdo->prepare("
+    SELECT pl.*, IFNULL(ip.name, 'Paket Investasi') as package_name
+    FROM investment_profit_logs pl
+    JOIN user_investments ui ON pl.user_investment_id = ui.id
+    LEFT JOIN investment_packages ip ON ui.package_id = ip.id
+    WHERE pl.user_id = ?
+    ORDER BY pl.claimed_at DESC
+    LIMIT 20
+");
+$profit_logs->execute([$user['id']]);
+$profit_logs = $profit_logs->fetchAll();
+
+$pageTitle = 'Investasi Ponzi — TontonKuy';
+$activePage = 'invest';
+require dirname(__DIR__) . '/partials/header.php';
+?>
+
+<style>
+.invest-hero {
+  border: 2.5px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--ink);
+  background: var(--yellow);
+  padding: 16px;
+  margin-bottom: 14px;
+}
+.invest-stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.invest-stat-box {
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 2px 2px 0 var(--ink);
+  padding: 10px 12px;
+}
+.invest-stat-box--active { background: var(--sky); }
+.invest-stat-box--claimed { background: var(--lavender); }
+.invest-stat-box__lbl { font-size: 10px; font-weight: 800; color: #555; margin-bottom: 2px; text-transform: uppercase; }
+.invest-stat-box__val { font-size: 15px; font-weight: 900; color: var(--ink); }
+
+.claimable-bar {
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  background: var(--mint);
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.claimable-bar__title { font-size: 11px; font-weight: 800; color: #444; text-transform: uppercase; }
+.claimable-bar__val { font-size: 22px; font-weight: 900; color: var(--ink); line-height: 1; }
+
+.tab-content-invest { display: none; }
+.tab-content-invest.active { display: block; }
+
+.package-card {
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  margin-bottom: 12px;
+  position: relative;
+  transition: transform .12s, box-shadow .12s;
+}
+.package-card:hover { transform: translate(-2px, -2px); box-shadow: var(--shadow-lg); }
+.package-card:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--ink); }
+.package-card__name { font-size: 16px; font-weight: 900; margin-bottom: 4px; }
+.package-card__price { font-size: 22px; font-weight: 900; color: var(--brand); margin-bottom: 10px; }
+.package-card__details {
+  background: rgba(0,0,0,0.02);
+  border: 1.5px dashed rgba(0,0,0,0.1);
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #444;
+  margin-bottom: 12px;
+}
+
+.portfolio-card {
+  background: var(--white);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+.portfolio-card__title { display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 14px; margin-bottom: 6px; }
+.portfolio-card__meta { font-size: 11px; color: #666; font-weight: 700; display: flex; justify-content: space-between; margin-bottom: 8px; }
+.portfolio-card__progress-lbl { font-size: 11px; font-weight: 800; color: #444; display: flex; justify-content: space-between; margin-bottom: 4px; }
+.portfolio-card__bar { width: 100%; height: 8px; background: #ddd; border-radius: 4px; border: 1.5px solid var(--ink); overflow: hidden; }
+.portfolio-card__fill { height: 100%; background: var(--green); border-radius: 3px; }
+</style>
+
+<!-- Page Header Title -->
+<div class="page-title-bar">
+  <h1>📈 Portal Investasi</h1>
+  <p>Tumbuhkan saldo Anda dengan kontrak investasi yield tinggi.</p>
+</div>
+
+<!-- Flash Alert -->
+<?php if ($flash): ?>
+<div class="alert alert--<?= $flashType === 'error' ? 'error' : ($flashType === 'info' ? 'warn' : 'success') ?>" style="margin-bottom:12px;font-size:13px">
+  <?= htmlspecialchars($flash) ?>
+</div>
+<?php endif; ?>
+
+<!-- Hero Stats Card -->
+<div class="invest-hero">
+  <div class="invest-stat-grid">
+    <div class="invest-stat-box invest-stat-box--active">
+      <div class="invest-stat-box__lbl">🔥 Aktif Investasi</div>
+      <div class="invest-stat-box__val"><?= format_rp($total_active_invested) ?></div>
+    </div>
+    <div class="invest-stat-box invest-stat-box--claimed">
+      <div class="invest-stat-box__lbl">💰 Total Profit Diklaim</div>
+      <div class="invest-stat-box__val"><?= format_rp($total_claimed_profit) ?></div>
+    </div>
+  </div>
+  
+  <!-- Claim Box -->
+  <div class="claimable-bar">
+    <div class="claimable-bar__title">💸 Akumulasi Profit Siap Klaim</div>
+    <div class="claimable-bar__val" id="global-claimable-text"><?= format_rp($total_claimable_profit) ?></div>
+    
+    <form method="POST" style="margin-top:4px" onsubmit="return confirm('Klaim semua profit investasi yang tersedia saat ini?')">
+      <?= csrf_field() ?>
+      <input type="hidden" name="action" value="claim">
+      <?php if ($total_claimable_profit > 0): ?>
+        <button type="submit" class="btn btn--primary btn--full btn--sm" style="box-shadow: 2px 2px 0 var(--ink); background: var(--brand); color:#fff; font-weight:900;">
+          💸 Klaim Semua Profit Sekarang
+        </button>
+      <?php else: ?>
+        <button type="button" class="btn btn--ghost btn--full btn--sm" disabled style="box-shadow: 2px 2px 0 var(--ink); color:#888; font-weight:900; background:#eee; cursor: not-allowed;">
+          🔒 Belum Ada Profit Baru
+        </button>
+      <?php endif; ?>
+    </form>
+  </div>
+</div>
+
+<!-- Tabs for Navigation -->
+<div class="tabs-row" style="margin-bottom:14px">
+  <button class="tab-btn active" onclick="switchTab(this, 'packages-tab')">🛒 Toko Paket</button>
+  <button class="tab-btn" onclick="switchTab(this, 'portfolios-tab')">👥 Porto Anda (<?= count($active_portfolios) ?>)</button>
+  <button class="tab-btn" onclick="switchTab(this, 'history-tab')">📜 Riwayat</button>
+</div>
+
+<!-- Tab 1: Packages Store -->
+<div id="packages-tab" class="tab-content-invest active">
+  <?php if (empty($packages)): ?>
+    <div class="card p-4 text-center">
+      <span style="font-size:32px">📭</span>
+      <h6 class="fw-bold mt-2" style="font-weight:800">Paket investasi kosong</h6>
+      <p style="font-size:12px;color:#666">Saat ini tidak ada paket investasi aktif yang tersedia.</p>
+    </div>
+  <?php else: ?>
+    <?php foreach ($packages as $pkg): ?>
+      <div class="package-card">
+        <div class="package-card__name"><?= htmlspecialchars($pkg['name']) ?></div>
+        <div class="package-card__price"><?= format_rp((float)$pkg['price']) ?></div>
+        
+        <div class="package-card__details">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span>Kontrak Kontrak:</span>
+            <span><strong><?= $pkg['duration_days'] ?> Hari</strong></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span>Total ROI Keuntungan:</span>
+            <span style="color:var(--green)"><strong><?= (float)$pkg['roi_percent'] ?>%</strong></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span>Estimasi Profit Harian:</span>
+            <span style="color:var(--green)"><strong>+<?= format_rp((float)$pkg['daily_profit']) ?>/hari</strong></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;border-top:1px dashed #ccc;padding-top:4px;margin-top:4px">
+            <span>Total Pengembalian:</span>
+            <span style="color:var(--blue)"><strong><?= format_rp((float)$pkg['daily_profit'] * $pkg['duration_days']) ?></strong></span>
+          </div>
+        </div>
+        
+        <button type="button" class="btn btn--primary btn--full btn--sm" onclick='confirmPurchase(<?= json_encode($pkg) ?>)'>
+          🛒 Beli Paket Investasi
+        </button>
+      </div>
+    <?php endforeach; ?>
+  <?php endif; ?>
+</div>
+
+<!-- Tab 2: User Active Portfolios -->
+<div id="portfolios-tab" class="tab-content-invest">
+  <div style="margin-bottom:10px">
+    <div class="section-title" style="font-size:13px;margin-bottom:6px">👥 Portofolio Aktif (<?= count($active_portfolios) ?>)</div>
+  </div>
+  
+  <?php if (empty($active_portfolios)): ?>
+    <div class="card p-4 text-center" style="background:#fff">
+      <span style="font-size:32px">💼</span>
+      <h6 style="font-weight:800;margin-top:8px;font-size:14px">Belum Ada Portofolio Aktif</h6>
+      <p style="font-size:12px;color:#666">Anda belum memiliki kontrak investasi yang berjalan saat ini. Silakan beli paket di Toko.</p>
+    </div>
+  <?php else: ?>
+    <?php foreach ($active_portfolios as $ui): ?>
+      <div class="portfolio-card active-portfolio-card" 
+           data-purchase-time="<?= strtotime($ui['created_at']) ?>" 
+           data-duration-days="<?= $ui['duration_days'] ?>" 
+           data-days-passed="<?= $ui['days_passed'] ?>">
+        <div class="portfolio-card__title">
+          <span><?= htmlspecialchars($ui['package_name']) ?></span>
+          <span class="badge badge--success">Aktif</span>
+        </div>
+        <div class="portfolio-card__meta">
+          <span>Investasi: <strong><?= format_rp((float)$ui['amount']) ?></strong></span>
+          <span>Profit: <strong style="color:var(--green)">+<?= format_rp((float)$ui['daily_profit']) ?>/hr</strong></span>
+        </div>
+        
+        <div class="portfolio-card__progress-lbl">
+          <span>Progress Siklus: <strong><?= $ui['days_passed'] ?> / <?= $ui['duration_days'] ?> Hari</strong></span>
+          <span>Claimed: <strong><?= format_rp($ui['days_passed'] * (float)$ui['daily_profit']) ?></strong></span>
+        </div>
+        <div class="portfolio-card__bar">
+          <div class="portfolio-card__fill" style="width: <?= ($ui['days_passed'] / $ui['duration_days']) * 100 ?>%"></div>
+        </div>
+        
+        <!-- Countdown Clock -->
+        <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between">
+          <span style="font-size:11px;font-weight:800;color:#666">Siklus Selanjutnya:</span>
+          <span class="countdown-timer" style="font-size:12px;font-weight:900;letter-spacing:-0.2px">⏱ Menghitung...</span>
+        </div>
+      </div>
+    <?php endforeach; ?>
+  <?php endif; ?>
+  
+  <!-- Completed Portfolios Section -->
+  <?php if (!empty($completed_portfolios)): ?>
+    <div class="section-header" style="margin-top:16px;margin-bottom:8px">
+      <div class="section-title" style="font-size:13px">🏁 Kontrak Investasi Selesai</div>
+    </div>
+    <?php foreach ($completed_portfolios as $ui): ?>
+      <div class="portfolio-card" style="opacity:0.8;background:#f9f9f9">
+        <div class="portfolio-card__title">
+          <span><?= htmlspecialchars($ui['package_name']) ?></span>
+          <span class="badge badge--neutral">Selesai</span>
+        </div>
+        <div class="portfolio-card__meta">
+          <span>Investasi: <strong><?= format_rp((float)$ui['amount']) ?></strong></span>
+          <span>Total Profit: <strong style="color:var(--green)"><?= format_rp($ui['duration_days'] * (float)$ui['daily_profit']) ?></strong></span>
+        </div>
+        
+        <div class="portfolio-card__progress-lbl">
+          <span>Progress Siklus: <strong><?= $ui['days_passed'] ?> / <?= $ui['duration_days'] ?> Hari</strong></span>
+          <span>Status: <strong>Telah Selesai Berjalan</strong></span>
+        </div>
+        <div class="portfolio-card__bar">
+          <div class="portfolio-card__fill" style="width: 100%; background: #999"></div>
+        </div>
+      </div>
+    <?php endforeach; ?>
+  <?php endif; ?>
+</div>
+
+<!-- Tab 3: Logs History -->
+<div id="history-tab" class="tab-content-invest">
+  <div style="margin-bottom:10px">
+    <div class="section-title" style="font-size:13px;margin-bottom:6px">📜 Riwayat Klaim Keuntungan</div>
+  </div>
+  
+  <?php if (empty($profit_logs)): ?>
+    <div class="card p-4 text-center" style="background:#fff">
+      <span style="font-size:32px">📜</span>
+      <h6 style="font-weight:800;margin-top:8px;font-size:14px">Belum Ada Riwayat Klaim</h6>
+      <p style="font-size:12px;color:#666">Riwayat klaim keuntungan portofolio Anda akan dicatat di sini.</p>
+    </div>
+  <?php else: ?>
+    <div class="card"><div class="card__body" style="padding:4px 0">
+      <?php foreach ($profit_logs as $log): ?>
+        <div class="list-item" style="padding:8px 14px">
+          <div class="list-item__icon" style="background:var(--lime);width:30px;height:30px;font-size:14px">📈</div>
+          <div class="list-item__body">
+            <div class="list-item__title" style="font-size:13px"><?= htmlspecialchars($log['package_name']) ?></div>
+            <div class="list-item__sub" style="font-size:10px">Klaim: <?= $log['days_claimed'] ?> Siklus Hari · <?= date('d M Y H:i', strtotime($log['claimed_at'])) ?></div>
+          </div>
+          <div class="list-item__right">
+            <div class="list-item__amount list-item__amount--green" style="font-size:12px">+<?= format_rp((float)$log['amount']) ?></div>
+          </div>
+        </div>
+      <?php endforeach; ?>
+    </div></div>
+  <?php endif; ?>
+</div>
+
+<!-- Modal Beli Confirmation -->
+<div id="buy-confirm-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px);">
+  <div class="card card--yellow" style="width:100%;max-width:350px;box-shadow:6px 6px 0 var(--ink);border:3px solid var(--ink);border-radius:12px;animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
+    <div class="card__header" style="background:var(--brand);border-bottom:3px solid var(--ink);border-radius:9px 9px 0 0;padding:12px 16px;">
+      <div class="card__title" style="color:var(--ink);font-weight:900;font-size:16px;">🛒 Konfirmasi Pembelian</div>
+    </div>
+    <div class="card__body" style="padding:16px;background:#fff;border-radius:0 0 9px 9px;">
+      <form method="POST" id="purchase-form">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="buy">
+        <input type="hidden" name="package_id" id="buy-pkg-id">
+        
+        <div style="font-size:13px;font-weight:700;margin-bottom:6px;color:#333;">Anda akan membeli paket investasi:</div>
+        <div id="buy-pkg-name" style="font-size:18px;font-weight:900;color:var(--ink);margin-bottom:4px;">Nama Paket</div>
+        <div id="buy-pkg-price" style="font-size:24px;font-weight:900;color:var(--brand);margin-bottom:12px;">Rp 0</div>
+        
+        <div class="p-3 mb-3" style="background:rgba(255,107,53,0.05);border:1.5px dashed var(--brand);border-radius:8px;font-size:11px;color:#444;font-weight:700">
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+            <span>Sumber Saldo:</span>
+            <span style="color:var(--blue)">Saldo Deposit</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:2px">
+            <span>Saldo Anda:</span>
+            <span><?= format_rp((float)$user['balance_dep']) ?></span>
+          </div>
+          <div style="display:flex;justify-content:space-between;border-top:1px dashed #ccc;padding-top:4px;margin-top:4px">
+            <span>Laba Total (ROI):</span>
+            <span id="buy-pkg-roi" style="color:var(--green)">+Rp 0</span>
+          </div>
+        </div>
+        
+        <!-- Insufficient Balance Warning -->
+        <div id="insufficient-balance-notice" style="display:none;margin-bottom:12px;font-size:11px;color:var(--red);font-weight:800;text-align:center;">
+          ⚠️ Saldo deposit Anda tidak cukup. Silakan isi ulang dahulu!
+        </div>
+        
+        <div style="display:flex;gap:8px;">
+          <button type="button" onclick="closePurchaseModal()" class="btn btn--sm" style="flex:1;background:#eee;color:var(--ink);border:2px solid var(--ink);font-weight:800;border-radius:8px;">Batal</button>
+          
+          <button type="submit" id="purchase-submit-btn" class="btn btn--primary btn--sm" style="flex:1.5;background:var(--brand);color:#fff;border:2px solid var(--ink);font-weight:900;border-radius:8px;box-shadow:2px 2px 0 var(--ink);">
+            Beli Sekarang
+          </button>
+          <a href="/deposit" id="purchase-topup-btn" class="btn btn--green btn--sm" style="display:none;flex:1.5;background:var(--green);color:var(--ink);border:2px solid var(--ink);font-weight:900;border-radius:8px;box-shadow:2px 2px 0 var(--ink);text-align:center;text-decoration:none;">
+            Isi Saldo
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+// Switch Tabs
+function switchTab(btn, tabId) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab-content-invest').forEach(c => c.classList.remove('active'));
+  
+  btn.classList.add('active');
+  document.getElementById(tabId).classList.add('active');
+}
+
+// Purchase Confirmation Modal
+const userBalanceDep = <?= (float)$user['balance_dep'] ?>;
+function confirmPurchase(pkg) {
+  document.getElementById('buy-pkg-id').value = pkg.id;
+  document.getElementById('buy-pkg-name').textContent = pkg.name;
+  
+  const price = parseFloat(pkg.price);
+  const roiTotal = (price * parseFloat(pkg.roi_percent)) / 100;
+  
+  document.getElementById('buy-pkg-price').textContent = 'Rp ' + Math.round(price).toLocaleString('id-ID');
+  document.getElementById('buy-pkg-roi').textContent = 'Rp ' + Math.round(roiTotal).toLocaleString('id-ID');
+  
+  const submitBtn = document.getElementById('purchase-submit-btn');
+  const topupBtn = document.getElementById('purchase-topup-btn');
+  const noticeEl = document.getElementById('insufficient-balance-notice');
+  
+  if (userBalanceDep < price) {
+    submitBtn.style.display = 'none';
+    topupBtn.style.display = 'inline-flex';
+    noticeEl.style.display = 'block';
+  } else {
+    submitBtn.style.display = 'inline-flex';
+    topupBtn.style.display = 'none';
+    noticeEl.style.display = 'none';
+  }
+  
+  document.getElementById('buy-confirm-modal').style.display = 'flex';
+}
+
+function closePurchaseModal() {
+  document.getElementById('buy-confirm-modal').style.display = 'none';
+}
+
+// Portfolio Timers
+document.addEventListener("DOMContentLoaded", () => {
+  const cards = document.querySelectorAll(".active-portfolio-card");
+  
+  function updateTimers() {
+    const now = Math.floor(Date.now() / 1000);
+    
+    cards.forEach(card => {
+      const purchaseTime = parseInt(card.dataset.purchaseTime);
+      const durationDays = parseInt(card.dataset.durationDays);
+      const daysPassed = parseInt(card.dataset.daysPassed);
+      const timerEl = card.querySelector(".countdown-timer");
+      
+      if (!timerEl) return;
+      
+      // Elapsed days since purchase
+      const elapsedDays = Math.floor((now - purchaseTime) / 86400);
+      
+      if (daysPassed >= durationDays) {
+        timerEl.innerHTML = "🏁 Selesai";
+        timerEl.style.color = "var(--green)";
+        return;
+      }
+      
+      const nextAccrualDay = elapsedDays + 1;
+      
+      if (nextAccrualDay > durationDays) {
+        timerEl.innerHTML = "🎉 Klaim Tersedia!";
+        timerEl.style.color = "var(--green)";
+        return;
+      }
+      
+      const nextAccrualTime = purchaseTime + nextAccrualDay * 86400;
+      const remainingSeconds = nextAccrualTime - now;
+      
+      // Determine if a claim is currently available
+      const cappedDays = Math.min(elapsedDays, durationDays);
+      const claimableDays = Math.max(0, cappedDays - daysPassed);
+      
+      if (claimableDays > 0) {
+        timerEl.style.color = "var(--green)";
+        if (remainingSeconds <= 0) {
+          timerEl.innerHTML = "🎉 Klaim Tersedia!";
+        } else {
+          const h = String(Math.floor(remainingSeconds / 3600)).padStart(2, '0');
+          const m = String(Math.floor((remainingSeconds % 3600) / 60)).padStart(2, '0');
+          const s = String(remainingSeconds % 60).padStart(2, '0');
+          timerEl.innerHTML = `⏱ ${h}:${m}:${s} (Klaim Tersedia)`;
+        }
+      } else {
+        timerEl.style.color = "var(--ink)";
+        if (remainingSeconds <= 0) {
+          timerEl.innerHTML = "🎉 Klaim Tersedia!";
+        } else {
+          const h = String(Math.floor(remainingSeconds / 3600)).padStart(2, '0');
+          const m = String(Math.floor((remainingSeconds % 3600) / 60)).padStart(2, '0');
+          const s = String(remainingSeconds % 60).padStart(2, '0');
+          timerEl.innerHTML = `⏱ ${h}:${m}:${s}`;
+        }
+      }
+    });
+  }
+  
+  updateTimers();
+  setInterval(updateTimers, 1000);
+});
+</script>
+
+<style>
+@keyframes popIn { 0% { transform: scale(0.8); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+</style>
+
+<?php require dirname(__DIR__) . '/partials/footer.php'; ?>
