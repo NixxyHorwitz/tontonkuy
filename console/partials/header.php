@@ -306,6 +306,12 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
       Traffic Analytics
     </a>
     <?php endif; ?>
+    <?php if (staff_can('target')): ?>
+    <a href="/console/target.php" class="c-nav-link <?= $activePage==='target'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+      Persentase Target
+    </a>
+    <?php endif; ?>
     <?php if (staff_can('livechat')): ?>
     <a href="/console/livechat.php" class="c-nav-link <?= $activePage==='livechat'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
@@ -365,7 +371,7 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
       Pengaturan Umum
     </a>
     <?php endif; ?>
-    <?php if (is_head_admin()): ?>
+    <?php if (staff_can('staff')): ?>
     <a href="/console/staff.php" class="c-nav-link <?= $activePage==='staff'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>
       Kelola Staff

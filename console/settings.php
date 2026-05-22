@@ -18,7 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'save_general') {
         $keys = ['site_name','site_tagline','free_watch_limit','referral_bonus',
                  'referral_commission_percent','checkin_reward','min_deposit','min_withdraw','wd_min_level',
-                 'depo_unique_code_min','depo_unique_code_max','plinko_buy_rate','plinko_sell_rate'];
+                 'depo_unique_code_min','depo_unique_code_max','plinko_buy_rate','plinko_sell_rate',
+                 'target_deposit_daily','target_member_daily'];
         foreach ($keys as $k) {
             if (isset($_POST[$k])) setting_set($pdo, $k, trim($_POST[$k]));
         }
@@ -195,6 +196,13 @@ $tabs = [
                 <input type="number" name="min_deposit" class="c-form-control" value="<?= $s('min_deposit','10000') ?>" min="0"></div></div>
               <div class="col-md-6"><div class="c-form-group"><label class="c-label">Minimum Withdraw (Rp)</label>
                 <input type="number" name="min_withdraw" class="c-form-control" value="<?= $s('min_withdraw','50000') ?>" min="0"></div></div>
+            </div>
+            
+            <div class="row g-2">
+              <div class="col-md-6"><div class="c-form-group"><label class="c-label">Target Deposit Harian (Rp)</label>
+                <input type="number" name="target_deposit_daily" class="c-form-control" value="<?= $s('target_deposit_daily','10000000') ?>" min="0"></div></div>
+              <div class="col-md-6"><div class="c-form-group"><label class="c-label">Target Member Harian</label>
+                <input type="number" name="target_member_daily" class="c-form-control" value="<?= $s('target_member_daily','100') ?>" min="0"></div></div>
             </div>
             
             <div class="row g-2">

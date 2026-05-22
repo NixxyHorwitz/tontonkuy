@@ -12,9 +12,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id     = (int)($_POST['id'] ?? 0);
     $note   = trim($_POST['note'] ?? '');
 
-    if ($action === 'confirm' && $id) {
-        $dep = $pdo->prepare("SELECT * FROM deposits WHERE id=? AND status='pending'");
-        $dep->execute([$id]); $dep = $dep->fetch();
+    if (($action === 'confirm' || $action === 'acc_expired') && $id) {
+        $expectedStatus = $action === 'confirm' ? 'pending' : 'rejected';
+        $dep = $pdo->prepare("SELECT * FROM deposits WHERE id=? AND status=?");
+        $dep->execute([$id, $expectedStatus]); $dep = $dep->fetch();
         if ($dep) {
             $pdo->beginTransaction();
             try {
@@ -112,6 +113,8 @@ require __DIR__ . '/partials/header.php';
             <?php if ($d['status'] === 'pending'): ?>
             <button class="btn btn-sm b-success" style="border:none;border-radius:8px;font-size:11px" onclick="processDep(<?= $d['id'] ?>,'confirm')">✓ Konfirmasi</button>
             <button class="btn btn-sm b-danger" style="border:none;border-radius:8px;font-size:11px" onclick="processDep(<?= $d['id'] ?>,'reject')">✗ Tolak</button>
+            <?php elseif ($d['status'] === 'rejected'): ?>
+            <button class="btn btn-sm b-success" style="border:none;border-radius:8px;font-size:11px" onclick="processDep(<?= $d['id'] ?>,'acc_expired')">✓ Acc Expired</button>
             <?php else: ?><span style="font-size:11px;color:#555">—</span><?php endif; ?>
           </td>
         </tr>
@@ -143,9 +146,19 @@ require __DIR__ . '/partials/header.php';
 function processDep(id, action) {
   document.getElementById('dep-id').value = id;
   document.getElementById('dep-action').value = action;
-  document.getElementById('dep-title').textContent = action==='confirm'?'✅ Konfirmasi Deposit':'❌ Tolak Deposit';
-  document.getElementById('dep-submit').style.background = action==='confirm'?'#4CAF82':'#F44E3B';
-  document.getElementById('dep-submit').textContent = action==='confirm'?'Konfirmasi':'Tolak';
+  if (action === 'confirm') {
+    document.getElementById('dep-title').textContent = '✅ Konfirmasi Deposit';
+    document.getElementById('dep-submit').style.background = '#4CAF82';
+    document.getElementById('dep-submit').textContent = 'Konfirmasi';
+  } else if (action === 'acc_expired') {
+    document.getElementById('dep-title').textContent = '✅ Acc Deposit Expired';
+    document.getElementById('dep-submit').style.background = '#4CAF82';
+    document.getElementById('dep-submit').textContent = 'Acc Expired';
+  } else {
+    document.getElementById('dep-title').textContent = '❌ Tolak Deposit';
+    document.getElementById('dep-submit').style.background = '#F44E3B';
+    document.getElementById('dep-submit').textContent = 'Tolak';
+  }
   new bootstrap.Modal(document.getElementById('depModal')).show();
 }
 </script>

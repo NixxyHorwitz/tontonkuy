@@ -26,6 +26,9 @@ define('STAFF_PERMISSIONS', [
     'orders'          => 'Orders',
     'vouchers'        => 'Voucher Diskon',
     'investments'     => 'Investasi Ponzi',
+    'target'          => 'Persentase Target',
+    'staff'           => 'Manajemen Staff',
+    'staff_roles'     => 'Peran & Izin',
 ]);
 
 // ── Determine who is logged in ─────────────────────────────────────────────

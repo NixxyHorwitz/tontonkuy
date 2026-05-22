@@ -2,10 +2,8 @@
 declare(strict_types=1);
 require_once __DIR__ . '/auth.php';
 
-// Head admin only
-if (!is_head_admin()) {
-    staff_require('__head_admin_only__'); // always 403 for staff
-}
+// Check RBAC permission (which automatically handles head admin check as well)
+staff_require('staff_roles');
 
 $flash = $flashType = '';
 
