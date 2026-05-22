@@ -71,7 +71,7 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
       ?>
       <!-- Balance Dropdown -->
       <div class="bal-dropdown" id="bal-dropdown">
-        <button type="button" class="bal-dropdown__trigger" onclick="toggleBalDropdown()" aria-label="Lihat saldo">
+        <button type="button" class="bal-dropdown__trigger" onclick="toggleBalDropdown(event)" aria-label="Lihat saldo">
           <span class="bal-dropdown__icon">💰</span>
           <span class="bal-dropdown__text"><?= fmt_short((float)$user['balance_wd']) ?></span>
           <span class="bal-dropdown__caret">▾</span>
