@@ -111,6 +111,13 @@ function cleanup_inactive_sessions(PDO $pdo): void {
 // ═══════════════════════════════════════════════════════════════
 
 try {
+$user_check = auth_user($pdo);
+if ($user_check && isset($user_check['can_chat']) && $user_check['can_chat'] == 0) {
+    if (in_array($action, ['start', 'send', 'switch_mode'])) {
+        json_err('Akses LiveChat Anda telah dibatasi oleh Administrator.');
+    }
+}
+
 switch ($action) {
 
     // ── Start / get session ─────────────────────────────────────

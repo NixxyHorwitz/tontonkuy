@@ -39,6 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $total_e   = (float)$_POST['total_earned'];
         $is_active = (int)($_POST['is_active'] ?? 0);
         $can_wd    = (int)($_POST['can_withdraw'] ?? 1);
+        $can_chat  = (int)($_POST['can_chat'] ?? 1);
         $new_pass  = trim($_POST['new_password'] ?? '');
 
         $errors = [];
@@ -59,11 +60,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $mem_exp_val = ($mem_exp && $mem_id) ? $mem_exp : null;
             $sql = "UPDATE users SET username=?, email=?, whatsapp=?, membership_id=?, membership_expires_at=?,
-                    balance_wd=?, balance_dep=?, total_earned=?, is_active=?, can_withdraw=?,
+                    balance_wd=?, balance_dep=?, total_earned=?, is_active=?, can_withdraw=?, can_chat=?,
                     bank_name=?, account_number=?, account_name=? WHERE id=?";
             $pdo->prepare($sql)->execute([
                 $username, $email, $whatsapp, $mem_id, $mem_exp_val,
-                $bal_wd, $bal_dep, $total_e, $is_active, $can_wd,
+                $bal_wd, $bal_dep, $total_e, $is_active, $can_wd, $can_chat,
                 $bank_name, $account_number, $account_name, $uid
             ]);
             if ($new_pass !== '') {
@@ -219,6 +220,13 @@ require __DIR__ . '/partials/header.php';
             </select>
           </div>
           <div class="c-form-group mb-3">
+            <label class="c-label">Akses LiveChat</label>
+            <select name="can_chat" id="eu-can-chat" class="c-form-control">
+              <option value="1">Diizinkan</option>
+              <option value="0">Dibatasi (Blocked)</option>
+            </select>
+          </div>
+          <div class="c-form-group mb-3">
             <label class="c-label">Nama Bank / E-Wallet</label>
             <input type="text" name="bank_name" id="eu-bank-name" class="c-form-control">
           </div>
@@ -346,6 +354,7 @@ function editUser(u) {
   document.getElementById('eu-total-earned').value= u.total_earned;
   document.getElementById('eu-is-active').value   = u.is_active;
   document.getElementById('eu-can-wd').value      = u.can_withdraw !== undefined ? u.can_withdraw : 1;
+  document.getElementById('eu-can-chat').value    = u.can_chat !== undefined ? u.can_chat : 1;
   document.getElementById('eu-mem-id').value      = u.membership_id || '';
   document.getElementById('eu-bank-name').value   = u.bank_name || '';
   document.getElementById('eu-acc-num').value     = u.account_number || '';
