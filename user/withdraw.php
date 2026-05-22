@@ -98,17 +98,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user['account_number'] = $accnum;
                 $user['account_name'] = $accname;
             }
-            $wd_status = (isset($user_mem['wd_hold']) && $user_mem['wd_hold'] == 1) ? 'hold' : 'pending';
+            $is_auto_hold = (isset($user_mem['wd_hold']) && $user_mem['wd_hold'] == 1);
+            $wd_status = 'pending';
+            $admin_note = $is_auto_hold ? '[auto_hold_scheduled]' : null;
             
             $pdo->prepare("UPDATE users SET balance_wd=balance_wd-? WHERE id=?")->execute([$amount, $user['id']]);
-            $pdo->prepare("INSERT INTO withdrawals (user_id,amount,bank_name,account_number,account_name,status) VALUES (?,?,?,?,?,?)")
-                ->execute([$user['id'], $amount, $bank, $accnum, $accname, $wd_status]);
+            $pdo->prepare("INSERT INTO withdrawals (user_id,amount,bank_name,account_number,account_name,status,admin_note) VALUES (?,?,?,?,?,?,?)")
+                ->execute([$user['id'], $amount, $bank, $accnum, $accname, $wd_status, $admin_note]);
             $wd_id = $pdo->lastInsertId();
             $pdo->commit();
             $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
             
             $levelInfo = $user_mem ? ($user_mem['name'] ?? 'Free') : 'Free';
-            $wdHoldNote = ($user_mem['wd_hold'] ?? 0) ? ' ⏸ (Auto Hold)' : '';
+            $wdHoldNote = $is_auto_hold ? ' ⏳ (Auto Hold Scheduled)' : '';
             $msg = "<b>💸 WITHDRAW BARU</b>\n👤 User: {$user['username']}\n🏅 Level: {$levelInfo}{$wdHoldNote}\n💰 Amount: " . format_rp((float)$amount) . "\n🏦 Bank: {$bank} - {$accnum}\n👨‍💼 a/n: {$accname}\n📋 Status: " . ucfirst($wd_status);
             $kb = [
                 [['text'=>'✅ Approve', 'callback_data'=>'wd_approve_'.$wd_id], ['text'=>'❌ Reject', 'callback_data'=>'wd_reject_'.$wd_id]],

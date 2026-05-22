@@ -81,6 +81,45 @@ function setting_set(PDO $pdo, string $key, string $value): void {
         ->execute([$key, $value, $value]);
 }
 
+// Process referral commission recursively
+function process_referral_commission(PDO $pdo, int $user_id, float $amount, int $depth = 1): void {
+    if ($depth > 3) return;
+    $s = $pdo->prepare("SELECT referred_by FROM users WHERE id=?");
+    $s->execute([$user_id]);
+    $refCode = $s->fetchColumn();
+    if (!$refCode) return;
+    
+    $su = $pdo->prepare("SELECT id FROM users WHERE referral_code=?");
+    $su->execute([$refCode]);
+    $upline_id = $su->fetchColumn();
+    if (!$upline_id) return;
+    
+    $rates = [1 => 0.05, 2 => 0.03, 3 => 0.01]; // 5%, 3%, 1%
+    $comm  = $amount * ($rates[$depth] ?? 0);
+    if ($comm > 0) {
+        $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id=?")
+            ->execute([$comm, $comm, $upline_id]);
+        $pdo->prepare("INSERT INTO referral_commissions (upline_id, downline_id, amount, depth) VALUES (?,?,?,?)")
+            ->execute([$upline_id, $user_id, $comm, $depth]);
+    }
+    process_referral_commission($pdo, $upline_id, $amount, $depth + 1);
+}
+
+// ============================================================
+// BACKGROUND TASKS / FAKE CRON
+// ============================================================
+try {
+    // Process auto holds that are older than 10 minutes (probabilistic execution to save resources)
+    if (rand(1, 5) === 1) {
+        $stmt = $pdo->query("SELECT id FROM withdrawals WHERE status='pending' AND admin_note='[auto_hold_scheduled]' AND created_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)");
+        $holds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        if ($holds) {
+            $ids = implode(',', array_map('intval', $holds));
+            $pdo->query("UPDATE withdrawals SET status='hold', admin_note=NULL WHERE id IN ($ids)");
+        }
+    }
+} catch (\Throwable $th) {}
+
 /** Format currency IDR */
 function format_rp(float $amount): string {
     return 'Rp ' . number_format($amount, 0, ',', '.');
