@@ -62,13 +62,13 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
     <div class="topbar__right">
       <?php if (!empty($user)): ?>
       <?php
-      // Compact number for topbar: 1.234.567 → 1,2jt | 50.000 → 50rb
       function fmt_short(float $n): string {
         if ($n >= 1_000_000) return number_format($n/1_000_000, 1, '.', '') . 'jt';
         if ($n >= 1_000)     return number_format($n/1_000, 1, '.', '') . 'rb';
         return (string)(int)$n;
       }
       ?>
+
       <!-- Balance Dropdown -->
       <div class="bal-dropdown" id="bal-dropdown">
         <button type="button" class="bal-dropdown__trigger" onclick="toggleBalDropdown(event)" aria-label="Lihat saldo">
@@ -94,45 +94,66 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
           <a href="/plinko-shop" class="bal-dropdown__link">🛒 Lapak Koin →</a>
         </div>
       </div>
+
       <style>
       .bal-dropdown{position:relative;z-index:9999;}
-      .bal-dropdown__trigger{display:flex;align-items:center;gap:4px;background:var(--yellow);border:2px solid var(--ink);border-radius:8px;box-shadow:2px 2px 0 var(--ink);padding:5px 10px;font-weight:900;font-size:12px;color:var(--ink);cursor:pointer;transition:transform .1s,box-shadow .1s;}
-      .bal-dropdown__trigger:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink);}
-      .bal-dropdown__caret{font-size:9px;transition:transform .2s;}
-      .bal-dropdown__panel{display:none;position:fixed;right:12px;top:56px;background:#fff;border:2.5px solid var(--ink);border-radius:10px;box-shadow:4px 4px 0 var(--ink);min-width:210px;z-index:9999;overflow:hidden;}
-      .bal-dropdown__panel.open{display:block;animation:bdFadeIn .15s ease;}
+      .topbar__right{overflow:visible!important;}
+      .bal-dropdown__trigger{display:flex;align-items:center;gap:4px;background:var(--yellow);border:2px solid var(--ink);border-radius:8px;box-shadow:2px 2px 0 var(--ink);padding:5px 10px;font-weight:900;font-size:12px;color:var(--ink);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;}
+      .bal-dropdown__caret{font-size:9px;transition:transform .2s;display:inline-block;}
       .bal-dropdown__caret.open{transform:rotate(180deg);}
-      @keyframes bdFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
-      .bal-dropdown__row{display:flex;justify-content:space-between;align-items:center;padding:9px 14px;border-bottom:1.5px solid #eee;font-size:12px;}
+      .bal-dropdown__panel{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:2.5px solid var(--ink);border-radius:10px;box-shadow:4px 4px 0 var(--ink);min-width:220px;z-index:9999;overflow:hidden;}
+      .bal-dropdown__panel.open{display:block;animation:bdFadeIn .15s ease;}
+      @keyframes bdFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+      .bal-dropdown__row{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1.5px solid #eee;font-size:12px;}
       .bal-dropdown__row--wd{background:var(--mint);}
       .bal-dropdown__row--dep{background:#f5f8ff;}
       .bal-dropdown__row--coin{background:var(--yellow);}
       .bal-dropdown__lbl{font-weight:700;color:#444;}
       .bal-dropdown__val{font-weight:900;color:var(--ink);}
-      .bal-dropdown__link{display:block;padding:9px 14px;font-size:11px;font-weight:900;color:var(--brand);text-decoration:none;text-align:center;background:#fafafa;}
-      .bal-dropdown__link:hover{background:var(--yellow);}
+      .bal-dropdown__link{display:block;padding:10px 14px;font-size:11px;font-weight:900;color:var(--brand);text-decoration:none;text-align:center;background:#fafafa;}
+      .bal-dropdown__link:hover,.bal-dropdown__link:active{background:var(--yellow);}
       </style>
       <script>
       (function(){
-        function toggleBalDropdown(e){
-          e.stopPropagation();
-          const panel=document.getElementById('bal-panel');
-          const caret=document.querySelector('.bal-dropdown__caret');
-          const isOpen=panel.classList.toggle('open');
-          caret.classList.toggle('open',isOpen);
-        }
-        // expose globally for onclick
-        window.toggleBalDropdown=toggleBalDropdown;
-        document.addEventListener('click',function(e){
-          const d=document.getElementById('bal-dropdown');
-          if(d&&!d.contains(e.target)){
-            document.getElementById('bal-panel').classList.remove('open');
-            const c=document.querySelector('.bal-dropdown__caret');
-            if(c)c.classList.remove('open');
+        /* Flag: true for 150ms after open so document-level close doesn't immediately re-close on mobile */
+        var _justOpened = false;
+
+        function balOpen() {
+          var panel = document.getElementById('bal-panel');
+          var caret = document.querySelector('.bal-dropdown__caret');
+          if (!panel) return;
+          var opening = !panel.classList.contains('open');
+          panel.classList.toggle('open');
+          if (caret) caret.classList.toggle('open', opening);
+          if (opening) {
+            _justOpened = true;
+            setTimeout(function(){ _justOpened = false; }, 150);
           }
-        });
+        }
+
+        function balClose(fromTarget) {
+          if (_justOpened) return;
+          var wrap = document.getElementById('bal-dropdown');
+          if (wrap && wrap.contains(fromTarget)) return;
+          var panel = document.getElementById('bal-panel');
+          var caret = document.querySelector('.bal-dropdown__caret');
+          if (panel) panel.classList.remove('open');
+          if (caret) caret.classList.remove('open');
+        }
+
+        /* Expose for inline onclick */
+        window.toggleBalDropdown = function(e) {
+          if (e) { e.preventDefault(); e.stopPropagation(); }
+          balOpen();
+        };
+
+        /* Desktop close-on-outside-click */
+        document.addEventListener('click', function(e){ balClose(e.target); });
+        /* Mobile close-on-outside-touch */
+        document.addEventListener('touchend', function(e){ balClose(e.target); }, {passive: true});
       })();
       </script>
+
       <a href="/notifications" class="topbar__avatar" title="Notifikasi"
          id="notif-bell-btn"
          style="background:var(--lavender);font-size:16px;text-decoration:none;position:relative">
@@ -170,7 +191,6 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
       })
       .catch(() => {});
   }
-  // Run on load + every 60s
   fetchNotifCount();
   setInterval(fetchNotifCount, 60000);
 })();
