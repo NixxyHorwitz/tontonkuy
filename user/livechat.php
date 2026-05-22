@@ -1,4 +1,4 @@
-<?php
+?php
 declare(strict_types=1);
 // DEBUG: tampilkan semua error PHP ke log
 ini_set('display_errors', '0');
@@ -34,7 +34,7 @@ if ($_abs_fav): ?>
 <link rel="icon" href="<?= htmlspecialchars($_abs_fav) ?>">
 <link rel="apple-touch-icon" href="<?= htmlspecialchars($_abs_fav) ?>">
 <?php endif; ?>
-<link rel="stylesheet" href="/assets/css/app.css">
+<link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'].'/assets/css/app.css') ?: time() ?>">
 <style>
 /* ── LiveChat: position:fixed layout (keyboard-safe, app.css-proof) ── */
 * { box-sizing: border-box; }

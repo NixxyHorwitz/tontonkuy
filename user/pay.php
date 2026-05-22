@@ -1,4 +1,4 @@
-<?php
+?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
 $user = require_auth($pdo);
@@ -59,7 +59,7 @@ $qr_url = !empty($qris_str)
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Bayar QRIS — TontonKuy</title>
-<link rel="stylesheet" href="/assets/css/app.css">
+<link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'].'/assets/css/app.css') ?: time() ?>">
 <style>
 .pay-page { min-height: 100vh; display:flex; flex-direction:column; background: var(--bg); }
 .pay-topbar {

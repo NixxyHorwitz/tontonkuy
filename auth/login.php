@@ -1,4 +1,4 @@
-<?php
+?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
 if (auth_user($pdo)) redirect('/home');
@@ -85,7 +85,7 @@ $final_og_desc = $_seo_desc;
 <link rel="icon" href="<?= htmlspecialchars($absolute_fav) ?>?v=<?= @filemtime(dirname(__DIR__).$_favicon)?:time() ?>">
 <link rel="apple-touch-icon" href="<?= htmlspecialchars($absolute_fav) ?>?v=<?= @filemtime(dirname(__DIR__).$_favicon)?:time() ?>">
 <?php endif; ?>
-<link rel="stylesheet" href="/assets/css/app.css">
+<link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'].'/assets/css/app.css') ?: time() ?>">
 <style>
 .login-pill {
   display: inline-flex; align-items: center; gap: 6px;

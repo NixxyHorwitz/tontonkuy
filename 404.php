@@ -1,4 +1,4 @@
-<?php
+?php
 declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 http_response_code(404);
@@ -10,7 +10,7 @@ $user = auth_user($pdo);
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>404 — Halaman Tidak Ditemukan</title>
-<link rel="stylesheet" href="/assets/css/app.css">
+<link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'].'/assets/css/app.css') ?: time() ?>">
 <style>
   .not-found-page {
     min-height: 100vh;
