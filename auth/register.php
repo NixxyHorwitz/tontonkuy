@@ -163,18 +163,11 @@ $final_og_desc = $_seo_desc;
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'].'/assets/css/app.css') ?: time() ?>">
 <style>
-/* Extra neobrutalism decoration */
-.reg-deco {
-  position: absolute;
-  pointer-events: none;
-  font-size: 40px;
-  opacity: .15;
-  user-select: none;
-}
-.auth-page { position: relative; overflow: hidden; }
-.step-tabs { display: flex; gap: 6px; margin-bottom: 20px; }
+.deco-bar{height:4px;background:repeating-linear-gradient(90deg,var(--yellow) 0,var(--yellow) 30px,var(--mint) 30px,var(--mint) 60px,var(--lavender) 60px,var(--lavender) 90px);margin:-20px -20px 16px;}
+.auth-page { position: relative; }
+.step-tabs { display: flex; gap: 6px; margin-bottom: 16px; }
 .step-tab {
-  flex: 1; height: 6px; border-radius: 3px;
+  flex: 1; height: 5px; border-radius: 3px;
   background: #e0e0e0;
   border: 1.5px solid var(--ink);
   transition: background .3s;
@@ -187,23 +180,19 @@ $final_og_desc = $_seo_desc;
 </head>
 <body>
 <div class="auth-page">
-  <!-- Decorative elements -->
-  <span class="reg-deco" style="top:5%;left:3%">🎬</span>
-  <span class="reg-deco" style="top:15%;right:4%">⭐</span>
-  <span class="reg-deco" style="bottom:20%;left:5%">💰</span>
-  <span class="reg-deco" style="bottom:10%;right:3%">🎁</span>
+  <div class="auth-card">
+    <div class="deco-bar"></div>
 
-    <div class="auth-card">
-    <div class="auth-logo">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
       <?php if ($_favicon): ?>
-      <div class="auth-logo__icon" style="background:none;border:none;box-shadow:none;padding:0">
-        <img src="<?= htmlspecialchars($_favicon) ?>" alt="" style="width:52px;height:52px;object-fit:contain;border-radius:12px;border:2px solid var(--ink)">
-      </div>
+      <img src="<?= htmlspecialchars($_favicon) ?>" alt="" style="width:36px;height:36px;object-fit:contain;border-radius:8px;border:2px solid var(--ink);flex-shrink:0;">
       <?php else: ?>
-      <div class="auth-logo__icon">🎬</div>
+      <span style="font-size:24px;line-height:1;">🎬</span>
       <?php endif; ?>
-      <div class="auth-logo__title"><?= htmlspecialchars($_seo_title) ?></div>
-      <div class="auth-logo__sub">Daftar gratis &amp; langsung tonton!</div>
+      <div>
+        <div style="font-weight:900;font-size:16px;"><?= htmlspecialchars($_seo_title) ?></div>
+        <div style="font-size:10px;color:#666;font-weight:700;">Daftar gratis &amp; langsung tonton!</div>
+      </div>
     </div>
 
     <?php if ($error): ?>

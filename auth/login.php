@@ -87,46 +87,23 @@ $final_og_desc = $_seo_desc;
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'].'/assets/css/app.css') ?: time() ?>">
 <style>
-.login-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  background: var(--mint);
-  border: var(--border);
-  box-shadow: var(--shadow-sm);
-  border-radius: 20px;
-  padding: 5px 14px;
-  font-size: 12px; font-weight: 800;
-  margin-bottom: 16px;
-}
-.deco-strip {
-  height: 8px;
-  background: repeating-linear-gradient(90deg,
-    var(--yellow) 0,var(--yellow) 40px,
-    var(--mint)   40px,var(--mint)   80px,
-    var(--lavender) 80px,var(--lavender) 120px,
-    var(--salmon) 120px,var(--salmon) 160px
-  );
-  border-top: var(--border);
-  border-bottom: var(--border);
-  margin: -30px -24px 24px;
-}
+.deco-bar{height:4px;background:repeating-linear-gradient(90deg,var(--yellow) 0,var(--yellow) 30px,var(--mint) 30px,var(--mint) 60px,var(--lavender) 60px,var(--lavender) 90px);margin:-20px -20px 16px;}
 </style>
 </head>
-<body>
 <div class="auth-page">
   <div class="auth-card">
-    <!-- Decorative stripe -->
-    <div class="deco-strip"></div>
+    <div class="deco-bar"></div>
 
-    <div class="auth-logo">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
       <?php if ($_favicon): ?>
-      <div class="auth-logo__icon" style="background:none;border:none;box-shadow:none;padding:0">
-        <img src="<?= htmlspecialchars($_favicon) ?>" alt="" style="width:52px;height:52px;object-fit:contain;border-radius:12px;border:2px solid var(--ink)">
-      </div>
+      <img src="<?= htmlspecialchars($_favicon) ?>" alt="" style="width:36px;height:36px;object-fit:contain;border-radius:8px;border:2px solid var(--ink);flex-shrink:0;">
       <?php else: ?>
-      <div class="auth-logo__icon">🎬</div>
+      <span style="font-size:24px;line-height:1;">🎬</span>
       <?php endif; ?>
-      <div class="auth-logo__title"><?= htmlspecialchars($_seo_title) ?></div>
-      <div class="login-pill">🎁 Tonton video &amp; kumpulkan reward!</div>
+      <div>
+        <div style="font-weight:900;font-size:16px;"><?= htmlspecialchars($_seo_title) ?></div>
+        <div style="font-size:10px;color:#666;font-weight:700;">Tonton video &amp; kumpulkan reward</div>
+      </div>
     </div>
 
     <?php if ($error): ?>
@@ -153,36 +130,11 @@ $final_og_desc = $_seo_desc;
           <button type="button" class="input-toggle" onclick="document.getElementById('pwd').type=document.getElementById('pwd').type==='password'?'text':'password'">👁</button>
         </div>
       </div>
-
-      <button type="submit" class="btn btn--yellow btn--full btn--lg" style="margin-top:4px">
-        🚀 Masuk Sekarang
-      </button>
-      <a href="/register" class="btn btn--full btn--lg" style="margin-top:8px;background:var(--white);border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);font-weight:800;font-size:15px;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px">
-        ✨ Daftar Gratis
-      </a>
+      <button type="submit" class="btn btn--yellow btn--full btn--lg" style="margin-top:4px;">🚀 Masuk</button>
+      <a href="/register" class="btn btn--full" style="margin-top:8px;background:#fff;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);font-weight:800;font-size:14px;text-decoration:none;display:flex;align-items:center;justify-content:center;gap:6px;padding:10px;">✨ Daftar Gratis</a>
     </form>
 
-    <!-- Visual divider -->
-    <div style="display:flex;align-items:center;gap:10px;margin:18px 0">
-      <div style="flex:1;height:2px;background:var(--ink);border-radius:2px"></div>
-      <span style="font-size:12px;font-weight:800;color:#aaa">ATAU</span>
-      <div style="flex:1;height:2px;background:var(--ink);border-radius:2px"></div>
-    </div>
-
-    <!-- Feature highlights -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px">
-      <?php
-      $feats = [['🎬',"Tonton\nVideo"],['💰',"Dapat\nReward"],['🏆',"Withdraw\nSaldo"]];
-      $cols  = ['var(--mint)','var(--yellow)','var(--lavender)'];
-      foreach ($feats as $i => [$ic,$lbl]): ?>
-      <div style="background:<?= $cols[$i] ?>;border:var(--border);box-shadow:var(--shadow-sm);border-radius:10px;padding:10px 6px;text-align:center">
-        <div style="font-size:20px"><?= $ic ?></div>
-        <div style="font-size:10px;font-weight:800;margin-top:4px;line-height:1.3;white-space:pre-line"><?= $lbl ?></div>
-      </div>
-      <?php endforeach; ?>
-    </div>
-
-    <div class="auth-switch">Belum punya akun? <a href="/register">Daftar gratis →</a></div>
+    <div class="auth-switch" style="margin-top:14px;">Belum punya akun? <a href="/register">Daftar gratis →</a></div>
   </div>
 </div>
 </body>

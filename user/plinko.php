@@ -167,56 +167,30 @@ $activePage = 'plinko';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
 
-<!-- Premium Header (Neo-Brutalist Arcade Machine Style) -->
-<div class="page-title-bar" style="
-  background: var(--lavender);
-  border: 3.5px solid var(--ink);
-  border-radius: 14px;
-  box-shadow: 5px 5px 0 var(--ink);
-  padding: 16px 14px;
-  margin-bottom: 16px;
-  position: relative;
-  overflow: hidden;
-">
-  <div style="font-size: 26px; position: absolute; right: 10px; top: 10px; opacity: 0.15;">🎮</div>
-  <h1 style="font-weight:900; font-size:22px; display:flex; align-items:center; gap:6px;">🎮 Plinko Arcade</h1>
-  <p style="color:#444; font-weight:700; margin-top:2px; font-size:12px;">Jatuhkan bola neon pada pin besi Galton Board untuk melipatgandakan koin Anda!</p>
+<!-- Compact Plinko Header -->
+<div style="display:flex;align-items:center;justify-content:space-between;background:var(--lavender);border:2.5px solid var(--ink);border-radius:10px;box-shadow:3px 3px 0 var(--ink);padding:10px 14px;margin-bottom:12px;">
+  <div>
+    <h1 style="font-weight:900;font-size:15px;margin:0;">🎮 Plinko Arcade</h1>
+    <div style="font-size:10px;color:#555;margin-top:2px;">Jatuhkan bola · kumpulkan koin</div>
+  </div>
+  <a href="/plinko-shop" style="display:flex;align-items:center;gap:4px;background:var(--mint);color:var(--ink);border:2px solid var(--ink);border-radius:7px;box-shadow:2px 2px 0 var(--ink);padding:6px 10px;font-weight:900;font-size:11px;text-decoration:none;white-space:nowrap;">🛒 Lapak</a>
 </div>
 
-<!-- Balance Indicator (Neo-Brutalist Compact Rows) -->
-<div class="stat-row" style="margin-bottom:16px; display:flex; gap:8px;">
-  <div class="stat-mini" style="flex:1; background:var(--yellow); border:2.5px solid var(--ink); box-shadow:3.5px 3.5px 0 var(--ink);" title="Total Koin Anda">
-    <div class="stat-mini__val" style="font-size:18px;" id="disp-coins">🪙 <?= number_format((int)$user['plinko_coins']) ?></div>
-    <div class="stat-mini__lbl" style="color:var(--ink); font-weight:800; font-size:9px;">Koin Anda</div>
+<!-- Compact Balance Row -->
+<div style="display:flex;gap:6px;margin-bottom:12px;">
+  <div style="flex:1;background:var(--yellow);border:2px solid var(--ink);border-radius:8px;box-shadow:2.5px 2.5px 0 var(--ink);padding:7px 8px;text-align:center;">
+    <div style="font-size:15px;font-weight:900;" id="disp-coins">🪙 <?= number_format((int)$user['plinko_coins']) ?></div>
+    <div style="font-size:9px;font-weight:800;color:#555;">KOIN</div>
   </div>
-  <div class="stat-mini" style="flex:1; background:var(--white); border:2.5px solid var(--ink); box-shadow:3.5px 3.5px 0 var(--ink);" title="Saldo Deposit">
-    <div class="stat-mini__val" style="font-size:14px;" id="disp-dep"><?= format_rp((float)$user['balance_dep']) ?></div>
-    <div class="stat-mini__lbl" style="font-size:9px;">Saldo DEP</div>
+  <div style="flex:1;background:#fff;border:2px solid var(--ink);border-radius:8px;box-shadow:2.5px 2.5px 0 var(--ink);padding:7px 8px;text-align:center;">
+    <div style="font-size:11px;font-weight:800;" id="disp-dep"><?= format_rp((float)$user['balance_dep']) ?></div>
+    <div style="font-size:9px;font-weight:700;color:#888;">DEP</div>
   </div>
-  <div class="stat-mini" style="flex:1; background:var(--mint); border:2.5px solid var(--ink); box-shadow:3.5px 3.5px 0 var(--ink);" title="Saldo WD">
-    <div class="stat-mini__val" style="font-size:14px; color:var(--ink);" id="disp-wd"><?= format_rp((float)$user['balance_wd']) ?></div>
-    <div class="stat-mini__lbl" style="color:var(--ink); font-weight:800; font-size:9px;">Saldo WD</div>
+  <div style="flex:1;background:var(--mint);border:2px solid var(--ink);border-radius:8px;box-shadow:2.5px 2.5px 0 var(--ink);padding:7px 8px;text-align:center;">
+    <div style="font-size:11px;font-weight:800;" id="disp-wd"><?= format_rp((float)$user['balance_wd']) ?></div>
+    <div style="font-size:9px;font-weight:800;">SALDO WD</div>
   </div>
 </div>
-
-<!-- Mega Navigation Banner to standalone Shop / Lapak -->
-<a href="/plinko-shop" class="card card--mint" style="
-  display: block; 
-  text-decoration: none; 
-  color: var(--ink); 
-  margin-bottom: 18px; 
-  box-shadow: 5px 5px 0 var(--ink); 
-  border: 3.5px solid var(--ink);
-  transition: transform 0.15s, box-shadow 0.15s;
-" onmouseover="this.style.transform='translate(-2px, -2px)'; this.style.boxShadow='6px 6px 0 var(--ink)';" onmouseout="this.style.transform='none'; this.style.boxShadow='5px 5px 0 var(--ink)';">
-  <div class="card__body" style="display: flex; align-items: center; justify-content: space-between; padding: 14px 16px;">
-    <div>
-      <div style="font-weight: 900; font-size: 15px; display: flex; align-items: center; gap: 6px;">🛒 Buka Lapak Jual-Beli Koin Plinko ➔</div>
-      <div style="font-size: 10px; font-weight: 700; color: #444; margin-top: 3px;">Klaim koin gratis harian, beli koin, atau jual kembali koin menjadi WD!</div>
-    </div>
-    <div style="font-size: 22px; background: #fff; border: 2.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); border-radius: 10px; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center;">🪙</div>
-  </div>
-</a>
 
 <!-- Main Plinko Game Machine Console (Neo-Brutalist Frame) -->
 <div class="card" style="margin-bottom:18px; overflow:hidden; border: 3.5px solid var(--ink); box-shadow: 6px 6px 0 var(--ink);">
