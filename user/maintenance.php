@@ -1,4 +1,4 @@
-?php
+<?php
 declare(strict_types=1);
 // This file is included by guard.php — $maintenance_msg is already set
 // Can also be accessed directly as a standalone page
