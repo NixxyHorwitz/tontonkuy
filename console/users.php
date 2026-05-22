@@ -112,25 +112,9 @@ $activePage = 'users';
 require __DIR__ . '/partials/header.php';
 ?>
 
-<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+<div class="d-flex align-items-center justify-content-between mb-4">
   <div><h5 class="mb-0 fw-bold">👥 Pengguna</h5><small class="text-secondary"><?= number_format($total) ?> pengguna terdaftar</small></div>
-  <div>
-    <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="🔍 Cari username/email..." onkeyup="filterUsers()" style="background:#1a1d27; border:1px solid #2d3149; color:#fff; min-width: 220px; border-radius: 8px;">
-  </div>
 </div>
-
-<style>
-/* Responsive Table for Mobile */
-@media (max-width: 768px) {
-  .c-table thead { display: none; }
-  .c-table, .c-table tbody, .c-table tr, .c-table td { display: block; width: 100%; border: none; }
-  .c-table tr { margin-bottom: 16px; border: 1px solid #2d3149; border-radius: 12px; padding: 12px; background: #1a1d27; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-  .c-table td { text-align: right; padding-left: 45%; position: relative; border-bottom: 1px solid #252836; min-height: 40px; display: flex; justify-content: flex-end; align-items: center; color: #eee; }
-  .c-table td:last-child { border-bottom: 0; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; padding-left: 0; margin-top: 10px; }
-  .c-table td::before { content: attr(data-label); position: absolute; left: 0; width: 45%; text-align: left; font-weight: 600; color: #8892b0; font-size: 11px; }
-  .c-table td .btn { flex: 1; min-width: 30%; }
-}
-</style>
 
 <?php if ($flash): ?>
 <div class="alert alert-<?= $flashType==='error'?'danger':'success' ?> py-2 mb-3" style="border-radius:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
@@ -138,7 +122,7 @@ require __DIR__ . '/partials/header.php';
 
 <div class="c-card">
   <div style="overflow-x:auto">
-    <table class="c-table" id="usersTable">
+    <table class="c-table" style="white-space: nowrap;">
       <thead><tr><th>Username</th><th>Email / WA</th><th>Saldo (WD/Dep)</th><th>Total Earned</th><th>Paket</th><th>Referral</th><th>Status</th><th>Aksi</th></tr></thead>
       <tbody>
         <?php foreach ($users as $u): ?>
@@ -368,27 +352,6 @@ function editUser(u) {
   document.getElementById('eu-mem-exp').value = exp ? exp.replace(' ', 'T').slice(0, 16) : '';
 
   new bootstrap.Modal(document.getElementById('editUserModal')).show();
-}
-
-function filterUsers() {
-  const input = document.getElementById("searchInput").value.toLowerCase();
-  const table = document.getElementById("usersTable");
-  const tr = table.getElementsByTagName("tr");
-  
-  for (let i = 1; i < tr.length; i++) {
-    const tdUser = tr[i].getElementsByTagName("td")[0];
-    const tdEmail = tr[i].getElementsByTagName("td")[1];
-    
-    if (tdUser || tdEmail) {
-      const txtValue1 = tdUser.textContent || tdUser.innerText;
-      const txtValue2 = tdEmail.textContent || tdEmail.innerText;
-      if (txtValue1.toLowerCase().indexOf(input) > -1 || txtValue2.toLowerCase().indexOf(input) > -1) {
-        tr[i].style.display = "";
-      } else {
-        tr[i].style.display = "none";
-      }
-    }
-  }
 }
 </script>
 
