@@ -33,10 +33,7 @@ require __DIR__ . '/partials/header.php';
     <div class="c-card">
       <div class="c-card-header"><span class="c-card-title">💰 Target Deposit</span></div>
       <div class="c-card-body text-center">
-        <div style="font-size:48px;font-weight:900;color:<?= $depoPercent >= 100 ? '#4CAF82' : 'var(--brand)' ?>"><?= $depoPercent ?>%</div>
-        <div style="font-size:13px;color:#888;margin-bottom:15px">
-          Tercapai <?= format_rp($currentDeposit) ?> dari <?= format_rp($targetDepositDaily) ?>
-        </div>
+        <div style="font-size:48px;font-weight:900;color:<?= $depoPercent >= 100 ? '#4CAF82' : 'var(--brand)' ?>;margin-bottom:15px"><?= $depoPercent ?>%</div>
         <div class="progress" style="height: 12px; background: #1a1d27; border-radius: 10px; border: 1px solid #2d3149;">
           <div class="progress-bar <?= $depoPercent >= 100 ? 'bg-success' : 'bg-primary' ?>" role="progressbar" style="width: <?= $depoPercent ?>%; background-color: var(--brand) !important;" aria-valuenow="<?= $depoPercent ?>" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
@@ -48,10 +45,7 @@ require __DIR__ . '/partials/header.php';
     <div class="c-card">
       <div class="c-card-header"><span class="c-card-title">👥 Target Registrasi Member</span></div>
       <div class="c-card-body text-center">
-        <div style="font-size:48px;font-weight:900;color:<?= $memberPercent >= 100 ? '#4CAF82' : '#F29900' ?>"><?= $memberPercent ?>%</div>
-        <div style="font-size:13px;color:#888;margin-bottom:15px">
-          Tercapai <?= number_format($currentMembers) ?> dari <?= number_format($targetMemberDaily) ?> member
-        </div>
+        <div style="font-size:48px;font-weight:900;color:<?= $memberPercent >= 100 ? '#4CAF82' : '#F29900' ?>;margin-bottom:15px"><?= $memberPercent ?>%</div>
         <div class="progress" style="height: 12px; background: #1a1d27; border-radius: 10px; border: 1px solid #2d3149;">
           <div class="progress-bar <?= $memberPercent >= 100 ? 'bg-success' : 'bg-warning' ?>" role="progressbar" style="width: <?= $memberPercent ?>%;" aria-valuenow="<?= $memberPercent ?>" aria-valuemin="0" aria-valuemax="100"></div>
         </div>
