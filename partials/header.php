@@ -95,11 +95,11 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
         </div>
       </div>
       <style>
-      .bal-dropdown{position:relative;}
+      .bal-dropdown{position:relative;z-index:9999;}
       .bal-dropdown__trigger{display:flex;align-items:center;gap:4px;background:var(--yellow);border:2px solid var(--ink);border-radius:8px;box-shadow:2px 2px 0 var(--ink);padding:5px 10px;font-weight:900;font-size:12px;color:var(--ink);cursor:pointer;transition:transform .1s,box-shadow .1s;}
       .bal-dropdown__trigger:hover{transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink);}
       .bal-dropdown__caret{font-size:9px;transition:transform .2s;}
-      .bal-dropdown__panel{display:none;position:absolute;right:0;top:calc(100% + 6px);background:#fff;border:2.5px solid var(--ink);border-radius:10px;box-shadow:4px 4px 0 var(--ink);min-width:200px;z-index:999;overflow:hidden;}
+      .bal-dropdown__panel{display:none;position:fixed;right:12px;top:56px;background:#fff;border:2.5px solid var(--ink);border-radius:10px;box-shadow:4px 4px 0 var(--ink);min-width:210px;z-index:9999;overflow:hidden;}
       .bal-dropdown__panel.open{display:block;animation:bdFadeIn .15s ease;}
       .bal-dropdown__caret.open{transform:rotate(180deg);}
       @keyframes bdFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
