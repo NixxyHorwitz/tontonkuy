@@ -627,7 +627,7 @@ switch ($action) {
                             foreach ($holds as $h) {
                                 $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$h['amount'], $h['user_id']]);
                                 $pdo->prepare("UPDATE withdrawals SET status='rejected',admin_note=?,processed_at=NOW() WHERE id=?")
-                                    ->execute(['Bulk refund Hold oleh admin via Telegram', $h['id']]);
+                                    ->execute(['Refund Hold massal oleh Admin', $h['id']]);
                                 $total += $h['amount'];
                             }
                             $pdo->commit();
@@ -737,7 +737,7 @@ switch ($action) {
                     if ($cbAction === 'close_sess') {
                         if ($csRow['status'] === 'open') {
                             $pdo->prepare("UPDATE chat_sessions SET status='closed' WHERE id=?")->execute([$cbSessId]);
-                            $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','Sesi ditutup oleh Admin via Telegram.')")->execute([$cbSessId]);
+                            $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','Sesi chat ditutup oleh Admin.')")->execute([$cbSessId]);
                             if ($csRow['tg_thread_id'] && $tgChatId) {
                                 tg_api($pdo, 'closeForumTopic', [
                                     'chat_id'           => $tgChatId,
@@ -783,7 +783,7 @@ switch ($action) {
             echo '{}'; exit;
         }
 
-        // Handle regular message (admin reply via Telegram)
+        // Handle regular message (admin reply)
         if (empty($input['message'])) { echo '{}'; exit; }
 
         $msg      = $input['message'];
