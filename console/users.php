@@ -112,73 +112,72 @@ $activePage = 'users';
 require __DIR__ . '/partials/header.php';
 ?>
 
-<div class="d-flex align-items-center justify-content-between mb-4">
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
   <div><h5 class="mb-0 fw-bold">👥 Pengguna</h5><small class="text-secondary"><?= number_format($total) ?> pengguna terdaftar</small></div>
+  <div>
+    <input type="text" id="searchInput" class="form-control form-control-sm" placeholder="🔍 Cari username/email..." onkeyup="filterUsers()" style="background:#1a1d27; border:1px solid #2d3149; color:#fff; min-width: 220px; border-radius: 8px;">
+  </div>
 </div>
+
+<style>
+/* Responsive Table for Mobile */
+@media (max-width: 768px) {
+  .c-table thead { display: none; }
+  .c-table, .c-table tbody, .c-table tr, .c-table td { display: block; width: 100%; border: none; }
+  .c-table tr { margin-bottom: 16px; border: 1px solid #2d3149; border-radius: 12px; padding: 12px; background: #1a1d27; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+  .c-table td { text-align: right; padding-left: 45%; position: relative; border-bottom: 1px solid #252836; min-height: 40px; display: flex; justify-content: flex-end; align-items: center; color: #eee; }
+  .c-table td:last-child { border-bottom: 0; display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 6px; padding-left: 0; margin-top: 10px; }
+  .c-table td::before { content: attr(data-label); position: absolute; left: 0; width: 45%; text-align: left; font-weight: 600; color: #8892b0; font-size: 11px; }
+  .c-table td .btn { flex: 1; min-width: 30%; }
+}
+</style>
 
 <?php if ($flash): ?>
-<div class="alert alert-<?= $flashType==='error'?'danger':'success' ?> py-2 mb-3" style="border-radius:10px;font-size:13px;font-weight:700;border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);background:<?= $flashType==='error'?'#ffebee':'var(--mint)' ?>;color:var(--ink);"><?= htmlspecialchars($flash) ?></div>
+<div class="alert alert-<?= $flashType==='error'?'danger':'success' ?> py-2 mb-3" style="border-radius:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
 <?php endif; ?>
 
-<div style="display:grid;grid-template-columns:repeat(auto-fill, minmax(300px, 1fr));gap:16px;margin-bottom:24px;">
-  <?php foreach ($users as $u): ?>
-  <div style="background:#fff;border:2.5px solid var(--ink);border-radius:12px;box-shadow:4px 4px 0 var(--ink);display:flex;flex-direction:column;overflow:hidden;transition:transform .2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-    <div style="padding:12px;border-bottom:2px solid var(--ink);display:flex;justify-content:space-between;align-items:flex-start;background:var(--lavender);">
-      <div>
-        <div style="font-weight:900;font-size:15px;color:var(--ink);"><?= htmlspecialchars($u['username']) ?></div>
-        <div style="font-size:11px;color:#555;font-weight:700;"><?= htmlspecialchars($u['email']) ?></div>
-      </div>
-      <div style="text-align:right;">
-        <?php if ($u['membership_name'] && $u['membership_expires_at'] && strtotime($u['membership_expires_at'])>time()): ?>
-        <span style="background:var(--lime);color:var(--ink);font-size:10px;font-weight:900;padding:4px 8px;border-radius:8px;border:1.5px solid var(--ink);display:inline-block;box-shadow:1.5px 1.5px 0 var(--ink);"><?= htmlspecialchars($u['membership_name']) ?></span>
-        <?php else: ?>
-        <span style="background:#eee;color:#666;font-size:10px;font-weight:800;padding:4px 8px;border-radius:8px;border:1.5px solid var(--ink);display:inline-block;">Free</span>
-        <?php endif; ?>
-      </div>
-    </div>
-    
-    <div style="padding:14px;flex:1;font-size:12px;line-height:1.6;background:#fafafa;">
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px;border-bottom:1px dashed #ccc;padding-bottom:4px;">
-        <span style="color:#666;font-weight:800;">WhatsApp</span>
-        <span style="font-weight:800;color:var(--ink);"><?= htmlspecialchars($u['whatsapp']) ?: '-' ?></span>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px;border-bottom:1px dashed #ccc;padding-bottom:4px;">
-        <span style="color:#666;font-weight:800;">Saldo WD</span>
-        <span style="color:var(--mint);font-weight:900;text-shadow:0.5px 0.5px 0 var(--ink);"><?= format_rp((float)$u['balance_wd']) ?></span>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px;border-bottom:1px dashed #ccc;padding-bottom:4px;">
-        <span style="color:#666;font-weight:800;">Saldo Depo</span>
-        <span style="color:var(--brand);font-weight:900;"><?= format_rp((float)$u['balance_dep']) ?></span>
-      </div>
-      <div style="display:flex;justify-content:space-between;margin-bottom:8px;border-bottom:1px dashed #ccc;padding-bottom:4px;">
-        <span style="color:#666;font-weight:800;">Total Earned</span>
-        <span style="font-weight:800;color:#888;"><?= format_rp((float)$u['total_earned']) ?></span>
-      </div>
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <span style="color:#666;font-weight:800;">Status</span>
-        <form method="POST" class="d-inline" style="margin:0;">
-          <?= csrf_field() ?><input type="hidden" name="action" value="toggle_active"><input type="hidden" name="user_id" value="<?= $u['id'] ?>">
-          <button type="submit" style="background:<?= $u['is_active']?'var(--mint)':'var(--salmon)' ?>;color:var(--ink);border:2px solid var(--ink);border-radius:6px;font-size:10px;font-weight:900;padding:3px 8px;cursor:pointer;box-shadow:2px 2px 0 var(--ink);">
-            <?= $u['is_active']?'Aktif':'Nonaktif' ?>
-          </button>
-        </form>
-      </div>
-    </div>
-    
-    <div style="padding:12px;background:#fff;border-top:2px solid var(--ink);display:flex;gap:8px;flex-wrap:wrap;">
-      <button class="btn btn-sm" style="flex:1;background:var(--yellow);border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);font-weight:900;font-size:11px;color:var(--ink);padding:6px;"
-        onclick='editUser(<?= htmlspecialchars(json_encode($u), ENT_QUOTES) ?>)'>✏️ Edit</button>
-      <button class="btn btn-sm" style="flex:1;background:#fff;border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);font-weight:900;font-size:11px;color:var(--ink);padding:6px;"
-        onclick="adjustBalance(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>')">💰 Saldo</button>
-      <?php if ($u['membership_id'] && $u['membership_name']): ?>
-      <button class="btn btn-sm" style="flex:1;background:var(--salmon);border:2px solid var(--ink);box-shadow:3px 3px 0 var(--ink);font-weight:900;font-size:11px;color:var(--ink);padding:6px;"
-        onclick="refundLevel(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>', '<?= htmlspecialchars($u['membership_name']) ?>')">⏪ Refund</button>
-      <?php endif; ?>
-    </div>
+<div class="c-card">
+  <div style="overflow-x:auto">
+    <table class="c-table" id="usersTable">
+      <thead><tr><th>Username</th><th>Email / WA</th><th>Saldo (WD/Dep)</th><th>Total Earned</th><th>Paket</th><th>Referral</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody>
+        <?php foreach ($users as $u): ?>
+        <tr>
+          <td data-label="Username"><strong style="font-size:13px"><?= htmlspecialchars($u['username']) ?></strong><div style="font-size:11px;color:#555"><?= date('d M Y', strtotime($u['created_at'])) ?></div></td>
+          <td data-label="Kontak"><div style="font-size:12px"><?= htmlspecialchars($u['email']) ?></div><div style="font-size:11px;color:#666"><?= htmlspecialchars($u['whatsapp']) ?></div></td>
+          <td data-label="Saldo"><div style="color:#4CAF82;font-weight:700;font-size:12px">WD: <?= format_rp((float)$u['balance_wd']) ?></div><div style="color:#4E9BFF;font-size:11px">Dep: <?= format_rp((float)$u['balance_dep']) ?></div></td>
+          <td data-label="Total Earned" style="color:#888;font-size:12px"><?= format_rp((float)$u['total_earned']) ?></td>
+          <td data-label="Paket">
+            <?php if ($u['membership_name'] && $u['membership_expires_at'] && strtotime($u['membership_expires_at'])>time()): ?>
+            <span class="badge b-success" style="border-radius:6px;font-size:11px"><?= htmlspecialchars($u['membership_name']) ?></span>
+            <?php else: ?><span class="badge b-neutral" style="border-radius:6px;font-size:11px">Free</span><?php endif; ?>
+          </td>
+          <td data-label="Referral" style="font-size:12px;letter-spacing:1px;color:#888"><?= $u['referral_code'] ?></td>
+          <td data-label="Status">
+            <form method="POST" class="d-inline">
+              <?= csrf_field() ?><input type="hidden" name="action" value="toggle_active"><input type="hidden" name="user_id" value="<?= $u['id'] ?>">
+              <button type="submit" class="badge border-0 <?= $u['is_active']?'b-success':'b-danger' ?>" style="cursor:pointer;border-radius:6px;padding:4px 8px">
+                <?= $u['is_active']?'Aktif':'Nonaktif' ?>
+              </button>
+            </form>
+          </td>
+          <td data-label="Aksi">
+            <button class="btn btn-sm b-neutral" style="border-radius:8px;font-size:11px;border:none;margin-right:4px;background:#f0f0f0;color:var(--ink)"
+              onclick="editUser(<?= htmlspecialchars(json_encode($u), ENT_QUOTES) ?>)">✏️ Edit</button>
+            <button class="btn btn-sm b-neutral" style="border-radius:8px;font-size:11px;border:none;margin-right:4px;background:#e3f2fd;color:#0d47a1"
+              onclick="adjustBalance(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>')">💰 Saldo</button>
+            <?php if ($u['membership_id'] && $u['membership_name']): ?>
+            <button class="btn btn-sm b-neutral" style="border-radius:8px;font-size:11px;border:none;background:#ffebee;color:#c62828"
+              onclick="refundLevel(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>', '<?= htmlspecialchars($u['membership_name']) ?>')">⏪ Refund</button>
+            <?php endif; ?>
+          </td>
+        </tr>
+        <?php endforeach; ?>
+      </tbody>
+    </table>
+    <?php if (empty($users)): ?><div style="padding:40px;text-align:center;color:#555">Tidak ada pengguna ditemukan.</div><?php endif; ?>
   </div>
-  <?php endforeach; ?>
 </div>
-<?php if (empty($users)): ?><div style="padding:40px;text-align:center;color:var(--ink);font-weight:900;border:2.5px dashed var(--ink);border-radius:12px;margin-bottom:24px;">Belum ada pengguna terdaftar.</div><?php endif; ?>
 
 <!-- ── Edit User Modal ───────────────────────────────── -->
 <div class="modal fade" id="editUserModal" tabindex="-1">
@@ -369,6 +368,27 @@ function editUser(u) {
   document.getElementById('eu-mem-exp').value = exp ? exp.replace(' ', 'T').slice(0, 16) : '';
 
   new bootstrap.Modal(document.getElementById('editUserModal')).show();
+}
+
+function filterUsers() {
+  const input = document.getElementById("searchInput").value.toLowerCase();
+  const table = document.getElementById("usersTable");
+  const tr = table.getElementsByTagName("tr");
+  
+  for (let i = 1; i < tr.length; i++) {
+    const tdUser = tr[i].getElementsByTagName("td")[0];
+    const tdEmail = tr[i].getElementsByTagName("td")[1];
+    
+    if (tdUser || tdEmail) {
+      const txtValue1 = tdUser.textContent || tdUser.innerText;
+      const txtValue2 = tdEmail.textContent || tdEmail.innerText;
+      if (txtValue1.toLowerCase().indexOf(input) > -1 || txtValue2.toLowerCase().indexOf(input) > -1) {
+        tr[i].style.display = "";
+      } else {
+        tr[i].style.display = "none";
+      }
+    }
+  }
 }
 </script>
 
