@@ -161,13 +161,13 @@ require __DIR__ . '/partials/header.php';
               </button>
             </form>
           </td>
-          <td data-label="Aksi">
-            <button class="btn btn-sm b-neutral" style="border-radius:8px;font-size:11px;border:none;margin-right:4px;background:#f0f0f0;color:var(--ink)"
-              onclick="editUser(<?= htmlspecialchars(json_encode($u), ENT_QUOTES) ?>)">✏️ Edit</button>
-            <button class="btn btn-sm b-neutral" style="border-radius:8px;font-size:11px;border:none;margin-right:4px;background:#e3f2fd;color:#0d47a1"
+          <td data-label="Aksi" style="white-space:nowrap">
+            <button class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#2d3149;color:#fff;border:1px solid #3e445b;padding:4px 8px;font-weight:600;"
+              onclick='editUser(<?= htmlspecialchars(json_encode($u), ENT_QUOTES) ?>)'>✏️ Edit</button>
+            <button class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#1e3a5f;color:#90caf9;border:1px solid #2b4f7e;padding:4px 8px;font-weight:600;"
               onclick="adjustBalance(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>')">💰 Saldo</button>
             <?php if ($u['membership_id'] && $u['membership_name']): ?>
-            <button class="btn btn-sm b-neutral" style="border-radius:8px;font-size:11px;border:none;background:#ffebee;color:#c62828"
+            <button class="btn btn-sm" style="border-radius:6px;font-size:11px;background:#4a1923;color:#ef9a9a;border:1px solid #6b2533;padding:4px 8px;font-weight:600;"
               onclick="refundLevel(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>', '<?= htmlspecialchars($u['membership_name']) ?>')">⏪ Refund</button>
             <?php endif; ?>
           </td>
