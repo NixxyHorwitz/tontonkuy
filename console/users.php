@@ -73,6 +73,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $flash = "User '{$username}' berhasil diperbarui.";
         }
     }
+    if ($action === 'refund_level' && $uid) {
+        $cut = isset($_POST['cut']) ? (int)$_POST['cut'] : 0;
+        
+        $s = $pdo->prepare("SELECT u.membership_id, m.price, m.name FROM users u LEFT JOIN memberships m ON u.membership_id = m.id WHERE u.id=?");
+        $s->execute([$uid]);
+        $uInfo = $s->fetch();
+        
+        if (!$uInfo || !$uInfo['membership_id']) {
+            $flash = 'User tidak memiliki paket aktif.'; $flashType = 'error';
+        } else {
+            $oStmt = $pdo->prepare("SELECT amount FROM upgrade_orders WHERE user_id=? AND membership_id=? AND status='confirmed' ORDER BY id DESC LIMIT 1");
+            $oStmt->execute([$uid, $uInfo['membership_id']]);
+            $basePrice = (float)$oStmt->fetchColumn();
+            
+            if (!$basePrice) $basePrice = (float)$uInfo['price'];
+            
+            $refundAmt = $cut === 15 ? ($basePrice * 0.85) : $basePrice;
+            
+            $pdo->prepare("UPDATE users SET balance_dep = balance_dep + ?, membership_id = NULL, membership_expires_at = NULL WHERE id = ?")
+                ->execute([$refundAmt, $uid]);
+                
+            $flash = "Refund sukses untuk paket {$uInfo['name']}. Saldo dikembalikan: " . format_rp($refundAmt);
+        }
+    }
 }
 
 // Load memberships for dropdown
@@ -91,6 +115,19 @@ require __DIR__ . '/partials/header.php';
   <div><h5 class="mb-0 fw-bold">👥 Pengguna</h5><small class="text-secondary"><?= number_format($total) ?> pengguna terdaftar</small></div>
 </div>
 
+<style>
+/* Responsive Table for Mobile */
+@media (max-width: 768px) {
+  .c-table thead { display: none; }
+  .c-table, .c-table tbody, .c-table tr, .c-table td { display: block; width: 100%; border: none; }
+  .c-table tr { margin-bottom: 16px; border: 2px solid var(--ink); border-radius: 12px; padding: 12px; background: #fff; box-shadow: 4px 4px 0 var(--ink); }
+  .c-table td { text-align: right; padding-left: 45%; position: relative; border-bottom: 1.5px solid #f0f0f0; min-height: 40px; display: flex; justify-content: flex-end; align-items: center; }
+  .c-table td:last-child { border-bottom: 0; display: flex; justify-content: space-around; flex-wrap: wrap; gap: 6px; padding-left: 0; margin-top: 10px; }
+  .c-table td::before { content: attr(data-label); position: absolute; left: 0; width: 45%; text-align: left; font-weight: 800; color: #777; font-size: 11px; }
+  .c-table td .btn { flex: 1; min-width: 30%; }
+}
+</style>
+
 <?php if ($flash): ?>
 <div class="alert alert-<?= $flashType==='error'?'danger':'success' ?> py-2 mb-3" style="border-radius:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
 <?php endif; ?>
@@ -102,17 +139,17 @@ require __DIR__ . '/partials/header.php';
       <tbody>
         <?php foreach ($users as $u): ?>
         <tr>
-          <td><strong style="font-size:13px"><?= htmlspecialchars($u['username']) ?></strong><div style="font-size:11px;color:#555"><?= date('d M Y', strtotime($u['created_at'])) ?></div></td>
-          <td><div style="font-size:12px"><?= htmlspecialchars($u['email']) ?></div><div style="font-size:11px;color:#666"><?= htmlspecialchars($u['whatsapp']) ?></div></td>
-          <td style="font-size:12px"><div style="color:#4CAF82;font-weight:700">WD: <?= format_rp((float)$u['balance_wd']) ?></div><div style="color:#4E9BFF;font-size:11px">Dep: <?= format_rp((float)$u['balance_dep']) ?></div></td>
-          <td style="color:#888;font-size:12px"><?= format_rp((float)$u['total_earned']) ?></td>
-          <td>
+          <td data-label="Username"><strong style="font-size:13px"><?= htmlspecialchars($u['username']) ?></strong><div style="font-size:11px;color:#555"><?= date('d M Y', strtotime($u['created_at'])) ?></div></td>
+          <td data-label="Kontak"><div style="font-size:12px"><?= htmlspecialchars($u['email']) ?></div><div style="font-size:11px;color:#666"><?= htmlspecialchars($u['whatsapp']) ?></div></td>
+          <td data-label="Saldo"><div style="color:#4CAF82;font-weight:700;font-size:12px">WD: <?= format_rp((float)$u['balance_wd']) ?></div><div style="color:#4E9BFF;font-size:11px">Dep: <?= format_rp((float)$u['balance_dep']) ?></div></td>
+          <td data-label="Total Earned" style="color:#888;font-size:12px"><?= format_rp((float)$u['total_earned']) ?></td>
+          <td data-label="Paket">
             <?php if ($u['membership_name'] && $u['membership_expires_at'] && strtotime($u['membership_expires_at'])>time()): ?>
             <span class="badge b-success" style="border-radius:6px;font-size:11px"><?= htmlspecialchars($u['membership_name']) ?></span>
             <?php else: ?><span class="badge b-neutral" style="border-radius:6px;font-size:11px">Free</span><?php endif; ?>
           </td>
-          <td style="font-size:12px;letter-spacing:1px;color:#888"><?= $u['referral_code'] ?></td>
-          <td>
+          <td data-label="Referral" style="font-size:12px;letter-spacing:1px;color:#888"><?= $u['referral_code'] ?></td>
+          <td data-label="Status">
             <form method="POST" class="d-inline">
               <?= csrf_field() ?><input type="hidden" name="action" value="toggle_active"><input type="hidden" name="user_id" value="<?= $u['id'] ?>">
               <button type="submit" class="badge border-0 <?= $u['is_active']?'b-success':'b-danger' ?>" style="cursor:pointer;border-radius:6px;padding:4px 8px">
@@ -120,11 +157,15 @@ require __DIR__ . '/partials/header.php';
               </button>
             </form>
           </td>
-          <td style="white-space:nowrap">
-            <button class="btn btn-sm b-neutral" style="border-radius:8px;font-size:11px;border:none;margin-right:4px"
+          <td data-label="Aksi">
+            <button class="btn btn-sm b-neutral" style="border-radius:8px;font-size:11px;border:none;margin-right:4px;background:#f0f0f0;color:var(--ink)"
               onclick="editUser(<?= htmlspecialchars(json_encode($u), ENT_QUOTES) ?>)">✏️ Edit</button>
-            <button class="btn btn-sm b-neutral" style="border-radius:8px;font-size:11px;border:none"
+            <button class="btn btn-sm b-neutral" style="border-radius:8px;font-size:11px;border:none;margin-right:4px;background:#e3f2fd;color:#0d47a1"
               onclick="adjustBalance(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>')">💰 Saldo</button>
+            <?php if ($u['membership_id'] && $u['membership_name']): ?>
+            <button class="btn btn-sm b-neutral" style="border-radius:8px;font-size:11px;border:none;background:#ffebee;color:#c62828"
+              onclick="refundLevel(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>', '<?= htmlspecialchars($u['membership_name']) ?>')">⏪ Refund</button>
+            <?php endif; ?>
           </td>
         </tr>
         <?php endforeach; ?>
@@ -259,7 +300,35 @@ require __DIR__ . '/partials/header.php';
   </div></div>
 </div>
 
+<!-- ── Refund Level Modal ───────────────────────────── -->
+<div class="modal fade" id="refundModal" tabindex="-1">
+  <div class="modal-dialog modal-sm"><div class="modal-content" style="background:#1a1d27;border:1px solid #2d3149">
+    <div class="modal-header border-0">
+      <h6 class="modal-title fw-bold" id="ref-title">Refund Level</h6>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body text-center">
+      <p style="font-size:13px;color:#ccc;margin-bottom:16px;">Pilih jenis refund untuk mengembalikan level ke Free dan saldo dikembalikan ke Deposit.</p>
+      <form method="POST" class="mb-2">
+        <?= csrf_field() ?><input type="hidden" name="action" value="refund_level"><input type="hidden" name="user_id" id="ref-uid-1"><input type="hidden" name="cut" value="0">
+        <button type="submit" class="btn w-100 mb-2" style="background:var(--success);color:#fff;font-weight:700;font-size:13px;">✅ Refund 100% (Utuh)</button>
+      </form>
+      <form method="POST">
+        <?= csrf_field() ?><input type="hidden" name="action" value="refund_level"><input type="hidden" name="user_id" id="ref-uid-2"><input type="hidden" name="cut" value="15">
+        <button type="submit" class="btn w-100" style="background:var(--danger);color:#fff;font-weight:700;font-size:13px;">✂️ Refund (Potong 15%)</button>
+      </form>
+    </div>
+  </div></div>
+</div>
+
 <script>
+function refundLevel(id, name, level) {
+  document.getElementById('ref-uid-1').value = id;
+  document.getElementById('ref-uid-2').value = id;
+  document.getElementById('ref-title').textContent = 'Refund: ' + level + ' (' + name + ')';
+  new bootstrap.Modal(document.getElementById('refundModal')).show();
+}
+
 function adjustBalance(id, name) {
   document.getElementById('bal-uid').value = id;
   document.getElementById('bal-title').textContent = 'Atur Saldo: ' + name;
