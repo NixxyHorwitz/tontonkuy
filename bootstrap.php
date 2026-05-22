@@ -19,10 +19,20 @@ if (file_exists($envFile)) {
 // Timezone — WIB (UTC+7)
 date_default_timezone_set('Asia/Jakarta');
 
-// Session
+// Session — lifetime 30 hari
 if (session_status() === PHP_SESSION_NONE) {
+    $lifetime = 30 * 24 * 60 * 60; // 30 hari dalam detik
+    ini_set('session.gc_maxlifetime',  (string)$lifetime);
+    ini_set('session.cookie_lifetime', (string)$lifetime);
     ini_set('session.cookie_httponly', '1');
+    ini_set('session.cookie_samesite', 'Lax');
     ini_set('session.use_strict_mode', '1');
+    session_set_cookie_params([
+        'lifetime' => $lifetime,
+        'path'     => '/',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 

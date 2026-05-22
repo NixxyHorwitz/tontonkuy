@@ -113,20 +113,25 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
       .bal-dropdown__link:hover{background:var(--yellow);}
       </style>
       <script>
-      function toggleBalDropdown(){
-        const panel=document.getElementById('bal-panel');
-        const caret=document.querySelector('.bal-dropdown__caret');
-        const isOpen=panel.classList.toggle('open');
-        caret.classList.toggle('open',isOpen);
-      }
-      document.addEventListener('click',function(e){
-        const d=document.getElementById('bal-dropdown');
-        if(d && !d.contains(e.target)){
-          document.getElementById('bal-panel').classList.remove('open');
-          const c=document.querySelector('.bal-dropdown__caret');
-          if(c)c.classList.remove('open');
+      (function(){
+        function toggleBalDropdown(e){
+          e.stopPropagation();
+          const panel=document.getElementById('bal-panel');
+          const caret=document.querySelector('.bal-dropdown__caret');
+          const isOpen=panel.classList.toggle('open');
+          caret.classList.toggle('open',isOpen);
         }
-      });
+        // expose globally for onclick
+        window.toggleBalDropdown=toggleBalDropdown;
+        document.addEventListener('click',function(e){
+          const d=document.getElementById('bal-dropdown');
+          if(d&&!d.contains(e.target)){
+            document.getElementById('bal-panel').classList.remove('open');
+            const c=document.querySelector('.bal-dropdown__caret');
+            if(c)c.classList.remove('open');
+          }
+        });
+      })();
       </script>
       <a href="/notifications" class="topbar__avatar" title="Notifikasi"
          id="notif-bell-btn"
