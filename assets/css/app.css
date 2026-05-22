@@ -422,18 +422,20 @@ select.form-control {
 /* ── Auth Page ──────────────────────────── */
 .auth-page {
   min-height: 100vh;
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: radial-gradient(var(--ink) 2px, transparent 2px);
+  background-size: 32px 32px;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   padding: 24px 16px;
 }
 .auth-card {
-  width: 100%; max-width: 480px;
+  width: 100%; max-width: 540px;
   background: var(--white);
-  border: var(--border);
+  border: 3px solid var(--ink);
   border-radius: 20px;
-  box-shadow: var(--shadow-lg);
-  padding: 30px 28px;
+  box-shadow: 8px 8px 0 var(--ink);
+  padding: 40px 32px;
 }
 .auth-logo { text-align: center; margin-bottom: 22px; }
 .auth-logo__icon {
@@ -532,7 +534,6 @@ select.form-control {
 @media (min-width: 520px) {
   body { background: #E8E4DA; }
   .app-shell { border-left: var(--border); border-right: var(--border); }
-  .auth-page { background: #E8E4DA; }
 }
 
 /* ── Dual Balance (topbar) ──────────────── */
