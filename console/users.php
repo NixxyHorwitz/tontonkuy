@@ -59,13 +59,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $flash = implode(' ', $errors); $flashType = 'error';
         } else {
             $mem_exp_val = ($mem_exp && $mem_id) ? $mem_exp : null;
+            $plinko_c  = (int)($_POST['plinko_coins'] ?? 0);
             $sql = "UPDATE users SET username=?, email=?, whatsapp=?, membership_id=?, membership_expires_at=?,
                     balance_wd=?, balance_dep=?, total_earned=?, is_active=?, can_withdraw=?, can_chat=?,
-                    bank_name=?, account_number=?, account_name=? WHERE id=?";
+                    bank_name=?, account_number=?, account_name=?, plinko_coins=? WHERE id=?";
             $pdo->prepare($sql)->execute([
                 $username, $email, $whatsapp, $mem_id, $mem_exp_val,
                 $bal_wd, $bal_dep, $total_e, $is_active, $can_wd, $can_chat,
-                $bank_name, $account_number, $account_name, $uid
+                $bank_name, $account_number, $account_name, $plinko_c, $uid
             ]);
             if ($new_pass !== '') {
                 $pdo->prepare("UPDATE users SET password_hash=? WHERE id=?")
@@ -97,6 +98,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 
             $flash = "Refund sukses untuk paket {$uInfo['name']}. Saldo dikembalikan: " . format_rp($refundAmt);
         }
+    }
+    if ($action === 'delete_user' && $uid) {
+        $pdo->prepare("DELETE FROM users WHERE id=?")->execute([$uid]);
+        $flash = 'Akun pengguna berhasil dihapus permanen.';
     }
 }
 
@@ -154,6 +159,9 @@ require __DIR__ . '/partials/header.php';
             <button class="btn btn-sm" style="border-radius:6px;font-size:11px;background:#4a1923;color:#ef9a9a;border:1px solid #6b2533;padding:4px 8px;font-weight:600;"
               onclick="refundLevel(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>', '<?= htmlspecialchars($u['membership_name']) ?>')">⏪ Refund</button>
             <?php endif; ?>
+            <button class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-left:2px;background:#4a1923;color:#ef9a9a;border:1px solid #6b2533;padding:4px 8px;font-weight:600;"
+              onclick="if(confirm('Yakin ingin menghapus akun ini permanen?')) document.getElementById('del-form-<?= $u['id'] ?>').submit()">🗑️ Hapus</button>
+            <form id="del-form-<?= $u['id'] ?>" method="POST" style="display:none;"><?= csrf_field() ?><input type="hidden" name="action" value="delete_user"><input type="hidden" name="user_id" value="<?= $u['id'] ?>"></form>
           </td>
         </tr>
         <?php endforeach; ?>
@@ -239,6 +247,10 @@ require __DIR__ . '/partials/header.php';
           <div class="c-form-group mb-3">
             <label class="c-label">Total Earned (Rp)</label>
             <input type="number" name="total_earned" id="eu-total-earned" class="c-form-control" step="0.01" min="0">
+          </div>
+          <div class="c-form-group mb-3">
+            <label class="c-label">Koin Plinko</label>
+            <input type="number" name="plinko_coins" id="eu-plinko-coins" class="c-form-control" min="0">
           </div>
           <div class="c-form-group mb-3">
             <label class="c-label">Paket Membership</label>
@@ -339,6 +351,7 @@ function editUser(u) {
   document.getElementById('eu-bal-wd').value      = u.balance_wd;
   document.getElementById('eu-bal-dep').value     = u.balance_dep;
   document.getElementById('eu-total-earned').value= u.total_earned;
+  document.getElementById('eu-plinko-coins').value= u.plinko_coins || 0;
   document.getElementById('eu-is-active').value   = u.is_active;
   document.getElementById('eu-can-wd').value      = u.can_withdraw !== undefined ? u.can_withdraw : 1;
   document.getElementById('eu-can-chat').value    = u.can_chat !== undefined ? u.can_chat : 1;
