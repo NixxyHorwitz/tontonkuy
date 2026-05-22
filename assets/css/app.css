@@ -64,13 +64,13 @@ body {
 
 /* ── Topbar ─────────────────────────────── */
 .topbar {
-  position: sticky; top: 0; z-index: 100;
+  position: sticky; top: 0; z-index: 9999;
   background: var(--white);
   border-bottom: var(--border);
   padding: 0 12px;
   height: 56px;
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  overflow: hidden;
+  overflow: visible;
 }
 .topbar__logo {
   display: flex; align-items: center; gap: 6px;
