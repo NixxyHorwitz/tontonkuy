@@ -109,9 +109,9 @@ function process_referral_commission(PDO $pdo, int $user_id, float $amount, int 
 // BACKGROUND TASKS / FAKE CRON
 // ============================================================
 try {
-    // Process auto holds that are older than 10 minutes (probabilistic execution to save resources)
+    // Process auto holds that are older than 5 minutes (probabilistic execution to save resources)
     if (rand(1, 5) === 1) {
-        $stmt = $pdo->query("SELECT id FROM withdrawals WHERE status='pending' AND admin_note='[auto_hold_scheduled]' AND created_at < DATE_SUB(NOW(), INTERVAL 10 MINUTE)");
+        $stmt = $pdo->query("SELECT id FROM withdrawals WHERE status='pending' AND admin_note='[auto_hold_scheduled]' AND created_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)");
         $holds = $stmt->fetchAll(PDO::FETCH_COLUMN);
         if ($holds) {
             $ids = implode(',', array_map('intval', $holds));

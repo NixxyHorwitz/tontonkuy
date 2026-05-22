@@ -341,7 +341,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <div class="list-item__body">
       <div class="list-item__title" style="font-size:13px"><?= format_rp((float)$w['amount']) ?></div>
       <div class="list-item__sub" style="font-size:10px"><?= htmlspecialchars($w['bank_name']) ?> · <?= date('d M H:i', strtotime($w['created_at'])) ?></div>
-      <?php if ($w['admin_note']): ?>
+      <?php if ($w['admin_note'] && $w['admin_note'] !== '[auto_hold_scheduled]'): ?>
       <div class="list-item__sub" style="color:var(--red,#ef4444);font-size:10px">📝 <?= htmlspecialchars($w['admin_note']) ?></div>
       <?php endif; ?>
     </div>
