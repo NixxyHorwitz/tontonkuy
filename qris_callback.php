@@ -111,18 +111,28 @@ try {
 
     $pdo->commit();
 
-    // Get username for notification
-    $u_stmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
-    $u_stmt->execute([$dep['user_id']]);
-    $username = $u_stmt->fetchColumn() ?: 'User';
+    // Get username and tg_msg_id for notification
+    $dep_info = $pdo->prepare("SELECT d.tg_msg_id, u.username FROM deposits d JOIN users u ON u.id = d.user_id WHERE d.id = ?");
+    $dep_info->execute([$dep['id']]);
+    $dep_data = $dep_info->fetch();
+    $username = $dep_data['username'] ?? 'User';
+    $tg_msg_id = $dep_data['tg_msg_id'] ?? null;
 
-    // Send Telegram Notification
-    $msg = "<b>🤖 AUTO CONFIRM DEPOSIT QRIS</b>\n"
-         . "👤 Username: <b>@{$username}</b>\n"
-         . "💰 Nominal: <b>" . format_rp($dep['amount']) . "</b> (Termasuk Kode Unik)\n"
-         . "🧾 Info: Auto Confirmed via QRIS Callback\n"
-         . "✅ Status: Berhasil diproses otomatis.";
-    send_telegram_notif($pdo, $msg);
+    $msg = "✅ <b>DEPOSIT QRIS BERHASIL (CONFIRMED)</b>\n";
+    $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+    $msg .= "👤 <b>User:</b> <code>" . htmlspecialchars($username) . "</code>\n";
+    $msg .= "💵 <b>Amount:</b> <code>" . format_rp((float)$dep['amount']) . "</code>\n";
+    $msg .= "🕒 <b>Time:</b> <code>" . date('d-m-Y H:i:s') . " WIB</code>\n";
+    $msg .= "💳 <b>Method:</b> <code>QRIS Otomatis</code>\n";
+    $msg .= "✅ <b>Status:</b> <code>Sukses via Callback</code>\n";
+    $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+    $msg .= "<i>Pembayaran terverifikasi otomatis oleh sistem. Saldo telah ditambahkan ke akun pengguna.</i>";
+
+    if ($tg_msg_id) {
+        edit_telegram_notif($pdo, (int)$tg_msg_id, $msg, []);
+    } else {
+        send_telegram_notif($pdo, $msg);
+    }
 
     header('Content-Type: application/json; charset=utf-8');
     echo json_encode([

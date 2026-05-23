@@ -310,10 +310,10 @@ function require_admin(): array {
 
 
 /** Send message to Telegram Admin Group/Channel */
-function send_telegram_notif(PDO $pdo, string $message, array $inline_keyboard = []): void {
+function send_telegram_notif(PDO $pdo, string $message, array $inline_keyboard = []): ?int {
     $token = setting($pdo, 'tg_bot_token', '');
     $chat_id = setting($pdo, 'tg_chat_id', '');
-    if (!$token || !$chat_id) return;
+    if (!$token || !$chat_id) return null;
     
     $url = "https://api.telegram.org/bot{$token}/sendMessage";
     $post = [
@@ -324,6 +324,41 @@ function send_telegram_notif(PDO $pdo, string $message, array $inline_keyboard =
     
     if (!empty($inline_keyboard)) {
         $post['reply_markup'] = json_encode(['inline_keyboard' => $inline_keyboard]);
+    }
+    
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $post);
+    $res = curl_exec($ch);
+    curl_close($ch);
+    
+    if ($res) {
+        $data = json_decode($res, true);
+        if (isset($data['ok']) && $data['ok'] && isset($data['result']['message_id'])) {
+            return (int)$data['result']['message_id'];
+        }
+    }
+    return null;
+}
+
+/** Edit message in Telegram Admin Group/Channel */
+function edit_telegram_notif(PDO $pdo, int $message_id, string $message, array $inline_keyboard = []): void {
+    $token = setting($pdo, 'tg_bot_token', '');
+    $chat_id = setting($pdo, 'tg_chat_id', '');
+    if (!$token || !$chat_id || !$message_id) return;
+    
+    $url = "https://api.telegram.org/bot{$token}/editMessageText";
+    $post = [
+        'chat_id' => $chat_id,
+        'message_id' => $message_id,
+        'text' => $message,
+        'parse_mode' => 'HTML'
+    ];
+    
+    if (!empty($inline_keyboard)) {
+        $post['reply_markup'] = json_encode(['inline_keyboard' => $inline_keyboard]);
+    } else {
+        $post['reply_markup'] = json_encode(['inline_keyboard' => []]);
     }
     
     $ch = curl_init($url);
