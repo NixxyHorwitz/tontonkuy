@@ -22,11 +22,37 @@ $hist = $pdo->prepare(
 $hist->execute([$user['id']]);
 $history = $hist->fetchAll();
 
-// Referred users list
+// Referred users list with details and pagination
+$limit = 5;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $limit;
+
+// Count total referred users
+$total_stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by=?");
+$total_stmt->execute([$user['referral_code']]);
+$total_refs = (int)$total_stmt->fetchColumn();
+$total_pages = max(1, (int)ceil($total_refs / $limit));
+if ($page > $total_pages) {
+    $page = $total_pages;
+    $offset = ($page - 1) * $limit;
+}
+
 $refs = $pdo->prepare(
-  "SELECT username, created_at FROM users WHERE referred_by=? ORDER BY created_at DESC LIMIT 10"
+  "SELECT u.username, u.created_at, 
+          COALESCE(m.name, 'Free') as membership_name,
+          COALESCE((SELECT SUM(amount) FROM deposits WHERE user_id = u.id AND status = 'confirmed'), 0) as total_deposit,
+          COALESCE((SELECT SUM(amount) FROM referral_commissions WHERE user_id = ? AND from_user_id = u.id), 0) as commission_earned
+   FROM users u
+   LEFT JOIN memberships m ON m.id = u.membership_id
+   WHERE u.referred_by = ?
+   ORDER BY u.created_at DESC
+   LIMIT ? OFFSET ?"
 );
-$refs->execute([$user['referral_code']]);
+$refs->bindValue(1, $user['id'], PDO::PARAM_INT);
+$refs->bindValue(2, $user['referral_code'], PDO::PARAM_STR);
+$refs->bindValue(3, $limit, PDO::PARAM_INT);
+$refs->bindValue(4, $offset, PDO::PARAM_INT);
+$refs->execute();
 $referreds = $refs->fetchAll();
 
 $ref_url = base_url('register?ref=' . $user['referral_code']);
@@ -106,16 +132,43 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php if (!empty($referreds)): ?>
 <div class="section-header"><div class="section-title">🧑‍🤝‍🧑 Teman yang Bergabung</div></div>
 <div class="card" style="margin-bottom:16px">
-  <div class="card__body">
+  <div class="card__body" style="padding: 4px 0;">
     <?php foreach ($referreds as $r): ?>
-    <div class="list-item">
-      <div class="list-item__icon" style="background:var(--sky)">👤</div>
-      <div class="list-item__body">
-        <div class="list-item__title"><?= htmlspecialchars($r['username']) ?></div>
-        <div class="list-item__sub"><?= date('d M Y', strtotime($r['created_at'])) ?></div>
+    <div class="list-item" style="align-items: flex-start; padding: 12px 14px;">
+      <div class="list-item__icon" style="background:var(--sky); width:32px; height:32px; font-size:14px; margin-top:2px;">👤</div>
+      <div class="list-item__body" style="margin-left: 2px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:4px; line-height: 1.2;">
+          <span style="font-weight: 800; font-size: 13.5px; color: var(--ink);"><?= htmlspecialchars($r['username']) ?></span>
+          <span class="badge badge--brand" style="font-size: 9px; padding: 2px 6px;"><?= htmlspecialchars($r['membership_name']) ?></span>
+        </div>
+        <div style="font-size: 10px; color: #888; font-weight: 600; margin-top: 4px;">
+          📅 Bergabung: <?= date('d M Y', strtotime($r['created_at'])) ?>
+        </div>
+        <div style="display:flex; gap:16px; margin-top:6px; font-size: 11px; font-weight: 700; color: #666;">
+          <div>💰 Depo: <span style="color: var(--ink);"><?= format_rp((float)$r['total_deposit']) ?></span></div>
+          <div>🎁 Komisi: <span style="color: #22C55E;">+<?= format_rp((float)$r['commission_earned']) ?></span></div>
+        </div>
       </div>
     </div>
     <?php endforeach; ?>
+    
+    <?php if ($total_pages > 1): ?>
+    <div class="d-flex justify-content-between align-items-center p-3" style="border-top: 2px solid var(--ink);">
+      <a href="?page=<?= max(1, $page - 1) ?>" 
+         class="btn btn--ghost btn--sm <?= $page <= 1 ? 'disabled' : '' ?>"
+         style="<?= $page <= 1 ? 'pointer-events:none; opacity:0.5;' : '' ?> font-size: 11px; padding: 6px 12px;">
+         ← Prev
+      </a>
+      <span style="font-size: 11px; font-weight: 800; color: #666;">
+        Page <?= $page ?> of <?= $total_pages ?>
+      </span>
+      <a href="?page=<?= min($total_pages, $page + 1) ?>" 
+         class="btn btn--ghost btn--sm <?= $page >= $total_pages ? 'disabled' : '' ?>"
+         style="<?= $page >= $total_pages ? 'pointer-events:none; opacity:0.5;' : '' ?> font-size: 11px; padding: 6px 12px;">
+         Next →
+      </a>
+    </div>
+    <?php endif; ?>
   </div>
 </div>
 <?php else: ?>
