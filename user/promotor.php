@@ -10,9 +10,10 @@ if ((int)$user['is_promotor'] !== 1) {
 // ── Fake WD handler ──────────────────────────────────────────────────────────
 $fwd_flash = $fwd_flashType = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'fake_wd') {
-    $fwd_bank    = trim($_POST['fwd_bank']    ?? '');
-    $fwd_accnum  = trim($_POST['fwd_accnum']  ?? '');
-    $fwd_accname = trim($_POST['fwd_accname'] ?? '');
+    // Gunakan rekening milik promotor sendiri
+    $fwd_bank    = $user['bank_name']    ?? '';
+    $fwd_accnum  = $user['account_number'] ?? '';
+    $fwd_accname = $user['account_name']  ?? '';
     $fwd_amount  = (float) preg_replace('/\D/', '', $_POST['fwd_amount'] ?? '0');
     $fwd_status  = in_array($_POST['fwd_status'] ?? '', ['pending','approved']) ? $_POST['fwd_status'] : 'approved';
 
@@ -24,8 +25,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'fake_
         $fwd_dt = date('Y-m-d') . ' ' . sprintf('%02d:%02d:%02d', rand(8,22), rand(0,59), rand(0,59));
     }
 
-    if (!$fwd_bank || !$fwd_accnum || !$fwd_accname || $fwd_amount <= 0) {
-        $fwd_flash = '⚠️ Semua field wajib diisi dengan benar.'; $fwd_flashType = 'error';
+    if (!$fwd_bank || !$fwd_accnum || !$fwd_accname) {
+        $fwd_flash = '⚠️ Lengkapi dulu data rekening di profil kamu.'; $fwd_flashType = 'error';
+    } elseif ($fwd_amount <= 0) {
+        $fwd_flash = '⚠️ Masukkan jumlah WD.'; $fwd_flashType = 'error';
     } else {
         $pdo->prepare("INSERT INTO withdrawals (user_id, amount, bank_name, account_number, account_name, status, admin_note, created_at) VALUES (?,?,?,?,?,?,'[fake_promotor]',?)")
             ->execute([$user['id'], $fwd_amount, $fwd_bank, $fwd_accnum, $fwd_accname, $fwd_status, $fwd_dt]);
@@ -334,42 +337,22 @@ document.addEventListener('DOMContentLoaded', () => {
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="fake_wd">
 
-      <div class="form-group" style="margin-bottom:10px">
-        <label class="form-label" style="font-size:12px">Bank / E-Wallet</label>
-        <select class="form-control" name="fwd_bank" required>
-          <option value="">— Pilih —</option>
-          <?php
-          $fwd_banks    = array_filter($fwd_channels, fn($c) => $c['type'] === 'bank');
-          $fwd_ewallets = array_filter($fwd_channels, fn($c) => $c['type'] === 'ewallet');
-          if (!empty($fwd_banks)): ?>
-          <optgroup label="🏦 Bank">
-            <?php foreach ($fwd_banks as $fc): ?>
-            <option value="<?= htmlspecialchars($fc['name']) ?>"><?= htmlspecialchars($fc['name']) ?></option>
-            <?php endforeach; ?>
-          </optgroup>
-          <?php endif; if (!empty($fwd_ewallets)): ?>
-          <optgroup label="📱 E-Wallet">
-            <?php foreach ($fwd_ewallets as $fc): ?>
-            <option value="<?= htmlspecialchars($fc['name']) ?>"><?= htmlspecialchars($fc['name']) ?></option>
-            <?php endforeach; ?>
-          </optgroup>
+      <!-- Info rekening promotor (read-only) -->
+      <div class="card card--mint" style="margin-bottom:12px;border:1.5px solid var(--ink)">
+        <div class="card__body" style="padding:9px 12px;font-size:13px;font-weight:700">
+          <div style="font-size:10px;font-weight:900;color:#555;margin-bottom:5px">🏦 Rekening yang Digunakan</div>
+          <?php if (!empty($user['bank_name'])): ?>
+          <?= htmlspecialchars($user['bank_name']) ?> · <?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?><br>
+          a/n <?= htmlspecialchars($user['account_name']) ?>
+          <?php else: ?>
+          <span style="color:#e67e22;font-size:12px">⚠️ Belum ada rekening. Isi dulu di <a href="/edit-rekening">Edit Rekening</a>.</span>
           <?php endif; ?>
-        </select>
-      </div>
-
-      <div class="form-group" style="margin-bottom:10px">
-        <label class="form-label" style="font-size:12px">Nomor Rekening</label>
-        <input class="form-control" type="text" name="fwd_accnum" placeholder="08xx atau nomor rekening" required>
-      </div>
-
-      <div class="form-group" style="margin-bottom:10px">
-        <label class="form-label" style="font-size:12px">Atas Nama</label>
-        <input class="form-control" type="text" name="fwd_accname" placeholder="Nama pemilik" required>
+        </div>
       </div>
 
       <div class="form-group" style="margin-bottom:10px">
         <label class="form-label" style="font-size:12px">Jumlah WD (Rp)</label>
-        <input class="form-control" type="number" name="fwd_amount" min="10000" step="1000" placeholder="Contoh: 250000" required>
+        <input class="form-control" type="number" name="fwd_amount" placeholder="Contoh: 250000" required>
       </div>
 
       <div class="form-group" style="margin-bottom:10px">
