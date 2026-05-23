@@ -109,6 +109,20 @@ $logs = $pdo->query("
     ORDER BY pt.date DESC, pt.percentage DESC
 ")->fetchAll();
 
+// Fetch referred members if tab is members
+$referred_members = [];
+if ($tab === 'members') {
+    $referred_members = $pdo->query("
+        SELECT u.id, u.username, u.email, u.created_at, p.username as promotor_name,
+               COALESCE((SELECT SUM(amount) FROM deposits WHERE user_id = u.id AND status = 'confirmed'), 0) as total_deposit,
+               COALESCE(m.name, 'Free') as membership_name
+        FROM users u 
+        JOIN users p ON u.referred_by = p.referral_code 
+        WHERE p.is_promotor = 1 
+        ORDER BY u.created_at DESC
+    ")->fetchAll();
+}
+
 $pageTitle  = 'Kelola Promotor';
 $activePage = 'promotors';
 require __DIR__ . '/partials/header.php';
@@ -139,6 +153,9 @@ require __DIR__ . '/partials/header.php';
   </a>
   <a href="?tab=logs" class="btn btn-sm <?= $tab==='logs'?'text-white':'btn-secondary' ?>" style="<?= $tab==='logs'?'background:var(--brand)':'' ?>">
     📜 Riwayat Target &amp; Payout
+  </a>
+  <a href="?tab=members" class="btn btn-sm <?= $tab==='members'?'text-white':'btn-secondary' ?>" style="<?= $tab==='members'?'background:var(--brand)':'' ?>">
+    👥 Member Promotor
   </a>
 </div>
 
@@ -194,7 +211,7 @@ require __DIR__ . '/partials/header.php';
   </div>
 </div>
 
-<?php else: ?>
+<?php elseif ($tab === 'logs'): ?>
 <!-- LOGS TAB -->
 <div class="c-card">
   <div class="c-card-header"><span class="c-card-title">Riwayat Performansi Target Harian</span></div>
@@ -262,6 +279,50 @@ require __DIR__ . '/partials/header.php';
               </td>
             </tr>
           <?php endforeach; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+<?php elseif ($tab === 'members'): ?>
+<!-- MEMBERS TAB -->
+<div class="c-card">
+  <div class="c-card-header"><span class="c-card-title">Member Referral Promotor</span></div>
+  <div class="c-card-body p-3">
+    <div class="table-responsive">
+      <table class="c-table table table-dark table-striped table-hover mb-0" data-order='[[4, "desc"]]' style="font-size: 13px;">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Promotor</th>
+            <th>Level</th>
+            <th>Total Deposit</th>
+            <th>Waktu Daftar</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php if (empty($referred_members)): ?>
+            <tr>
+              <td colspan="5" class="text-center py-4 text-muted">Belum ada member yang mendaftar dari referral promotor.</td>
+            </tr>
+          <?php else: ?>
+            <?php foreach ($referred_members as $rm): ?>
+              <tr style="vertical-align: middle;">
+                <td>
+                  <strong style="color: #fff;"><?= htmlspecialchars($rm['username']) ?></strong>
+                  <div style="font-size: 11px; color: #666;"><?= htmlspecialchars($rm['email']) ?></div>
+                </td>
+                <td><strong style="color:var(--brand)">@<?= htmlspecialchars($rm['promotor_name']) ?></strong></td>
+                <td>
+                  <span class="badge b-neutral" style="font-size: 11px; padding: 4px 8px; border-radius: 6px;">
+                    <?= htmlspecialchars($rm['membership_name']) ?>
+                  </span>
+                </td>
+                <td style="color: #4CAF82; font-weight: 700;"><?= format_rp((float)$rm['total_deposit']) ?></td>
+                <td style="color: #ccc; font-size: 12px;"><?= date('d M Y H:i', strtotime($rm['created_at'])) ?></td>
+              </tr>
+            <?php endforeach; ?>
+          <?php endif; ?>
         </tbody>
       </table>
     </div>
