@@ -108,9 +108,9 @@ require __DIR__ . '/partials/header.php';
 </div>
 
 <!-- Stat cards -->
-<div class="row g-3 mb-4">
-  <div class="col-6 col-md-3">
-    <div class="c-stat">
+<div class="row row-cols-2 row-cols-md-5 g-3 mb-4">
+  <div class="col">
+    <div class="c-stat h-100">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <div class="c-stat__lbl">Total Pageviews</div>
         <div class="c-stat__icon" style="background:rgba(59,130,246,.15)">📄</div>
@@ -119,8 +119,8 @@ require __DIR__ . '/partials/header.php';
       <div style="font-size:11px;color:#555;margin-top:3px"><?= $range ?> hari terakhir</div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
-    <div class="c-stat">
+  <div class="col">
+    <div class="c-stat h-100">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <div class="c-stat__lbl">Unique Visitors</div>
         <div class="c-stat__icon" style="background:rgba(76,175,130,.15)">👥</div>
@@ -129,18 +129,28 @@ require __DIR__ . '/partials/header.php';
       <div style="font-size:11px;color:#555;margin-top:3px">berdasarkan IP</div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
-    <div class="c-stat">
+  <div class="col">
+    <div class="c-stat h-100">
       <div class="d-flex align-items-center justify-content-between mb-2">
-        <div class="c-stat__lbl">Hari Ini</div>
+        <div class="c-stat__lbl">Hari Ini (Views)</div>
         <div class="c-stat__icon" style="background:rgba(255,193,7,.15)">📅</div>
       </div>
       <div class="c-stat__val"><?= number_format($today_pv) ?></div>
       <div style="font-size:11px;color:#555;margin-top:3px">pageviews hari ini</div>
     </div>
   </div>
-  <div class="col-6 col-md-3">
-    <div class="c-stat">
+  <div class="col">
+    <div class="c-stat h-100" style="border: 1.5px solid var(--brand, #ff5e00);">
+      <div class="d-flex align-items-center justify-content-between mb-2">
+        <div class="c-stat__lbl">REAL User Today</div>
+        <div class="c-stat__icon" style="background:rgba(255,107,53,.2)">👤</div>
+      </div>
+      <div class="c-stat__val" style="color:var(--brand, #ff5e00)"><?= number_format(count($today_ips)) ?></div>
+      <div style="font-size:11px;color:#fff;margin-top:3px">user unik hari ini</div>
+    </div>
+  </div>
+  <div class="col">
+    <div class="c-stat h-100">
       <div class="d-flex align-items-center justify-content-between mb-2">
         <div class="c-stat__lbl">Avg/Hari</div>
         <div class="c-stat__icon" style="background:rgba(255,107,53,.15)">📊</div>
@@ -261,9 +271,9 @@ new Chart(document.getElementById('traffic-chart'), {
     <span class="c-card-title">🌐 Detail Traffic & Real IP Hari Ini</span>
     <span class="badge bg-success" style="font-size: 11px;">Live Activity</span>
   </div>
-  <div class="c-card-body p-0">
+  <div class="c-card-body p-3">
     <div class="table-responsive">
-      <table class="table table-dark table-striped table-hover mb-0" style="font-size: 13px; background: #131520; border: none;">
+      <table class="c-table table table-dark table-striped table-hover mb-0" data-order='[[5, "desc"]]' style="font-size: 13px; background: #131520; border: none; width: 100%;">
         <thead>
           <tr style="border-bottom: 2px solid #1f2235; color: #aaa;">
             <th class="px-4 py-3" style="font-weight: 700;">IP Address / Unique Hash</th>
