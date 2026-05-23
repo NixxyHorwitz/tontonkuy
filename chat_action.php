@@ -145,7 +145,7 @@ switch ($action) {
             $sess = get_chat_session($pdo, $sessionKey);
             if ($sess && $sess['status'] === 'open') {
                 $msgs = $pdo->prepare(
-                    "SELECT id,sender,message,created_at FROM chat_messages
+                    "SELECT id,sender,message,attachment,created_at FROM chat_messages
                      WHERE session_id=? ORDER BY id ASC LIMIT 100"
                 );
                 $msgs->execute([$sess['id']]);
