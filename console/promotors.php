@@ -55,10 +55,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $log = $log->fetch();
             
             if ($log && !$log['is_paid']) {
-                // 1. Mark target log as paid
-                $pdo->prepare("UPDATE promotor_daily_targets SET is_paid = 1 WHERE id = ?")->execute([$log_id]);
+                // Calculate proportional pay amount based on percentage (capped at 100%)
+                $pay_amount = (float)round(($log['salary_rate'] * min(100.0, (float)$log['percentage'])) / 100.0);
+                
+                if ($pay_amount <= 0) {
+                    throw new \Exception("Jumlah gaji yang diperoleh adalah Rp 0 karena pencapaian target 0%.");
+                }
+                
+                // 1. Mark target log as paid and save actual paid amount
+                $pdo->prepare("UPDATE promotor_daily_targets SET is_paid = 1, paid_amount = ? WHERE id = ?")->execute([$pay_amount, $log_id]);
                 // 2. Credit salary to promotor's balance_wd
-                $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ? WHERE id = ?")->execute([$log['salary_rate'], $log['user_id']]);
+                $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ? WHERE id = ?")->execute([$pay_amount, $log['user_id']]);
                 
                 // Get username for notification logs
                 $u_stmt = $pdo->prepare("SELECT username FROM users WHERE id = ?");
@@ -68,15 +75,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->commit();
                 
                 // Send Telegram Notification
-                $msg = "<b>💸 GAJI PROMOTOR DICAIRKAN</b>\n"
+                $msg = "<b>💸 GAJI PROMOTOR DICAIRKAN (PROPORSIAL)</b>\n"
                      . "👤 Promotor: <b>@{$username}</b>\n"
                      . "📅 Tanggal Target: " . date('d M Y', strtotime($log['date'])) . "\n"
                      . "🎯 Pencapaian: <b>" . number_format((float)$log['percentage'], 1) . "%</b>\n"
-                     . "💰 Jumlah Gaji: <b>" . format_rp((float)$log['salary_rate']) . "</b>\n"
+                     . "💰 Gaji Diperoleh: <b>" . format_rp($pay_amount) . "</b> (dari total " . format_rp((float)$log['salary_rate']) . ")\n"
                      . "✅ Status: Berhasil dicairkan langsung ke Saldo WD.";
                 send_telegram_notif($pdo, $msg);
                 
-                $flash = "Gaji promotor @{$username} sebesar " . format_rp((float)$log['salary_rate']) . " berhasil dicairkan!";
+                $flash = "Gaji promotor @{$username} sebesar " . format_rp($pay_amount) . " (" . number_format((float)$log['percentage'], 1) . "% pencapaian) berhasil dicairkan!";
             } else {
                 $pdo->rollBack();
                 $flash = "Target log tidak ditemukan atau sudah dibayar."; $flashType = 'error';
@@ -224,16 +231,29 @@ require __DIR__ . '/partials/header.php';
                 Depo: <?= format_rp((float)$log['target_deposits']) ?> <br>
                 Reg: <?= $log['target_regs'] ?> member
               </td>
-              <td style="font-weight: 700; color: #ff8c00;"><?= format_rp((float)$log['salary_rate']) ?></td>
               <td>
-                <span class="badge <?= $log['is_paid'] ? 'b-success' : 'b-neutral' ?>" style="padding: 4px 8px; border-radius: 6px;">
-                  <?= $log['is_paid'] ? 'Paid ✅' : 'Awaiting ⏳' ?>
-                </span>
+                <div style="font-size:11px;color:#aaa">Rate: <?= format_rp((float)$log['salary_rate']) ?></div>
+                <?php 
+                $earned = (float)round(($log['salary_rate'] * min(100.0, (float)$log['percentage'])) / 100.0);
+                if ($log['is_paid']): ?>
+                  <div style="font-weight:700;color:#4CAF82;font-size:12.5px">Paid: <?= format_rp((float)$log['paid_amount']) ?></div>
+                <?php else: ?>
+                  <div style="font-weight:700;color:#FF6B35;font-size:12.5px">Earned: <?= format_rp($earned) ?></div>
+                <?php endif; ?>
+              </td>
+              <td>
+                <?php if ($log['is_paid']): ?>
+                  <span class="badge b-success" style="padding: 4px 8px; border-radius: 6px;">Paid ✅</span>
+                <?php elseif ($earned > 0): ?>
+                  <span class="badge b-warn" style="padding: 4px 8px; border-radius: 6px; background:#FF6B35; color:#fff">Ready ⏳</span>
+                <?php else: ?>
+                  <span class="badge b-neutral" style="padding: 4px 8px; border-radius: 6px; background:#444; color:#aaa">0% ❌</span>
+                <?php endif; ?>
               </td>
               <td class="text-end">
-                <?php if (!$log['is_paid'] && (float)$log['percentage'] >= 100): ?>
+                <?php if (!$log['is_paid'] && $earned > 0): ?>
                   <button class="btn btn-sm btn-success text-white" style="border:none;border-radius:6px;font-size:11px;background:#4CAF82"
-                          onclick="openPayoutModal(<?= $log['id'] ?>, '<?= htmlspecialchars($log['username']) ?>', '<?= date('d M Y', strtotime($log['date'])) ?>', '<?= format_rp((float)$log['salary_rate']) ?>')">
+                          onclick="openPayoutModal(<?= $log['id'] ?>, '<?= htmlspecialchars($log['username']) ?>', '<?= date('d M Y', strtotime($log['date'])) ?>', '<?= format_rp($earned) ?>', '<?= number_format((float)$log['percentage'], 1) ?>%')">
                     💸 Bayar Gaji
                   </button>
                 <?php else: ?>
@@ -345,8 +365,9 @@ require __DIR__ . '/partials/header.php';
           <p style="font-size:13.5px;color:#ccc;line-height:1.5">
             Anda akan merilis gaji harian untuk promotor <strong id="pay_username" style="color:#fff"></strong>.<br>
             Tanggal Target: <strong id="pay_date" style="color:#fff"></strong><br>
-            Jumlah Pencairan: <strong id="pay_amount" style="color:#4CAF82;font-size:16px"></strong><br><br>
-            <span style="font-size:11px;color:#aaa">⚠️ Setelah diklik, saldo WD milik promotor akan langsung bertambah dan notifikasi Telegram akan terkirim.</span>
+            Pencapaian Target: <strong id="pay_pct" style="color:#FF6B35"></strong><br>
+            Jumlah Pencairan Gaji: <strong id="pay_amount" style="color:#4CAF82;font-size:16px"></strong><br><br>
+            <span style="font-size:11px;color:#aaa">⚠️ Setelah diklik, saldo WD milik promotor akan langsung bertambah secara proporsional sesuai pencapaian target dan notifikasi Telegram akan terkirim.</span>
           </p>
         </div>
         <div class="modal-footer border-0">
@@ -391,11 +412,12 @@ function confirmRemove(uid, uname) {
   new bootstrap.Modal(document.getElementById('removeModal')).show();
 }
 
-function openPayoutModal(lid, uname, date, amount) {
+function openPayoutModal(lid, uname, date, amount, pct) {
   document.getElementById('pay_log_id').value = lid;
   document.getElementById('pay_username').textContent = '@' + uname;
   document.getElementById('pay_date').textContent = date;
   document.getElementById('pay_amount').textContent = amount;
+  document.getElementById('pay_pct').textContent = pct;
   
   new bootstrap.Modal(document.getElementById('payoutModal')).show();
 }

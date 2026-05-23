@@ -175,17 +175,29 @@ require dirname(__DIR__) . '/partials/header.php';
         <div class="list-item__body" style="margin-left:2px">
           <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
             <span style="font-weight:800;font-size:13px;color:var(--ink)"><?= date('d M Y', strtotime($log['date'])) ?></span>
-            <span class="badge" style="font-size:9px;padding:2px 6px;background:<?= $log['is_paid'] ? 'var(--lime)' : 'var(--white)' ?>">
-              <?= $log['is_paid'] ? '✅ Paid' : '⏳ Unpaid' ?>
-            </span>
+            <?php 
+            $earned = (float)round(($log['salary_rate'] * min(100.0, (float)$log['percentage'])) / 100.0);
+            if ($log['is_paid']): ?>
+              <span class="badge" style="font-size:9px;padding:2px 6px;background:var(--lime)">
+                ✅ Paid: <?= format_rp((float)$log['paid_amount']) ?>
+              </span>
+            <?php else: ?>
+              <span class="badge" style="font-size:9px;padding:2px 6px;background:var(--peach)">
+                ⏳ Unpaid
+              </span>
+            <?php endif; ?>
           </div>
           <div style="font-size:10px;color:#666;font-weight:700;margin-top:3px">
             Pencapaian: <strong style="color:var(--ink)"><?= number_format((float)$log['percentage'], 1) ?>%</strong>
             (Depo: <?= format_rp((float)$log['actual_deposits']) ?> · Reg: <?= $log['actual_regs'] ?>)
           </div>
-          <?php if ((float)$log['percentage'] >= 100 && !$log['is_paid']): ?>
+          <?php if ($log['is_paid']): ?>
+          <div style="font-size:9px;color:#4CAF82;font-weight:700;margin-top:2px">
+            💸 Gaji sebesar <strong><?= format_rp((float)$log['paid_amount']) ?></strong> berhasil ditransfer ke Saldo WD Anda.
+          </div>
+          <?php elseif ($earned > 0): ?>
           <div style="font-size:9px;color:#ff8c00;font-weight:700;margin-top:2px">
-            🎉 Target tercapai! Gaji <?= format_rp((float)$log['salary_rate']) ?> akan segera diproses admin.
+            🎉 Estimasi Gaji Diperoleh: <strong><?= format_rp($earned) ?></strong> (dari total <?= format_rp((float)$log['salary_rate']) ?>) - akan ditransfer setelah diverifikasi admin.
           </div>
           <?php endif; ?>
         </div>
