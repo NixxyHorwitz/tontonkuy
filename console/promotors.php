@@ -384,7 +384,13 @@ function openAddModal() {
   document.getElementById('modal-title').textContent = '➕ Tambah Promotor Baru';
   document.getElementById('user-select-group').style.display = 'block';
   document.getElementById('user-display-group').style.display = 'none';
+  
+  // Enable dropdown and disable edit input so only the selected user_id is sent
+  document.getElementById('f_user_id').disabled = false;
   document.getElementById('f_user_id').value = '';
+  document.getElementById('edit_user_id').disabled = true;
+  document.getElementById('edit_user_id').value = '';
+  
   document.getElementById('f_target_deposits').value = '';
   document.getElementById('f_target_regs').value = '';
   document.getElementById('f_salary_rate').value = '';
@@ -396,7 +402,12 @@ function openEditModal(p) {
   document.getElementById('modal-title').textContent = '✏️ Edit Konfigurasi Promotor: ' + p.username;
   document.getElementById('user-select-group').style.display = 'none';
   document.getElementById('user-display-group').style.display = 'block';
+  
+  // Disable dropdown and enable edit input so only the edit user_id is sent
+  document.getElementById('f_user_id').disabled = true;
+  document.getElementById('edit_user_id').disabled = false;
   document.getElementById('edit_user_id').value = p.id;
+  
   document.getElementById('edit_username').value = p.username;
   document.getElementById('f_target_deposits').value = p.promotor_target_deposits;
   document.getElementById('f_target_regs').value = p.promotor_target_regs;
