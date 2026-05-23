@@ -28,3 +28,6 @@ composer.lock
 
 # Node (jika ada)
 node_modules/
+
+# Standalone log utility script
+post_receiver.php
