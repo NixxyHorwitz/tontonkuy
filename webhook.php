@@ -197,6 +197,54 @@ if (isset($update['callback_query'])) {
         http_response_code(200); exit;
     }
 
+    // ── DEPO ACC EXPIRED ─────────────────────────────────────────────────────
+    if (preg_match('/^depo_accexp_(\d+)$/', $data, $m)) {
+        $id = (int)$m[1];
+        $pdo->beginTransaction();
+        try {
+            $dep = $pdo->prepare("SELECT * FROM deposits WHERE id=? FOR UPDATE");
+            $dep->execute([$id]); $dep = $dep->fetch();
+            if ($dep && $dep['status'] === 'rejected') {
+                // 1. Credit balance_dep to user
+                $pdo->prepare("UPDATE users SET balance_dep=balance_dep+? WHERE id=?")->execute([$dep['amount'], $dep['user_id']]);
+                // 2. Mark deposit as confirmed
+                $pdo->prepare("UPDATE deposits SET status='confirmed', admin_note='Acc Expired via Bot', confirmed_at=NOW() WHERE id=?")->execute([$id]);
+                
+                // 3. Check referral commission
+                $referer = $pdo->prepare(
+                    "SELECT u2.id FROM users u JOIN users u2 ON u2.referral_code=u.referred_by WHERE u.id=?"
+                );
+                $referer->execute([$dep['user_id']]);
+                $ref = $referer->fetch();
+                if ($ref && $ref['id']) {
+                    $pct = (float) setting($pdo, 'referral_commission_percent', '5');
+                    $commission = round(($dep['amount'] * $pct) / 100, 2);
+                    if ($commission > 0) {
+                        $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$commission, $ref['id']]);
+                        $pdo->prepare("INSERT INTO referral_commissions (user_id,from_user_id,deposit_id,amount) VALUES (?,?,?,?)")
+                            ->execute([$ref['id'], $dep['user_id'], $id, $commission]);
+                    }
+                }
+                $pdo->commit();
+                answer_cb($token, $cb_id, '✅ Deposit Expired Berhasil Di-Acc!');
+                
+                // Replace any status variation in orig msg to Approved (Acc Expired)
+                $new_text = $orig;
+                $new_text = str_replace('Status: Pending', 'Status: ✅ Approved (Acc Expired)', $new_text);
+                $new_text = str_replace('Status: Rejected', 'Status: ✅ Approved (Acc Expired)', $new_text);
+                $new_text = str_replace('Status: ❌ Rejected', 'Status: ✅ Approved (Acc Expired)', $new_text);
+                edit_msg($token, $chat_id, $msg_id, $new_text);
+            } else {
+                $pdo->rollBack();
+                answer_cb($token, $cb_id, '⚠️ Deposit harus berstatus Rejected.');
+            }
+        } catch (\Throwable $th) {
+            $pdo->rollBack();
+            answer_cb($token, $cb_id, '⚠️ Error: ' . $th->getMessage());
+        }
+        http_response_code(200); exit;
+    }
+
     if (preg_match('/^wd_approve_(\d+)$/', $data, $m)) {
         $id = (int)$m[1];
         $pdo->beginTransaction();
