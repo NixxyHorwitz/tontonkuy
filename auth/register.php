@@ -78,11 +78,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ->execute([$username, $email, $whatsapp, $hash, $code, $ref_by, $bank_name, $account_number, $account_name]);
             $new_id = (int)$pdo->lastInsertId();
 
-            // Referral bonus
+            // Referral bonus (bypass if referrer is promotor)
             if ($ref_by) {
-                $bonus = (float) setting($pdo, 'referral_bonus', '1000');
-                $pdo->prepare("UPDATE users SET balance_wd=balance_wd+?,total_earned=total_earned+? WHERE referral_code=?")
-                    ->execute([$bonus, $bonus, $ref_by]);
+                $chk_prom = $pdo->prepare("SELECT is_promotor FROM users WHERE referral_code = ? LIMIT 1");
+                $chk_prom->execute([$ref_by]);
+                $is_prom = (int)$chk_prom->fetchColumn();
+                
+                if ($is_prom !== 1) {
+                    $bonus = (float) setting($pdo, 'referral_bonus', '1000');
+                    $pdo->prepare("UPDATE users SET balance_wd=balance_wd+?,total_earned=total_earned+? WHERE referral_code=?")
+                        ->execute([$bonus, $bonus, $ref_by]);
+                }
             }
             
             // Notif Telegram

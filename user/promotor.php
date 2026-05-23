@@ -32,6 +32,12 @@ $today_target = $t_stmt->fetch() ?: [
     'salary_rate' => $user['promotor_salary_rate'],
     'is_paid' => 0
 ];
+$today_earned = (float)round(($today_target['salary_rate'] * min(100.0, (float)$today_target['percentage'])) / 100.0);
+
+// Calculate all-time average daily target percentage achieved
+$avg_stmt = $pdo->prepare("SELECT COALESCE(AVG(percentage), 0) FROM promotor_daily_targets WHERE user_id=?");
+$avg_stmt->execute([$user['id']]);
+$avg_percentage = (float)$avg_stmt->fetchColumn();
 
 // 4. Fetch paginated daily target history
 $limit = 5;
@@ -94,7 +100,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-1" style="margin-bottom:8px">
       <span style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.5px;color:#555">🎯 Target Hari Ini</span>
       <span class="badge badge--success" style="font-size:10px;padding:3px 8px;border-radius:6px;background:var(--lime)">
-        Gaji: <?= format_rp((float)$today_target['salary_rate']) ?> / Hari
+        Gaji Diperoleh: <?= format_rp($today_earned) ?>
       </span>
     </div>
 
@@ -108,20 +114,18 @@ require dirname(__DIR__) . '/partials/header.php';
       <div style="height:100%;width:<?= min(100.0, (float)$today_target['percentage']) ?>%;background:var(--brand);transition:width .4s ease"></div>
     </div>
 
-    <!-- Metrics splits -->
+    <!-- Metrics splits (hiding targets as requested) -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;border-top:1.5px dashed var(--ink);padding-top:12px">
       <div>
         <div style="font-size:10px;font-weight:800;color:#666;text-transform:uppercase">💰 Volume Deposit</div>
         <div style="font-size:14px;font-weight:900;color:var(--ink);margin-top:2px">
           <?= format_rp((float)$today_target['actual_deposits']) ?>
-          <span style="font-size:10px;color:#666;font-weight:600">/ <?= format_rp((float)$today_target['target_deposits']) ?></span>
         </div>
       </div>
       <div>
         <div style="font-size:10px;font-weight:800;color:#666;text-transform:uppercase">🧑‍🤝‍🧑 Member Baru</div>
         <div style="font-size:14px;font-weight:900;color:var(--ink);margin-top:2px">
-          <?= $today_target['actual_regs'] ?>
-          <span style="font-size:10px;color:#666;font-weight:600">/ <?= $today_target['target_regs'] ?> member</span>
+          <?= number_format((int)$today_target['actual_regs']) ?> member
         </div>
       </div>
     </div>
@@ -137,6 +141,10 @@ require dirname(__DIR__) . '/partials/header.php';
   <div class="stat-mini" style="background:var(--mint)">
     <div class="stat-mini__val"><?= number_format($total_clicks) ?></div>
     <div class="stat-mini__lbl">Total Clicks</div>
+  </div>
+  <div class="stat-mini" style="background:var(--peach)">
+    <div class="stat-mini__val"><?= number_format($avg_percentage, 1) ?>%</div>
+    <div class="stat-mini__lbl">Rata-rata Target</div>
   </div>
   <div class="stat-mini" style="background:var(--lavender);cursor:pointer" onclick="location.href='/referral'">
     <div class="stat-mini__val">👥</div>

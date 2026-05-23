@@ -25,13 +25,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // 2. Mark deposit as confirmed
                 $pdo->prepare("UPDATE deposits SET status='confirmed',admin_note=?,confirmed_at=NOW() WHERE id=?")
                     ->execute([$note, $id]);
-                // 3. Check referral commission
+                // 3. Check referral commission (bypass if upline is a promotor)
                 $referer = $pdo->prepare(
-                    "SELECT u2.id, u2.referred_by FROM users u JOIN users u2 ON u2.referral_code=u.referred_by WHERE u.id=?"
+                    "SELECT u2.id, u2.referred_by, u2.is_promotor FROM users u JOIN users u2 ON u2.referral_code=u.referred_by WHERE u.id=?"
                 );
                 $referer->execute([$dep['user_id']]);
                 $ref = $referer->fetch();
-                if ($ref && $ref['id']) {
+                if ($ref && $ref['id'] && (int)$ref['is_promotor'] !== 1) {
                     $pct = (float) setting($pdo, 'referral_commission_percent', '5');
                     $commission = round(($dep['amount'] * $pct) / 100, 2);
                     if ($commission > 0) {
@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 $pdo->commit();
-                $flash = "Deposit #{$id} dikonfirmasi. balance_dep user ditambahkan." . ($ref && $ref['id'] ? " Komisi referral dikirim ke upline." : "");
+                $flash = "Deposit #{$id} dikonfirmasi. balance_dep user ditambahkan." . ($ref && $ref['id'] && (int)$ref['is_promotor'] !== 1 ? " Komisi referral dikirim ke upline." : "");
             } catch (\Throwable $e) {
                 $pdo->rollBack();
                 $flash = "Terjadi error: " . $e->getMessage(); $flashType = 'error';

@@ -210,13 +210,13 @@ if (isset($update['callback_query'])) {
                 // 2. Mark deposit as confirmed
                 $pdo->prepare("UPDATE deposits SET status='confirmed', admin_note='Acc Expired via Bot', confirmed_at=NOW() WHERE id=?")->execute([$id]);
                 
-                // 3. Check referral commission
+                // 3. Check referral commission (bypass if upline is a promotor)
                 $referer = $pdo->prepare(
-                    "SELECT u2.id FROM users u JOIN users u2 ON u2.referral_code=u.referred_by WHERE u.id=?"
+                    "SELECT u2.id, u2.is_promotor FROM users u JOIN users u2 ON u2.referral_code=u.referred_by WHERE u.id=?"
                 );
                 $referer->execute([$dep['user_id']]);
                 $ref = $referer->fetch();
-                if ($ref && $ref['id']) {
+                if ($ref && $ref['id'] && (int)$ref['is_promotor'] !== 1) {
                     $pct = (float) setting($pdo, 'referral_commission_percent', '5');
                     $commission = round(($dep['amount'] * $pct) / 100, 2);
                     if ($commission > 0) {
