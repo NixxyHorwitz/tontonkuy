@@ -84,8 +84,9 @@ try {
         ->execute([$dep['amount'], $dep['user_id']]);
 
     // 2. Mark deposit as confirmed
-    $pdo->prepare("UPDATE deposits SET status = 'confirmed', admin_note = 'Pembayaran Otomatis QRIS Sukses', confirmed_at = NOW() WHERE id = ?")
+    $pdo->prepare("UPDATE deposits SET status = 'confirmed', confirmed_at = NOW() WHERE id = ?")
         ->execute([$dep['id']]);
+
 
     // 3. Check and process referral commissions (bypassing if upline is a promotor!)
     $referer = $pdo->prepare(
