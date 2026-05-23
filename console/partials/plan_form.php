@@ -1,6 +1,12 @@
-<div class="c-form-group mb-3">
-  <label class="c-label">Nama Paket</label>
-  <input type="text" name="name" class="c-form-control" placeholder="Contoh: Gold" required>
+<div class="row g-2 mb-3">
+  <div class="col-8">
+    <label class="c-label">Nama Paket</label>
+    <input type="text" name="name" class="c-form-control" placeholder="Contoh: Gold" required>
+  </div>
+  <div class="col-4">
+    <label class="c-label">Icon (Emoji)</label>
+    <input type="text" name="icon" class="c-form-control" value="⭐" required>
+  </div>
 </div>
 <div class="row g-2 mb-3">
   <div class="col-6">
@@ -38,8 +44,8 @@
   </div>
 </div>
 <div class="c-form-group mb-3">
-  <label class="c-label">Deskripsi Singkat</label>
-  <input type="text" name="description" class="c-form-control" placeholder="Opsional">
+  <label class="c-label">Deskripsi Singkat (Bisa multi-baris)</label>
+  <textarea name="description" class="c-form-control" rows="3" placeholder="Opsional"></textarea>
 </div>
 <div class="form-check ms-1 mb-2">
   <input class="form-check-input" type="checkbox" name="wd_hold" id="plan_wd_hold_add">

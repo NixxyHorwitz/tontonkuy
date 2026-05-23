@@ -12,6 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'add' || $action === 'edit') {
         $name     = trim($_POST['name'] ?? '');
+        $icon     = trim($_POST['icon'] ?? '⭐');
         $price    = (float)preg_replace('/[^\d.]/', '', $_POST['price'] ?? '0');
         $orig_price = (float)preg_replace('/[^\d.]/', '', $_POST['original_price'] ?? '0');
         $limit    = (int)($_POST['watch_limit'] ?? 10);
@@ -27,12 +28,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$name) { $flash = 'Nama paket wajib diisi.'; $flashType = 'error'; }
         else {
             if ($action === 'add') {
-                $pdo->prepare("INSERT INTO memberships (name,price,original_price,watch_limit,duration_days,description,is_active,sort_order,min_wd,max_wd,wd_hold,allow_edit_bank) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
-                    ->execute([$name, $price, $orig_price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd, $wd_hold, $allow_edit_bank]);
+                $pdo->prepare("INSERT INTO memberships (name,icon,price,original_price,watch_limit,duration_days,description,is_active,sort_order,min_wd,max_wd,wd_hold,allow_edit_bank) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")
+                    ->execute([$name, $icon, $price, $orig_price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd, $wd_hold, $allow_edit_bank]);
                 $flash = "Paket {$name} ditambahkan.";
             } else {
-                $pdo->prepare("UPDATE memberships SET name=?,price=?,original_price=?,watch_limit=?,duration_days=?,description=?,is_active=?,sort_order=?,min_wd=?,max_wd=?,wd_hold=?,allow_edit_bank=? WHERE id=?")
-                    ->execute([$name, $price, $orig_price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd, $wd_hold, $allow_edit_bank, $id]);
+                $pdo->prepare("UPDATE memberships SET name=?,icon=?,price=?,original_price=?,watch_limit=?,duration_days=?,description=?,is_active=?,sort_order=?,min_wd=?,max_wd=?,wd_hold=?,allow_edit_bank=? WHERE id=?")
+                    ->execute([$name, $icon, $price, $orig_price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd, $wd_hold, $allow_edit_bank, $id]);
                 $flash = "Paket berhasil diperbarui."; 
             }
         }
@@ -85,9 +86,8 @@ require __DIR__ . '/partials/header.php';
 <div class="row g-3">
   <?php foreach ($plans as $p):
     $colors = ['#888','#4E9BFF','#FFC107','#4CAF82'];
-    $icons  = ['🆓','🥈','🥇','💎'];
     $color  = $colors[min($p['sort_order'], 3)];
-    $icon   = $icons[min($p['sort_order'], 3)];
+    $icon   = htmlspecialchars($p['icon'] ?: '⭐');
     $activeUsersStmt = $pdo->prepare("SELECT username FROM users WHERE membership_id=? AND membership_expires_at>NOW()");
     $activeUsersStmt->execute([$p['id']]);
     $activeUsernames = $activeUsersStmt->fetchAll(PDO::FETCH_COLUMN);
@@ -118,7 +118,7 @@ require __DIR__ . '/partials/header.php';
           <div>📹 <?= $p['watch_limit'] ?>× video/hari</div>
           <div>💸 Min WD: <?= format_rp((float)$p['min_wd']) ?></div>
           <div>💸 Max WD: <?= (float)$p['max_wd']>0 ? format_rp((float)$p['max_wd']) : '<i>Tanpa batas</i>' ?></div>
-          <?php if ($p['description']): ?><div>ℹ️ <?= htmlspecialchars($p['description']) ?></div><?php endif; ?>
+          <?php if ($p['description']): ?><div>ℹ️ <?= nl2br(htmlspecialchars($p['description'])) ?></div><?php endif; ?>
         </div>
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid #1f2235;font-size:12px;color:#666">
           👥 <strong style="color:#e0e0f0"><?= $activeUsersCount ?></strong> user aktif
@@ -199,8 +199,12 @@ function confirmDelete(id, name) {
 function editPlan(p) {
   document.getElementById('ep-id').value = p.id;
   document.getElementById('ep-body').innerHTML = `
-    <div class="c-form-group mb-3"><label class="c-label">Nama Paket</label>
-      <input type="text" name="name" class="c-form-control" value="${escH(p.name)}" required></div>
+    <div class="row g-2 mb-3">
+      <div class="col-8"><label class="c-label">Nama Paket</label>
+        <input type="text" name="name" class="c-form-control" value="${escH(p.name)}" required></div>
+      <div class="col-4"><label class="c-label">Icon</label>
+        <input type="text" name="icon" class="c-form-control" value="${escH(p.icon||'⭐')}" required></div>
+    </div>
     <div class="row g-2 mb-3">
       <div class="col-6"><label class="c-label">Harga (Rp)</label>
         <input type="number" name="price" class="c-form-control" value="${p.price}" min="0" step="1"></div>
@@ -223,7 +227,7 @@ function editPlan(p) {
         <small style="font-size:10px;color:#888">0 = Tanpa batas</small></div>
     </div>
     <div class="c-form-group mb-3"><label class="c-label">Deskripsi</label>
-      <input type="text" name="description" class="c-form-control" value="${escH(p.description||'')}"></div>
+      <textarea name="description" class="c-form-control" rows="3">${escH(p.description||'')}</textarea></div>
     <div class="form-check ms-1 mb-2"><input class="form-check-input" type="checkbox" name="wd_hold" id="ep-wd-hold" ${p.wd_hold==1?'checked':''}>
       <label class="form-check-label text-warning fw-bold" for="ep-wd-hold" style="font-size:13px">Tahan Withdraw (Auto Hold)</label></div>
     <div class="form-check ms-1 mb-2"><input class="form-check-input" type="checkbox" name="allow_edit_bank" id="ep-allow-edit-bank" ${p.allow_edit_bank==1?'checked':''}>

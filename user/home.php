@@ -94,11 +94,13 @@ require dirname(__DIR__) . '/partials/header.php';
   <div class="hero-card__actions" style="margin-top:10px;gap:6px;flex-wrap:wrap">
     <a href="/deposit"      class="hero-card__btn" style="flex:1;min-width:70px">⬆️ Topup</a>
     <a href="/withdraw"     class="hero-card__btn" style="flex:1;min-width:70px">⬇️ Tarik</a>
-    <a href="/upgrade"      class="hero-card__btn" style="flex:1;min-width:70px">👑 Upgrade</a>
-    <a href="/redeem"       class="hero-card__btn" style="flex:1;min-width:70px">🎁 Redeem</a>
     <a href="/checkin"      class="hero-card__btn" style="flex:1;min-width:70px">📅 Absen</a>
+    <a href="/redeem"       class="hero-card__btn" style="flex:1;min-width:70px">🎁 Redeem</a>
     <a href="/panduan"      class="hero-card__btn" style="flex:1;min-width:70px;background:var(--white);color:var(--brand);border-color:var(--brand)">📖 Panduan</a>
   </div>
+  <a href="/upgrade" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;background:var(--yellow);color:var(--ink);text-decoration:none;padding:12px;border-radius:10px;font-weight:900;border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);font-size:15px;">
+    🚀 UPGRADE LEVEL SEKARANG
+  </a>
 </div>
 
 <!-- Stats row -->

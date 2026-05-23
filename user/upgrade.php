@@ -257,7 +257,7 @@ require dirname(__DIR__) . '/partials/header.php';
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;margin-top:2px">
         <div style="display:flex;align-items:center;gap:10px">
           <div style="width:40px;height:40px;background:<?= $color ?>22;border-radius:10px;border:1.5px solid <?= $color ?>;display:flex;align-items:center;justify-content:center;font-size:20px">
-            <?= ['⭐','🥈','🥇','💎'][$i] ?? '⭐' ?>
+            <?= htmlspecialchars($m['icon'] ?: '⭐') ?>
           </div>
           <div>
             <div style="font-size:15px;font-weight:900;color:<?= $color ?>;line-height:1.1;margin-bottom:2px"><?= htmlspecialchars($m['name']) ?></div>
@@ -276,7 +276,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <div>📹 <?= $m['watch_limit'] ?>× / hari</div>
         <?php if ((float)$m['min_wd'] > 0): ?><div>💸 Min. WD: <?= format_rp((float)$m['min_wd']) ?></div><?php endif; ?>
         <div style="grid-column:1/-1">📤 Max. WD: <?= (float)$m['max_wd'] > 0 ? format_rp((float)$m['max_wd']) : '<span style="color:#4CAF82;font-weight:900">Tanpa batas</span>' ?></div>
-        <?php if ($m['description']): ?><div style="grid-column:1/-1;color:#888;font-size:11px;margin-top:2px;font-weight:500">ℹ️ <?= htmlspecialchars($m['description']) ?></div><?php endif; ?>
+        <?php if ($m['description']): ?><div style="grid-column:1/-1;color:#888;font-size:11px;margin-top:2px;font-weight:500;line-height:1.4">ℹ️ <?= nl2br(htmlspecialchars($m['description'])) ?></div><?php endif; ?>
       </div>
       
       <div style="display:flex;gap:8px;align-items:center">
