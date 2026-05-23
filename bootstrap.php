@@ -125,6 +125,16 @@ function format_rp(float $amount): string {
     return 'Rp ' . number_format($amount, 0, ',', '.');
 }
 
+/** Mask account/phone number: show first 4 and last 4 chars, mask middle with **** */
+function mask_account(string $num): string {
+    $num = trim($num);
+    $len = mb_strlen($num);
+    if ($len <= 8) return str_repeat('*', $len); // too short, mask all
+    $visible = 4;
+    $tail    = 4;
+    return mb_substr($num, 0, $visible) . str_repeat('*', $len - $visible - $tail) . mb_substr($num, -$tail);
+}
+
 /** Generate CSRF token */
 function csrf_token(): string {
     if (empty($_SESSION['csrf_token'])) {

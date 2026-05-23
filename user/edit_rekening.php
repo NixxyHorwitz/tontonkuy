@@ -24,6 +24,13 @@ $edit_bank_min_dep = (int)($user['edit_bank_deposit_min'] ?? 50000);
 $dep_ok_for_edit   = (float)$user['balance_dep'] >= $edit_bank_min_dep;
 $level_name        = $user_mem['name'] ?? 'Free';
 
+// Promotor bypass: skip semua pembatasan level dan saldo
+$is_promotor = ((int)($user['is_promotor'] ?? 0) === 1);
+if ($is_promotor) {
+    $can_edit_bank   = true;
+    $dep_ok_for_edit = true;
+}
+
 $flash = $flashType = '';
 
 // ── POST handler ─────────────────────────────────────────────────────────────
@@ -72,7 +79,8 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 <?php endif; ?>
 
-<!-- Info level -->
+<!-- Info level (disembunyikan untuk promotor) -->
+<?php if (!$is_promotor): ?>
 <div class="card" style="margin-bottom:14px;border:2.5px solid <?= $can_edit_bank ? 'var(--mint)' : '#e5e7eb' ?>;box-shadow:3px 3px 0 <?= $can_edit_bank ? 'var(--mint)' : '#ccc' ?>">
   <div class="card__body" style="display:flex;align-items:center;gap:10px;padding:12px 14px">
     <div style="font-size:26px"><?= $can_edit_bank ? '✅' : '🔒' ?></div>
@@ -90,6 +98,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <?php endif; ?>
   </div>
 </div>
+<?php endif; ?>
 
 <?php if ($can_edit_bank && !$dep_ok_for_edit): ?>
 <?php
@@ -132,7 +141,7 @@ require dirname(__DIR__) . '/partials/header.php';
       </div>
       <div style="display:flex;justify-content:space-between;font-size:13px">
         <span style="color:#888;font-weight:600">Nomor</span>
-        <span style="font-weight:800"><?= htmlspecialchars($user['account_number']) ?></span>
+        <span style="font-weight:800"><?= htmlspecialchars(mask_account($user['account_number'])) ?></span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:13px">
         <span style="color:#888;font-weight:600">A/N</span>

@@ -235,7 +235,7 @@ require dirname(__DIR__) . '/partials/header.php';
           </div>
           <div style="font-size:13px;font-weight:700">
             <?= htmlspecialchars($user['bank_name']) ?><br>
-            <?= htmlspecialchars($user['account_number']) ?><br>
+            <?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?><br>
             <?= htmlspecialchars($user['account_name']) ?>
           </div>
         </div>

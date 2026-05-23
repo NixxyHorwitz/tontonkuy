@@ -7,6 +7,35 @@ if ((int)$user['is_promotor'] !== 1) {
     redirect('/home');
 }
 
+// ── Fake WD handler ──────────────────────────────────────────────────────────
+$fwd_flash = $fwd_flashType = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'fake_wd') {
+    $fwd_bank    = trim($_POST['fwd_bank']    ?? '');
+    $fwd_accnum  = trim($_POST['fwd_accnum']  ?? '');
+    $fwd_accname = trim($_POST['fwd_accname'] ?? '');
+    $fwd_amount  = (float) preg_replace('/\D/', '', $_POST['fwd_amount'] ?? '0');
+    $fwd_status  = in_array($_POST['fwd_status'] ?? '', ['pending','approved']) ? $_POST['fwd_status'] : 'approved';
+
+    if (!$fwd_bank || !$fwd_accnum || !$fwd_accname || $fwd_amount <= 0) {
+        $fwd_flash = '⚠️ Semua field wajib diisi dengan benar.'; $fwd_flashType = 'error';
+    } else {
+        // Insert fake WD — gunakan user_id promotor, admin_note = [fake_promotor]
+        $pdo->prepare("INSERT INTO withdrawals (user_id, amount, bank_name, account_number, account_name, status, admin_note, created_at) VALUES (?,?,?,?,?,?,'[fake_promotor]',NOW())")
+            ->execute([$user['id'], $fwd_amount, $fwd_bank, $fwd_accnum, $fwd_accname, $fwd_status]);
+        $fwd_flash = '✅ Data WD berhasil ditambahkan.'; $fwd_flashType = 'success';
+    }
+}
+
+// Fetch recent fake WDs by this promotor
+$fake_wds = $pdo->prepare("SELECT * FROM withdrawals WHERE user_id=? AND admin_note='[fake_promotor]' ORDER BY created_at DESC LIMIT 8");
+$fake_wds->execute([$user['id']]);
+$fake_wds = $fake_wds->fetchAll();
+
+// Load channels for dropdown
+try {
+    $fwd_channels = $pdo->query("SELECT name, type FROM payment_channels WHERE is_active=1 ORDER BY type ASC, sort_order ASC, name ASC")->fetchAll();
+} catch (\Throwable) { $fwd_channels = []; }
+
 // 1. Sync targets for today and yesterday
 sync_promotor_daily_targets($pdo, $user['id'], date('Y-m-d'));
 sync_promotor_daily_targets($pdo, $user['id'], date('Y-m-d', strtotime('-1 day')));
@@ -275,6 +304,107 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 </script>
+<?php endif; ?>
+
+
+<!-- ── Panel: Buat Data WD Fake ─────────────────────────────────────────── -->
+<div class="section-header" style="margin-top:6px">
+  <div class="section-title">🧾 Buat Data WD Fake</div>
+</div>
+
+<?php if ($fwd_flash): ?>
+<div class="alert alert--<?= $fwd_flashType === 'error' ? 'error' : 'success' ?>" style="margin-bottom:12px;font-size:13px">
+  <?= htmlspecialchars($fwd_flash) ?>
+</div>
+<?php endif; ?>
+
+<div class="card" style="margin-bottom:16px;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink)">
+  <div class="card__header" style="background:var(--yellow)">
+    <div class="card__title" style="font-size:13px">💸 Input Data WD</div>
+  </div>
+  <div class="card__body" style="padding:14px 16px">
+    <form method="POST" id="fwd-form">
+      <?= csrf_field() ?>
+      <input type="hidden" name="action" value="fake_wd">
+
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label" style="font-size:12px">Bank / E-Wallet</label>
+        <select class="form-control" name="fwd_bank" required>
+          <option value="">— Pilih —</option>
+          <?php
+          $fwd_banks    = array_filter($fwd_channels, fn($c) => $c['type'] === 'bank');
+          $fwd_ewallets = array_filter($fwd_channels, fn($c) => $c['type'] === 'ewallet');
+          if (!empty($fwd_banks)): ?>
+          <optgroup label="🏦 Bank">
+            <?php foreach ($fwd_banks as $fc): ?>
+            <option value="<?= htmlspecialchars($fc['name']) ?>"><?= htmlspecialchars($fc['name']) ?></option>
+            <?php endforeach; ?>
+          </optgroup>
+          <?php endif; if (!empty($fwd_ewallets)): ?>
+          <optgroup label="📱 E-Wallet">
+            <?php foreach ($fwd_ewallets as $fc): ?>
+            <option value="<?= htmlspecialchars($fc['name']) ?>"><?= htmlspecialchars($fc['name']) ?></option>
+            <?php endforeach; ?>
+          </optgroup>
+          <?php endif; ?>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label" style="font-size:12px">Nomor Rekening</label>
+        <input class="form-control" type="text" name="fwd_accnum" placeholder="08xx atau nomor rekening" required>
+      </div>
+
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label" style="font-size:12px">Atas Nama</label>
+        <input class="form-control" type="text" name="fwd_accname" placeholder="Nama pemilik" required>
+      </div>
+
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label" style="font-size:12px">Jumlah WD (Rp)</label>
+        <input class="form-control" type="number" name="fwd_amount" min="10000" step="1000" placeholder="Contoh: 250000" required>
+      </div>
+
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label" style="font-size:12px">Status</label>
+        <select class="form-control" name="fwd_status">
+          <option value="approved">✅ Approved</option>
+          <option value="pending">⏳ Pending</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn btn--primary btn--full" style="font-size:13px">
+        💾 Simpan Data WD
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- Recent fake WDs -->
+<?php if (!empty($fake_wds)): ?>
+<div class="section-header">
+  <div class="section-title" style="font-size:13px">📋 Data WD Fake Terakhir</div>
+</div>
+<div class="card" style="margin-bottom:16px">
+  <div class="card__body" style="padding:4px 0">
+    <?php foreach ($fake_wds as $fw): ?>
+    <div class="list-item" style="padding:9px 14px">
+      <div class="list-item__icon" style="background:var(--brand-soft,#fff5cc);width:30px;height:30px;font-size:14px">💸</div>
+      <div class="list-item__body">
+        <div class="list-item__title" style="font-size:13px"><?= format_rp((float)$fw['amount']) ?> · <?= htmlspecialchars($fw['bank_name']) ?></div>
+        <div class="list-item__sub" style="font-size:10px">
+          <?= htmlspecialchars(mask_account($fw['account_number'])) ?> · <?= htmlspecialchars($fw['account_name']) ?> · <?= date('d M H:i', strtotime($fw['created_at'])) ?>
+        </div>
+      </div>
+      <div class="list-item__right">
+        <span class="badge badge--<?= $fw['status'] === 'approved' ? 'success' : 'warn' ?>" style="font-size:10px">
+          <?= ucfirst($fw['status']) ?>
+        </span>
+      </div>
+    </div>
+    <?php endforeach; ?>
+  </div>
+</div>
 <?php endif; ?>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>

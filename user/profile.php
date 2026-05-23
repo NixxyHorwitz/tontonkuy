@@ -54,7 +54,8 @@ if ($user['membership_id'] && $user['membership_expires_at'] && strtotime($user[
 
 $edit_bank_min_dep = (int)($user['edit_bank_deposit_min'] ?? 50000);
 $dep_ok_for_edit   = (float)$user['balance_dep'] >= $edit_bank_min_dep;
-$show_edit_rek_btn = $membership_allow_edit_bank;
+$is_promotor_prof  = ((int)($user['is_promotor'] ?? 0) === 1);
+$show_edit_rek_btn = $membership_allow_edit_bank || $is_promotor_prof;
 
 // Contact buttons
 try {
@@ -166,7 +167,7 @@ $_psvg = [
         </div>
         <div style="display:flex;justify-content:space-between;font-size:13px">
           <span style="color:#888;font-weight:600">📱 WhatsApp</span>
-          <span style="font-weight:700"><?= htmlspecialchars($user['whatsapp']) ?></span>
+          <span style="font-weight:700"><?= htmlspecialchars(mask_account($user['whatsapp'] ?? '')) ?></span>
         </div>
       </div>
     </div>
@@ -183,7 +184,7 @@ $_psvg = [
           <span style="color:#888;font-weight:600">Bank</span><span style="font-weight:800"><?= htmlspecialchars($user['bank_name']) ?></span>
         </div>
         <div style="display:flex;justify-content:space-between">
-          <span style="color:#888;font-weight:600">Nomor</span><span style="font-weight:800"><?= htmlspecialchars($user['account_number']) ?></span>
+          <span style="color:#888;font-weight:600">Nomor</span><span style="font-weight:800"><?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?></span>
         </div>
         <div style="display:flex;justify-content:space-between">
           <span style="color:#888;font-weight:600">A/N</span><span style="font-weight:800"><?= htmlspecialchars($user['account_name']) ?></span>
