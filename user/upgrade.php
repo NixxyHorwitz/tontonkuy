@@ -236,7 +236,7 @@ require dirname(__DIR__) . '/partials/header.php';
   <?= csrf_field() ?>
   <input type="hidden" name="membership_id" id="chosen-id" value="">
   <input type="hidden" name="voucher_code" id="applied-voucher-code" value="">
-  <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px">
+  <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:20px">
     <?php $colors = ['#FF6B35','#4E9BFF','#9C6FFF','#4CAF82'];
     foreach ($memberships as $i => $m):
       if ((float)$m['price'] == 0) continue;
@@ -244,36 +244,51 @@ require dirname(__DIR__) . '/partials/header.php';
       $can_afford = (float)$user['balance_dep'] >= (float)$m['price'];
     ?>
     <div class="membership-card" id="card-<?= $m['id'] ?>"
-         style="transition:all .2s">
-      <?php if ($i === 2): ?><div class="membership-card__badge">🔥 Populer</div><?php endif; ?>
-      <div style="display:flex;align-items:center;justify-content:space-between">
-        <div>
-          <div class="membership-card__name" style="color:<?= $color ?>"><?= htmlspecialchars($m['name']) ?></div>
-          <div class="membership-card__price"><?= format_rp((float)$m['price']) ?><span>/<?= $m['duration_days'] ?> hari</span></div>
-        </div>
-        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">
-          <div style="width:44px;height:44px;background:<?= $color ?>22;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px">
+         style="transition:all .2s; padding:14px; position:relative; border:2px solid var(--ink); border-radius:16px; background:#fff; box-shadow:3px 3px 0 var(--ink)">
+      
+      <?php if ($i === 2): ?>
+      <div style="position:absolute;top:-10px;right:-10px;background:#FF6B35;color:#fff;font-size:10px;font-weight:900;padding:4px 8px;border-radius:12px;border:1.5px solid var(--ink);transform:rotate(4deg);z-index:2">🔥 Populer</div>
+      <?php endif; ?>
+      
+      <?php if ((float)$m['original_price'] > 0): ?>
+      <div style="position:absolute;top:-10px;left:-10px;background:#4CAF82;color:#fff;font-size:10px;font-weight:900;padding:4px 8px;border-radius:12px;border:1.5px solid var(--ink);transform:rotate(-4deg);z-index:2">🎉 PROMO DISKON!</div>
+      <?php endif; ?>
+      
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;margin-top:2px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:40px;height:40px;background:<?= $color ?>22;border-radius:10px;border:1.5px solid <?= $color ?>;display:flex;align-items:center;justify-content:center;font-size:20px">
             <?= ['⭐','🥈','🥇','💎'][$i] ?? '⭐' ?>
           </div>
-          <span class="badge badge--<?= $can_afford ? 'success' : 'warn' ?>" style="font-size:10px">
-            <?= $can_afford ? '✓ Saldo Cukup' : '🎟️ Kurang / Gunakan Voucher' ?>
-          </span>
+          <div>
+            <div style="font-size:15px;font-weight:900;color:<?= $color ?>;line-height:1.1;margin-bottom:2px"><?= htmlspecialchars($m['name']) ?></div>
+            <div style="font-size:11px;color:#888;font-weight:700">⏳ <?= $m['duration_days'] ?> Hari</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <?php if ((float)$m['original_price'] > 0): ?>
+          <div style="font-size:11px;color:#999;text-decoration:line-through;margin-bottom:-2px;font-weight:700"><?= format_rp((float)$m['original_price']) ?></div>
+          <?php endif; ?>
+          <div style="font-size:17px;font-weight:900;line-height:1"><?= format_rp((float)$m['price']) ?></div>
         </div>
       </div>
-      <div class="membership-card__features" style="margin-top:10px">
-        <div class="membership-card__feature">📹 <?= $m['watch_limit'] ?>× video per hari</div>
-        <div class="membership-card__feature">⏳ Berlaku <?= $m['duration_days'] ?> hari</div>
-        <?php if ((float)$m['min_wd'] > 0): ?>
-        <div class="membership-card__feature">💸 Min. WD: <?= format_rp((float)$m['min_wd']) ?></div>
-        <?php endif; ?>
-        <div class="membership-card__feature">📤 Max. WD: <?= (float)$m['max_wd'] > 0 ? format_rp((float)$m['max_wd']) : '<span style="color:#4CAF82">Tanpa batas</span>' ?></div>
-        <?php if ($m['description']): ?><div class="membership-card__feature">ℹ️ <?= htmlspecialchars($m['description']) ?></div><?php endif; ?>
+      
+      <div style="background:var(--brand-soft,#f4f6f8);border:1.5px solid #e0e4e8;border-radius:10px;padding:8px 10px;margin-bottom:12px;font-size:11.5px;color:#555;display:grid;grid-template-columns:1fr 1fr;gap:6px;font-weight:600">
+        <div>📹 <?= $m['watch_limit'] ?>× / hari</div>
+        <?php if ((float)$m['min_wd'] > 0): ?><div>💸 Min. WD: <?= format_rp((float)$m['min_wd']) ?></div><?php endif; ?>
+        <div style="grid-column:1/-1">📤 Max. WD: <?= (float)$m['max_wd'] > 0 ? format_rp((float)$m['max_wd']) : '<span style="color:#4CAF82;font-weight:900">Tanpa batas</span>' ?></div>
+        <?php if ($m['description']): ?><div style="grid-column:1/-1;color:#888;font-size:11px;margin-top:2px;font-weight:500">ℹ️ <?= htmlspecialchars($m['description']) ?></div><?php endif; ?>
       </div>
-      <div style="margin-top:12px">
-        <button type="button" class="btn btn--primary btn--full" style="font-size:13px"
+      
+      <div style="display:flex;gap:8px;align-items:center">
+        <button type="button" class="btn btn--primary" style="flex:1;font-size:13px;padding:9px;height:auto;box-shadow:3px 3px 0 var(--ink)"
           onclick="openConfirm(<?= $m['id'] ?>, '<?= htmlspecialchars($m['name'], ENT_QUOTES) ?>', <?= (float)$m['price'] ?>, <?= $m['duration_days'] ?>)">
-          🚀 Upgrade ke <?= htmlspecialchars($m['name']) ?>
+          🚀 Upgrade Sekarang
         </button>
+        <?php if (!$can_afford): ?>
+        <div style="font-size:22px;cursor:help;filter:grayscale(1);opacity:0.6" title="Saldo Kurang / Gunakan Voucher">🎟️</div>
+        <?php else: ?>
+        <div style="font-size:22px;cursor:help" title="Saldo Cukup">✅</div>
+        <?php endif; ?>
       </div>
     </div>
     <?php endforeach; ?>

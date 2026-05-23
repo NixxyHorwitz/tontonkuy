@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'add' || $action === 'edit') {
         $name     = trim($_POST['name'] ?? '');
         $price    = (float)preg_replace('/[^\d.]/', '', $_POST['price'] ?? '0');
+        $orig_price = (float)preg_replace('/[^\d.]/', '', $_POST['original_price'] ?? '0');
         $limit    = (int)($_POST['watch_limit'] ?? 10);
         $days     = (int)($_POST['duration_days'] ?? 30);
         $desc     = trim($_POST['description'] ?? '');
@@ -26,12 +27,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$name) { $flash = 'Nama paket wajib diisi.'; $flashType = 'error'; }
         else {
             if ($action === 'add') {
-                $pdo->prepare("INSERT INTO memberships (name,price,watch_limit,duration_days,description,is_active,sort_order,min_wd,max_wd,wd_hold,allow_edit_bank) VALUES (?,?,?,?,?,?,?,?,?,?,?)")
-                    ->execute([$name, $price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd, $wd_hold, $allow_edit_bank]);
+                $pdo->prepare("INSERT INTO memberships (name,price,original_price,watch_limit,duration_days,description,is_active,sort_order,min_wd,max_wd,wd_hold,allow_edit_bank) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")
+                    ->execute([$name, $price, $orig_price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd, $wd_hold, $allow_edit_bank]);
                 $flash = "Paket {$name} ditambahkan.";
             } else {
-                $pdo->prepare("UPDATE memberships SET name=?,price=?,watch_limit=?,duration_days=?,description=?,is_active=?,sort_order=?,min_wd=?,max_wd=?,wd_hold=?,allow_edit_bank=? WHERE id=?")
-                    ->execute([$name, $price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd, $wd_hold, $allow_edit_bank, $id]);
+                $pdo->prepare("UPDATE memberships SET name=?,price=?,original_price=?,watch_limit=?,duration_days=?,description=?,is_active=?,sort_order=?,min_wd=?,max_wd=?,wd_hold=?,allow_edit_bank=? WHERE id=?")
+                    ->execute([$name, $price, $orig_price, $limit, $days, $desc, $active, $sort, $min_wd, $max_wd, $wd_hold, $allow_edit_bank, $id]);
                 $flash = "Paket berhasil diperbarui."; 
             }
         }
@@ -106,7 +107,12 @@ require __DIR__ . '/partials/header.php';
           </div>
         </div>
         <div style="font-size:16px;font-weight:800;color:<?= $color ?>"><?= htmlspecialchars($p['name']) ?></div>
-        <div style="font-size:22px;font-weight:800;margin:4px 0"><?= (float)$p['price']===0.0?'Gratis':format_rp((float)$p['price']) ?></div>
+        <div style="font-size:22px;font-weight:800;margin:4px 0">
+          <?= (float)$p['price']===0.0?'Gratis':format_rp((float)$p['price']) ?>
+          <?php if ((float)$p['original_price'] > 0): ?>
+          <small style="text-decoration:line-through;color:#888;font-size:14px;margin-left:4px;font-weight:normal"><?= format_rp((float)$p['original_price']) ?></small>
+          <?php endif; ?>
+        </div>
         <div style="font-size:12px;color:#666;margin-bottom:12px"><?= (float)$p['price']>0?'/ '.$p['duration_days'].' hari':'' ?></div>
         <div style="font-size:13px;color:#888;display:flex;flex-direction:column;gap:4px">
           <div>📹 <?= $p['watch_limit'] ?>× video/hari</div>
@@ -198,15 +204,17 @@ function editPlan(p) {
     <div class="row g-2 mb-3">
       <div class="col-6"><label class="c-label">Harga (Rp)</label>
         <input type="number" name="price" class="c-form-control" value="${p.price}" min="0" step="1000"></div>
-      <div class="col-6"><label class="c-label">Limit Tonton/Hari</label>
-        <input type="number" name="watch_limit" class="c-form-control" value="${p.watch_limit}" min="1"></div>
+      <div class="col-6"><label class="c-label">Harga Coret (Rp)</label>
+        <input type="number" name="original_price" class="c-form-control" value="${p.original_price}" min="0" step="1000"></div>
     </div>
     <div class="row g-2 mb-3">
+      <div class="col-6"><label class="c-label">Limit Tonton/Hari</label>
+        <input type="number" name="watch_limit" class="c-form-control" value="${p.watch_limit}" min="1"></div>
       <div class="col-6"><label class="c-label">Durasi (hari)</label>
         <input type="number" name="duration_days" class="c-form-control" value="${p.duration_days}" min="1"></div>
-      <div class="col-6"><label class="c-label">Urutan</label>
-        <input type="number" name="sort_order" class="c-form-control" value="${p.sort_order}"></div>
     </div>
+    <div class="c-form-group mb-3"><label class="c-label">Urutan</label>
+      <input type="number" name="sort_order" class="c-form-control" value="${p.sort_order}"></div>
     <div class="row g-2 mb-3">
       <div class="col-6"><label class="c-label">Min. WD (Rp)</label>
         <input type="number" name="min_wd" class="c-form-control" value="${p.min_wd}" min="0" step="1000"></div>
