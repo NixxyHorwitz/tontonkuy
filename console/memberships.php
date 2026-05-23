@@ -37,8 +37,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     if ($action === 'delete' && $id) {
-        $pdo->prepare("DELETE FROM memberships WHERE id=? AND price>0")->execute([$id]);
-        $flash = 'Paket dihapus.';
+        try {
+            $pdo->prepare("DELETE FROM memberships WHERE id=? AND price>0")->execute([$id]);
+            $flash = 'Paket dihapus.';
+        } catch (\PDOException $e) {
+            if ($e->getCode() == '23000') {
+                $flash = 'Gagal menghapus: masih ada data user atau riwayat order yang terkait dengan paket ini.';
+            } else {
+                $flash = 'Terjadi kesalahan sistem saat menghapus paket.';
+            }
+            $flashType = 'error';
+        }
     }
 }
 
