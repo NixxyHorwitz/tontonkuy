@@ -421,6 +421,7 @@ select.form-control {
 
 /* ── Auth Page ──────────────────────────── */
 .auth-page {
+  width: 100%;
   min-height: 100vh;
   background-color: var(--bg);
   background-image: radial-gradient(var(--ink) 2px, transparent 2px);
