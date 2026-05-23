@@ -172,10 +172,10 @@ $already_claimed = $user['last_plinko_claim'] === $today;
         </button>
       <?php endforeach; ?>
     </div>
-    <form id="form-buy-coins" onsubmit="buyCoins(event)">
+    <form id="form-buy-coins" onsubmit="buyCoins(event)" novalidate>
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="buy_coins">
-      <input type="number" name="qty" id="buy-qty" placeholder="Jumlah koin..." min="10" step="10" required class="lapak-input">
+      <input type="number" name="qty" id="buy-qty" placeholder="Jumlah koin..." min="10" step="1" required class="lapak-input">
       <div id="buy-summary-box" class="lapak-summary lapak-summary--buy">
         <div class="lapak-summary__label">💳 Total Dibayar</div>
         <div id="buy-summary-val" class="lapak-summary__val"></div>
@@ -197,7 +197,7 @@ $already_claimed = $user['last_plinko_claim'] === $today;
         </button>
       <?php endforeach; ?>
     </div>
-    <form id="form-sell-coins" onsubmit="sellCoins(event)">
+    <form id="form-sell-coins" onsubmit="sellCoins(event)" novalidate>
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="sell_coins">
       <input type="number" name="qty" id="sell-qty" placeholder="Jumlah koin dijual..." min="1" required class="lapak-input">
@@ -309,7 +309,10 @@ function claimDaily(e){
 
 function buyCoins(e){
   e.preventDefault();
-  const btn=document.getElementById('btn-buy'), qty=document.getElementById('buy-qty').value;
+  const btn=document.getElementById('btn-buy'), qtyStr=document.getElementById('buy-qty').value;
+  if(!qtyStr){ nToast('Masukkan jumlah koin!', 'error'); return; }
+  const qty = parseInt(qtyStr);
+  if(qty < 10){ nToast('Minimal pembelian 10 koin!', 'error'); return; }
   btn.disabled=true; btn.innerText='Memproses...';
   fetch('',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=buy_coins&qty='+qty+'&_csrf='+encodeURIComponent(_csrf)})
   .then(r=>r.json()).then(res=>{
@@ -321,7 +324,10 @@ function buyCoins(e){
 
 function sellCoins(e){
   e.preventDefault();
-  const btn=document.getElementById('btn-sell'), qty=document.getElementById('sell-qty').value;
+  const btn=document.getElementById('btn-sell'), qtyStr=document.getElementById('sell-qty').value;
+  if(!qtyStr){ nToast('Masukkan jumlah koin!', 'error'); return; }
+  const qty = parseInt(qtyStr);
+  if(qty < 1){ nToast('Minimal penjualan 1 koin!', 'error'); return; }
   btn.disabled=true; btn.innerText='Memproses...';
   fetch('',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'action=sell_coins&qty='+qty+'&_csrf='+encodeURIComponent(_csrf)})
   .then(r=>r.json()).then(res=>{
