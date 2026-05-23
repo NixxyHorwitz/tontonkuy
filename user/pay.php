@@ -40,7 +40,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
     $dep2 = $pdo->prepare("SELECT * FROM deposits WHERE id=?"); $dep2->execute([$dep_id]); $dep = $dep2->fetch();
 }
 
-// AJAX: poll deposit status (for auto-confirm mode)
+// Handle cancel deposit by user (unlocks after 1 minute)
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cancel_deposit') {
+    $created_time = strtotime($dep['created_at']);
+    if (time() - $created_time >= 60) {
+        $pdo->prepare("UPDATE deposits SET status='rejected', admin_note='Dibatalkan oleh Pengguna' WHERE id=? AND user_id=? AND status='pending'")
+            ->execute([$dep_id, $user['id']]);
+        redirect('/deposit');
+    } else {
+        $flash = 'Harap tunggu 1 menit sejak deposit dibuat sebelum membatalkannya.'; $flashType = 'error';
+    }
+}
+
+// AJAX: poll deposit status (for both modes)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check_status') {
     header('Content-Type: application/json');
     $st = $pdo->prepare("SELECT status FROM deposits WHERE id=? AND user_id=?");
@@ -49,6 +61,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check
     echo json_encode(['confirmed' => ($row && $row['status'] === 'confirmed')]);
     exit;
 }
+
+// Calculate remaining seconds for 1-minute cancel cooldown
+$created_time = strtotime($dep['created_at']);
+$seconds_left = max(0, 60 - (time() - $created_time));
 
 $qr_url = !empty($qris_str)
     ? 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' . urlencode($qris_str)
@@ -222,38 +238,7 @@ $qr_url = !empty($qris_str)
     </div>
 
     <?php if ($confirm_mode === 'auto'): ?>
-    <script>
-    let secs = 300;
-    const timerEl  = document.getElementById('auto-timer');
-    const labelEl  = document.getElementById('strip-label');
-    const dotEl    = document.getElementById('strip-dot');
-    const countdown = setInterval(() => {
-      secs--;
-      const m = Math.floor(secs / 60), s = secs % 60;
-      if (timerEl) timerEl.textContent = m + ':' + String(s).padStart(2,'0');
-      if (secs <= 0) {
-        clearInterval(countdown);
-        if (timerEl) timerEl.textContent = '0:00';
-        if (labelEl) labelEl.textContent = '⚠️ Waktu habis — cek riwayat atau hubungi admin';
-        if (dotEl)   { dotEl.style.background = '#f97316'; dotEl.style.animation = 'none'; }
-      }
-    }, 1000);
-    const pollStatus = () => {
-      fetch('', { method:'POST',
-        headers:{'Content-Type':'application/x-www-form-urlencoded'},
-        body:'_csrf=<?= csrf_token() ?>&action=check_status'
-      }).then(r=>r.json()).then(d=>{
-        if (d.confirmed) {
-          clearInterval(countdown); clearInterval(pollTimer);
-          if (timerEl) timerEl.textContent = '✓';
-          if (labelEl) labelEl.textContent = '✅ Dikonfirmasi! Mengalihkan...';
-          if (dotEl)   { dotEl.style.background='#22c55e'; dotEl.style.animation='none'; }
-          setTimeout(()=>location.href='/history?tab=deposit', 1800);
-        }
-      }).catch(()=>{});
-    };
-    const pollTimer = setInterval(pollStatus, 10000);
-    </script>
+      <!-- Auto countdown is handled in JS globally below -->
     <?php else: ?>
     <!-- MANUAL: Upload bukti -->
     <div class="upload-card">
@@ -273,6 +258,86 @@ $qr_url = !empty($qris_str)
       </div>
     </div>
     <?php endif; ?>
+
+    <!-- Cancel button (unlocked after 1 minute of creation) -->
+    <div style="margin-top: 14px;">
+      <form method="POST" id="cancel-form">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="cancel_deposit">
+        <button type="submit" id="btn-cancel-dep" class="btn btn--ghost btn--full" style="border: 2.5px solid #ef4444; color: #ef4444; font-weight: 800; background: transparent; box-shadow: 4px 4px 0 var(--ink);">
+          ❌ Batalkan Deposit
+        </button>
+      </form>
+    </div>
+
+    <!-- Unified Real-time Polling & Cooldown Script -->
+    <script>
+    // ── 1. Global Real-time Polling (every 5 seconds) ──
+    const pollStatus = () => {
+      fetch('', { method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'_csrf=<?= csrf_token() ?>&action=check_status'
+      }).then(r=>r.json()).then(d=>{
+        if (d.confirmed) {
+          if (typeof countdown !== 'undefined') clearInterval(countdown);
+          clearInterval(pollTimer);
+          
+          const timerEl  = document.getElementById('auto-timer');
+          const labelEl  = document.getElementById('strip-label');
+          const dotEl    = document.getElementById('strip-dot');
+          if (timerEl) timerEl.textContent = '✓';
+          if (labelEl) labelEl.textContent = '✅ Dikonfirmasi! Mengalihkan...';
+          if (dotEl)   { dotEl.style.background='#22c55e'; dotEl.style.animation='none'; }
+          
+          setTimeout(()=>location.href='/history?tab=deposit', 1500);
+        }
+      }).catch(()=>{});
+    };
+    const pollTimer = setInterval(pollStatus, 5000);
+
+    // ── 2. Auto-Confirm Countdown (If in Auto Mode) ──
+    <?php if ($confirm_mode === 'auto'): ?>
+    let secs = 300;
+    const timerEl  = document.getElementById('auto-timer');
+    const labelEl  = document.getElementById('strip-label');
+    const dotEl    = document.getElementById('strip-dot');
+    const countdown = setInterval(() => {
+      secs--;
+      const m = Math.floor(secs / 60), s = secs % 60;
+      if (timerEl) timerEl.textContent = m + ':' + String(s).padStart(2,'0');
+      if (secs <= 0) {
+        clearInterval(countdown);
+        if (timerEl) timerEl.textContent = '0:00';
+        if (labelEl) labelEl.textContent = '⚠️ Waktu habis — cek riwayat atau hubungi admin';
+        if (dotEl)   { dotEl.style.background = '#f97316'; dotEl.style.animation = 'none'; }
+      }
+    }, 1000);
+    <?php endif; ?>
+
+    // ── 3. Cancel Button Countdown & Logic ──
+    let cancelSecs = <?= $seconds_left ?>;
+    const cancelBtn = document.getElementById('btn-cancel-dep');
+    if (cancelBtn) {
+      if (cancelSecs > 0) {
+        cancelBtn.disabled = true;
+        cancelBtn.style.opacity = '0.5';
+        cancelBtn.style.cursor = 'not-allowed';
+        cancelBtn.textContent = '❌ Batalkan Deposit (Tunggu ' + cancelSecs + 's)';
+        
+        const cancelInterval = setInterval(() => {
+          cancelSecs--;
+          cancelBtn.textContent = '❌ Batalkan Deposit (Tunggu ' + cancelSecs + 's)';
+          if (cancelSecs <= 0) {
+            clearInterval(cancelInterval);
+            cancelBtn.disabled = false;
+            cancelBtn.style.opacity = '1';
+            cancelBtn.style.cursor = 'pointer';
+            cancelBtn.textContent = '❌ Batalkan Deposit';
+          }
+        }, 1000);
+      }
+    }
+    </script>
     <?php endif; ?>
   </div>
 </div>
