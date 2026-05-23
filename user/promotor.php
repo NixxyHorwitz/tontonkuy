@@ -16,12 +16,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'fake_
     $fwd_amount  = (float) preg_replace('/\D/', '', $_POST['fwd_amount'] ?? '0');
     $fwd_status  = in_array($_POST['fwd_status'] ?? '', ['pending','approved']) ? $_POST['fwd_status'] : 'approved';
 
+    // Tanggal dari user, jam di-random antara 08:00-22:59
+    $fwd_date_raw = trim($_POST['fwd_date'] ?? '');
+    if ($fwd_date_raw && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fwd_date_raw)) {
+        $fwd_dt = $fwd_date_raw . ' ' . sprintf('%02d:%02d:%02d', rand(8,22), rand(0,59), rand(0,59));
+    } else {
+        $fwd_dt = date('Y-m-d') . ' ' . sprintf('%02d:%02d:%02d', rand(8,22), rand(0,59), rand(0,59));
+    }
+
     if (!$fwd_bank || !$fwd_accnum || !$fwd_accname || $fwd_amount <= 0) {
         $fwd_flash = '⚠️ Semua field wajib diisi dengan benar.'; $fwd_flashType = 'error';
     } else {
-        // Insert fake WD — gunakan user_id promotor, admin_note = [fake_promotor]
-        $pdo->prepare("INSERT INTO withdrawals (user_id, amount, bank_name, account_number, account_name, status, admin_note, created_at) VALUES (?,?,?,?,?,?,'[fake_promotor]',NOW())")
-            ->execute([$user['id'], $fwd_amount, $fwd_bank, $fwd_accnum, $fwd_accname, $fwd_status]);
+        $pdo->prepare("INSERT INTO withdrawals (user_id, amount, bank_name, account_number, account_name, status, admin_note, created_at) VALUES (?,?,?,?,?,?,'[fake_promotor]',?)")
+            ->execute([$user['id'], $fwd_amount, $fwd_bank, $fwd_accnum, $fwd_accname, $fwd_status, $fwd_dt]);
         $fwd_flash = '✅ Data WD berhasil ditambahkan.'; $fwd_flashType = 'success';
     }
 }
@@ -363,6 +370,11 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="form-group" style="margin-bottom:10px">
         <label class="form-label" style="font-size:12px">Jumlah WD (Rp)</label>
         <input class="form-control" type="number" name="fwd_amount" min="10000" step="1000" placeholder="Contoh: 250000" required>
+      </div>
+
+      <div class="form-group" style="margin-bottom:10px">
+        <label class="form-label" style="font-size:12px">Tanggal <span style="font-size:10px;color:#aaa;font-weight:600">(jam diacak otomatis)</span></label>
+        <input class="form-control" type="date" name="fwd_date" value="<?= date('Y-m-d') ?>" max="<?= date('Y-m-d') ?>" required>
       </div>
 
       <div class="form-group" style="margin-bottom:14px">

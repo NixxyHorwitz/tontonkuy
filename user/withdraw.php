@@ -235,11 +235,19 @@ require dirname(__DIR__) . '/partials/header.php';
           </div>
           <div style="font-size:13px;font-weight:700">
             <?= htmlspecialchars($user['bank_name']) ?><br>
-            <?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?><br>
+            <span style="display:inline-flex;align-items:center;gap:6px">
+              <span id="wd-accnum-display"><?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?></span>
+              <button type="button" id="wd-accnum-toggle" onclick="toggleAccNum()"
+                title="Tampilkan/sembunyikan nomor"
+                style="background:none;border:none;cursor:pointer;padding:0;line-height:1;font-size:15px;color:#888;flex-shrink:0">
+                👁
+              </button>
+            </span><br>
             <?= htmlspecialchars($user['account_name']) ?>
           </div>
         </div>
       </div>
+
       <?php else: ?>
       <div class="alert alert--warn" style="margin-bottom:12px;font-size:12px">⚠️ Harap isi data rekening bank. Data ini tidak dapat diubah setelah diisi!</div>
       <div class="form-group" style="margin-bottom:8px">
@@ -280,6 +288,23 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php endif; ?>
 
 <script>
+// ── Toggle show/hide account number ──
+const _maskedNum = '<?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?>';
+const _realNum   = '<?= htmlspecialchars($user['account_number'] ?? '') ?>';
+let _numVisible  = false;
+function toggleAccNum() {
+  _numVisible = !_numVisible;
+  const el  = document.getElementById('wd-accnum-display');
+  const btn = document.getElementById('wd-accnum-toggle');
+  if (el)  el.textContent = _numVisible ? _realNum : _maskedNum;
+  if (btn) { btn.style.opacity = _numVisible ? '1' : '0.5'; btn.title = _numVisible ? 'Sembunyikan nomor' : 'Tampilkan nomor'; }
+}
+// Init opacity
+document.addEventListener('DOMContentLoaded', () => {
+  const b = document.getElementById('wd-accnum-toggle');
+  if (b) b.style.opacity = '0.5';
+});
+
 (function(){
   const form    = document.getElementById('wd-form');
   const btn     = document.getElementById('wd-submit-btn');
