@@ -82,115 +82,117 @@ $qr_url = !empty($qris_str)
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'].'/assets/css/app.css') ?: time() ?>">
 <style>
-:root { --pay-radius: 12px; }
-.pay-wrap { min-height:100dvh; display:flex; flex-direction:column; background:var(--bg); }
+:root{--pay-radius:10px;}
+.pay-wrap{min-height:100dvh;display:flex;flex-direction:column;background:var(--bg);}
 
-/* ── Topbar ── */
-.pay-topbar {
-  background:var(--white); border-bottom:2px solid var(--ink);
-  padding:0 14px; height:48px;
-  display:flex; align-items:center; justify-content:space-between;
-  position:sticky; top:0; z-index:100;
+/* topbar */
+.pay-topbar{
+  background:var(--white);border-bottom:2px solid var(--ink);
+  padding:0 14px;height:46px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:100;
 }
-.pay-topbar__back {
-  display:flex; align-items:center; gap:4px;
-  color:var(--ink); text-decoration:none; font-weight:800; font-size:13px;
-}
-.pay-topbar__title { font-size:13px; font-weight:900; }
-.pay-topbar__amt {
-  font-size:13px; font-weight:900;
-  background:var(--yellow); border:1.5px solid var(--ink);
-  border-radius:6px; padding:3px 9px;
-}
+.pay-topbar__back{display:flex;align-items:center;gap:4px;color:var(--ink);text-decoration:none;font-weight:800;font-size:13px;}
+.pay-topbar__title{font-size:12px;font-weight:900;color:#666;}
+.pay-topbar__amt{font-size:12px;font-weight:900;background:var(--yellow);border:1.5px solid var(--ink);border-radius:6px;padding:2px 8px;}
 
-/* ── Body ── */
-.pay-body { padding:14px; flex:1; display:flex; flex-direction:column; gap:12px; }
+/* body */
+.pay-body{padding:12px;flex:1;display:flex;flex-direction:column;gap:10px;}
 
-/* ── Amount Header ── */
-.pay-amthdr {
-  text-align:center; padding:14px 12px 10px;
-  background:var(--mint); border:2px solid var(--ink);
-  border-radius:var(--pay-radius); 
-}
-.pay-amthdr__label { font-size:11px; font-weight:700; color:#666; margin-bottom:2px; }
-.pay-amthdr__val   { font-size:30px; font-weight:900; letter-spacing:-1px; line-height:1; }
-.pay-amthdr__id    { font-size:10px; color:#888; margin-top:3px; }
+/* auto strip */
+.auto-strip{display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1.5px solid #4ade80;border-radius:8px;padding:7px 11px;}
+.auto-strip__dot{width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0;animation:blink .9s ease-in-out infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
+.auto-strip__lbl{font-size:11px;font-weight:700;flex:1;color:#166534;}
+.auto-strip__time{font-size:12px;font-weight:900;color:#166534;flex-shrink:0;}
 
-/* ── Auto strip ── */
-.auto-strip {
-  display:flex; align-items:center; gap:8px;
-  background:#f0fdf4; border:1.5px solid #4ade80;
-  border-radius:8px; padding:8px 12px;
-}
-.auto-strip__dot {
-  width:8px; height:8px; border-radius:50%;
-  background:#22c55e; flex-shrink:0;
-  animation:blink .9s ease-in-out infinite;
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
-.auto-strip__lbl { font-size:11px; font-weight:700; flex:1; color:#166534; }
-.auto-strip__time { font-size:13px; font-weight:900; color:#166534; flex-shrink:0; }
-
-/* ── QR Card ── */
-.qr-card {
-  background:#fff; border:2px solid var(--ink);
-  border-radius:var(--pay-radius); padding:16px 12px 12px;
+/* QR centre */
+.qr-centre{
+  background:#fff;border:2px solid var(--ink);
+  border-radius:var(--pay-radius);
+  padding:16px 12px 12px;
   text-align:center;
 }
-.qr-card img {
-  width:170px; height:170px;
-  border:2px solid var(--ink); border-radius:10px;
-  display:block; margin:0 auto 10px;
-  padding:8px; background:#fff;
+.qr-centre img{
+  width:180px;height:180px;
+  border:2px solid var(--ink);border-radius:10px;
+  display:block;margin:0 auto 10px;
+  padding:8px;background:#fff;
 }
-.qr-card__amt  { font-size:18px; font-weight:900; margin-bottom:2px; }
-.qr-card__note { font-size:11px; color:#777; font-weight:600; margin-bottom:10px; }
-.qr-card__btns { display:flex; gap:8px; }
-.qr-card__btns > * { flex:1; }
+.qr-centre__amt{font-size:20px;font-weight:900;letter-spacing:-.5px;margin-bottom:2px;}
+.qr-centre__id{font-size:11px;font-weight:700;color:#999;}
+.qr-centre__note{font-size:11px;color:#888;font-weight:600;margin-bottom:10px;}
+.qr-centre__row{display:flex;gap:8px;}
+.qr-btn{
+  flex:1;display:inline-flex;align-items:center;justify-content:center;
+  padding:7px 4px;font-size:12px;font-weight:800;
+  border:2px solid var(--ink);border-radius:7px;cursor:pointer;
+  text-decoration:none;color:var(--ink);
+  transition:opacity .15s;
+}
+.qr-btn:active{opacity:.7;}
+.qr-btn--dl{background:var(--yellow);box-shadow:2px 2px 0 var(--ink);}
+.qr-btn--open{background:var(--white);}
 
-/* ── Steps ── */
-.steps {
-  background:var(--yellow); border:1.5px solid var(--ink);
-  border-radius:var(--pay-radius); padding:12px;
-  display:flex; flex-direction:column; gap:7px;
+/* steps pills */
+.steps-pills{
+  display:flex;flex-direction:column;gap:5px;
+  background:var(--yellow);border:1.5px solid var(--ink);
+  border-radius:var(--pay-radius);padding:10px 12px;
 }
-.steps__title { font-size:12px; font-weight:900; margin-bottom:2px; }
-.step { display:flex; align-items:center; gap:8px; }
-.step__n {
-  width:22px; height:22px; flex-shrink:0;
-  background:#fff; border:1.5px solid var(--ink); border-radius:50%;
-  font-size:11px; font-weight:900;
-  display:flex; align-items:center; justify-content:center;
+.pill{display:flex;align-items:center;gap:8px;}
+.pill__n{
+  width:20px;height:20px;flex-shrink:0;
+  background:#fff;border:1.5px solid var(--ink);border-radius:50%;
+  font-size:10px;font-weight:900;
+  display:flex;align-items:center;justify-content:center;
 }
-.step__t { font-size:12px; font-weight:700; line-height:1.3; }
+.pill span:last-child{font-size:11px;font-weight:700;line-height:1.3;}
 
-/* ── Upload card ── */
-.upload-card {
-  background:#fff; border:2px solid var(--ink);
-  border-radius:var(--pay-radius); padding:14px;
-}
-.upload-card__title { font-size:13px; font-weight:900; margin-bottom:10px; }
+/* upload */
+.upload-card{background:#fff;border:2px solid var(--ink);border-radius:var(--pay-radius);padding:12px;}
 
-/* ── Action buttons ── */
-.pay-actions { display:flex; flex-direction:column; gap:8px; }
+/* actions */
+.pay-actions{display:flex;flex-direction:column;gap:7px;}
 
-/* ── Confirmed ── */
-.pay-confirmed {
-  text-align:center; padding:28px 16px;
-  background:var(--lime); border:2px solid var(--ink);
-  border-radius:var(--pay-radius);
+/* confirmed */
+.pay-confirmed{text-align:center;padding:24px 14px;background:var(--lime);border:2px solid var(--ink);border-radius:var(--pay-radius);}
+
+/* toast */
+#toast-container{
+  position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+  z-index:9999;display:flex;flex-direction:column;align-items:center;gap:7px;
+  pointer-events:none;width:calc(100% - 28px);max-width:340px;
 }
+.nb-toast{
+  display:flex;align-items:center;gap:9px;
+  padding:10px 13px;
+  border:2.5px solid var(--ink);border-radius:9px;
+  box-shadow:3px 3px 0 var(--ink);
+  font-size:13px;font-weight:800;color:var(--ink);
+  pointer-events:auto;width:100%;
+  animation:toastIn .2s cubic-bezier(.2,.8,.4,1.2) both;
+}
+.nb-toast.out{animation:toastOut .18s ease forwards;}
+.nb-toast--success{background:#d1fae5;}
+.nb-toast--error{background:#fee2e2;}
+.nb-toast--warn{background:#fff3cd;}
+.nb-toast__icon{font-size:15px;flex-shrink:0;}
+.nb-toast__msg{flex:1;line-height:1.3;}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(6px)}}
 </style>
 </head>
 <body>
+<div id="toast-container"></div>
 <div class="pay-wrap">
 
-  <div class="pay-topbar">
+<div class="pay-topbar">
     <a href="/deposit" class="pay-topbar__back">
       <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       Kembali
     </a>
-    <div class="pay-topbar__title">📱 Bayar QRIS</div>
+    <div class="pay-topbar__title">📱 QRIS</div>
     <div class="pay-topbar__amt"><?= format_rp($amount) ?></div>
   </div>
 
@@ -201,97 +203,83 @@ $qr_url = !empty($qris_str)
 
     <?php if ($dep['status'] === 'confirmed'): ?>
     <div class="pay-confirmed">
-      <div style="font-size:42px;margin-bottom:8px">✅</div>
-      <div style="font-size:18px;font-weight:900;margin-bottom:6px">Pembayaran Dikonfirmasi!</div>
-      <div style="font-size:12px;color:#555;margin-bottom:16px">Saldo deposit kamu sudah ditambahkan.</div>
+      <div style="font-size:40px;margin-bottom:6px">✅</div>
+      <div style="font-size:17px;font-weight:900;margin-bottom:4px">Pembayaran Dikonfirmasi!</div>
+      <div style="font-size:11px;color:#555;margin-bottom:14px">Saldo deposit kamu sudah ditambahkan.</div>
       <a href="/home" class="btn btn--primary btn--full">🏠 Ke Beranda</a>
     </div>
 
     <?php elseif ($dep['proof_image']): ?>
-    <div class="alert alert--info" style="margin:0;font-size:12px">⏳ Bukti sudah diupload, menunggu konfirmasi admin. Biasanya 1–24 jam.</div>
-    <a href="/history" class="btn btn--ghost btn--full" style="font-size:13px">📜 Lihat Riwayat</a>
+    <div style="text-align:center;padding:20px 0">
+      <div style="font-size:32px;margin-bottom:8px">⏳</div>
+      <div style="font-size:13px;font-weight:800;margin-bottom:4px">Bukti Sudah Diupload</div>
+      <div style="font-size:11px;color:#777;margin-bottom:16px">Menunggu konfirmasi admin. Biasanya 1–24 jam.</div>
+      <a href="/history" class="btn btn--ghost btn--full" style="font-size:12px">📜 Lihat Riwayat</a>
+    </div>
 
     <?php else: ?>
-
-    <!-- Amount header -->
-    <div class="pay-amthdr">
-      <div class="pay-amthdr__label">Total Pembayaran</div>
-      <div class="pay-amthdr__val"><?= format_rp($amount) ?></div>
-      <div class="pay-amthdr__id">Deposit #<?= $dep_id ?></div>
-    </div>
 
     <!-- Auto-confirm strip -->
     <?php if ($confirm_mode === 'auto'): ?>
     <div class="auto-strip">
       <div class="auto-strip__dot" id="strip-dot"></div>
-      <div class="auto-strip__lbl" id="strip-label">⚡ Menunggu konfirmasi otomatis…</div>
+      <div class="auto-strip__lbl" id="strip-label">⚡ Menunggu konfirmasi…</div>
       <div class="auto-strip__time" id="auto-timer">5:00</div>
     </div>
     <?php endif; ?>
 
-    <!-- QR Code -->
+    <!-- QR Centre block -->
     <?php if ($qr_url): ?>
-    <div class="qr-card">
-      <img id="qr-img" src="<?= htmlspecialchars($qr_url) ?>" alt="QRIS <?= format_rp($amount) ?>" crossorigin="anonymous">
-      <div class="qr-card__amt"><?= format_rp($amount) ?></div>
-      <div class="qr-card__note">Scan dengan aplikasi bank / dompet digital apapun</div>
-      <div class="qr-card__btns">
-        <button type="button" onclick="downloadQR()" class="btn btn--secondary btn--sm" style="font-size:12px;font-weight:800">
-          ⬇️ Unduh QR
-        </button>
-        <a href="<?= htmlspecialchars($qr_url) ?>" target="_blank" class="btn btn--ghost btn--sm" style="font-size:12px;font-weight:800;text-align:center">
-          🔗 Buka
-        </a>
+    <div class="qr-centre">
+      <img id="qr-img" src="<?= htmlspecialchars($qr_url) ?>" alt="QRIS" crossorigin="anonymous">
+      <div class="qr-centre__amt"><?= format_rp($amount) ?> <span class="qr-centre__id">#<?= $dep_id ?></span></div>
+      <div class="qr-centre__note">Scan dengan app bank / dompet digital</div>
+      <div class="qr-centre__row">
+        <button onclick="downloadQR()" class="qr-btn qr-btn--dl">⬇ Unduh QR</button>
+        <a href="<?= htmlspecialchars($qr_url) ?>" target="_blank" class="qr-btn qr-btn--open">↗ Buka</a>
       </div>
     </div>
     <?php else: ?>
     <div class="alert alert--warn" style="margin:0;font-size:12px">QRIS belum dikonfigurasi. Hubungi admin.</div>
     <?php endif; ?>
 
-    <!-- Steps -->
-    <div class="steps">
-      <div class="steps__title">📋 Cara Bayar</div>
-      <div class="step"><div class="step__n">1</div><div class="step__t">Buka app bank atau e-wallet (GoPay, OVO, DANA, dll)</div></div>
-      <div class="step"><div class="step__n">2</div><div class="step__t">Scan QR di atas — nominal sudah otomatis terisi</div></div>
-      <div class="step"><div class="step__n">3</div><div class="step__t">Konfirmasi pembayaran di aplikasi kamu</div></div>
+    <!-- Steps inline pills -->
+    <div class="steps-pills">
+      <div class="pill"><span class="pill__n">1</span><span>Buka app bank/e-wallet</span></div>
+      <div class="pill"><span class="pill__n">2</span><span>Scan QR, nominal otomatis terisi</span></div>
+      <div class="pill"><span class="pill__n">3</span><span>Konfirmasi di app kamu</span></div>
       <?php if ($confirm_mode === 'manual'): ?>
-      <div class="step"><div class="step__n">4</div><div class="step__t">Screenshot bukti &amp; upload di bawah ini</div></div>
+      <div class="pill"><span class="pill__n">4</span><span>Upload bukti di bawah</span></div>
       <?php else: ?>
-      <div class="step"><div class="step__n">4</div><div class="step__t">Tunggu — saldo otomatis masuk dalam hitungan menit ⚡</div></div>
+      <div class="pill"><span class="pill__n">4</span><span>Tunggu — saldo masuk otomatis ⚡</span></div>
       <?php endif; ?>
     </div>
 
-    <!-- Upload bukti (manual mode only) -->
+    <!-- Upload bukti (manual only) -->
     <?php if ($confirm_mode !== 'auto'): ?>
     <div class="upload-card">
-      <div class="upload-card__title">📸 Upload Bukti Pembayaran</div>
+      <div style="font-size:12px;font-weight:900;margin-bottom:8px">📸 Upload Bukti</div>
       <form method="POST" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="upload_proof">
-        <div class="form-group" style="margin-bottom:10px">
-          <input class="form-control" type="file" name="proof" accept="image/*" style="padding:8px;font-size:12px" required>
-          <div class="form-hint" style="font-size:11px">Screenshot notifikasi / struk pembayaran QRIS</div>
-        </div>
-        <button type="submit" class="btn btn--primary btn--full" style="font-size:13px">📤 Upload &amp; Konfirmasi</button>
+        <input class="form-control" type="file" name="proof" accept="image/*" style="padding:7px;font-size:12px;margin-bottom:8px" required>
+        <button type="submit" class="btn btn--primary btn--full" style="font-size:12px">📤 Upload &amp; Konfirmasi</button>
       </form>
-      <div style="text-align:center;margin-top:10px">
-        <a href="/history" style="font-size:12px;color:#999;font-weight:700">Nanti saja → Lihat Riwayat</a>
+      <div style="text-align:center;margin-top:8px">
+        <a href="/history" style="font-size:11px;color:#aaa;font-weight:700">Nanti saja → Riwayat</a>
       </div>
     </div>
     <?php endif; ?>
 
-    <!-- Action buttons -->
+    <!-- Actions -->
     <div class="pay-actions">
-      <button type="button" id="btn-check-status" onclick="manualCheckStatus()"
-              class="btn btn--primary btn--full" style="font-size:13px;font-weight:800">
-        🔄 Cek Status Pembayaran
+      <button id="btn-check-status" onclick="manualCheckStatus()" class="btn btn--primary btn--full" style="font-size:13px;font-weight:800">
+        🔄 Cek Status
       </button>
-      <form method="POST" id="cancel-form" style="margin:0">
+      <form method="POST" style="margin:0">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="cancel_deposit">
-        <button type="submit" id="btn-cancel-dep"
-                class="btn btn--ghost btn--full"
-                style="font-size:12px;font-weight:800;border-color:#ef4444;color:#ef4444;width:100%">
+        <button id="btn-cancel-dep" type="submit" class="btn btn--ghost btn--full" style="font-size:11px;font-weight:800;border-color:#ef4444;color:#ef4444;width:100%">
           ❌ Batalkan Deposit
         </button>
       </form>
@@ -302,6 +290,22 @@ $qr_url = !empty($qris_str)
     const DEP_ID   = <?= $dep_id ?>;
     const CSRF_TOK = '<?= csrf_token() ?>';
     let isChecking = false;
+
+    // ── Neobrutalism Toast ──
+    function toast(msg, type = 'success', duration = 3000) {
+      const icons = { success:'✅', error:'❌', warn:'⚠️' };
+      const c = document.getElementById('toast-container');
+      const el = document.createElement('div');
+      el.className = 'nb-toast nb-toast--' + type;
+      el.innerHTML = '<span class="nb-toast__icon">' + icons[type] + '</span><span class="nb-toast__msg">' + msg + '</span>';
+      c.appendChild(el);
+      const remove = () => {
+        el.classList.add('out');
+        setTimeout(() => el.remove(), 200);
+      };
+      el.addEventListener('click', remove);
+      setTimeout(remove, duration);
+    }
 
     // ── Download QR via blob (cross-origin safe) ──
     async function downloadQR() {
@@ -370,15 +374,16 @@ $qr_url = !empty($qris_str)
         btn.innerHTML = orig;
         if (d.confirmed) {
           confirmAndRedirect();
+          toast('Pembayaran Sukses', 'success');
         } else {
-          alert('❌ Pembayaran belum terdeteksi. Pastikan nominal sudah sesuai (termasuk kode unik jika ada).');
+          toast('Pembayaran belum diterima', 'error');
         }
       })
       .catch(() => {
         isChecking = false;
         btn.disabled = false;
         btn.innerHTML = orig;
-        alert('⚠️ Gagal menghubungi server. Coba lagi.');
+        toast('Gagal menghubungi server', 'warn');
       });
     };
 
