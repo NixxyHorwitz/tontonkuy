@@ -336,14 +336,22 @@ function send_telegram_notif(PDO $pdo, string $message, array $inline_keyboard =
 /** Track a page view (fire-and-forget, safe to fail) */
 function track_pageview(PDO $pdo, string $path): void {
     try {
-        $ip      = $_SERVER['REMOTE_ADDR'] ?? '';
-        $ip_hash = hash('sha256', $ip . date('Y-m-d')); // rotates daily for privacy
-        $ref     = substr($_SERVER['HTTP_REFERER'] ?? '', 0, 500);
-        $ua      = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 300);
+        $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+        if (isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+            $ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
+        } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+            $ip = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
+        } elseif (isset($_SERVER['HTTP_CLIENT_IP'])) {
+            $ip = $_SERVER['HTTP_CLIENT_IP'];
+        }
+        $ip = trim($ip);
+        
+        $ref = substr($_SERVER['HTTP_REFERER'] ?? '', 0, 500);
+        $ua  = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 300);
         // Skip bots
         if (preg_match('/bot|crawl|spider|slurp|baidu|bing|google/i', $ua)) return;
         $pdo->prepare("INSERT INTO page_views (path,ip_hash,referrer,user_agent) VALUES (?,?,?,?)")
-            ->execute([$path, $ip_hash, $ref, $ua]);
+            ->execute([$path, $ip, $ref, $ua]);
     } catch (\Throwable) {
         // Silently fail — never break user experience for analytics
     }

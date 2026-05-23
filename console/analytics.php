@@ -3,6 +3,31 @@ declare(strict_types=1);
 require_once __DIR__ . '/auth.php';
 staff_require('analytics');
 
+// Helper: Parse User Agent into readable text
+function parse_ua_short(?string $ua): string {
+    if (empty($ua)) return 'Unknown Device';
+    
+    // Detect OS
+    $os = 'Unknown OS';
+    if (stripos($ua, 'windows nt 10.0') !== false) $os = 'Windows 10/11';
+    elseif (stripos($ua, 'windows nt 6.1') !== false) $os = 'Windows 7';
+    elseif (stripos($ua, 'iphone') !== false) $os = 'iPhone';
+    elseif (stripos($ua, 'ipad') !== false) $os = 'iPad';
+    elseif (stripos($ua, 'macintosh') !== false || stripos($ua, 'mac os x') !== false) $os = 'macOS';
+    elseif (stripos($ua, 'android') !== false) $os = 'Android';
+    elseif (stripos($ua, 'linux') !== false) $os = 'Linux';
+    
+    // Detect Browser
+    $browser = 'Unknown Browser';
+    if (stripos($ua, 'edg/') !== false) $browser = 'Edge';
+    elseif (stripos($ua, 'chrome') !== false) $browser = 'Chrome';
+    elseif (stripos($ua, 'safari') !== false) $browser = 'Safari';
+    elseif (stripos($ua, 'firefox') !== false) $browser = 'Firefox';
+    elseif (stripos($ua, 'opera') !== false || stripos($ua, 'opr/') !== false) $browser = 'Opera';
+    
+    return "{$browser} on {$os}";
+}
+
 $range = (int)($_GET['range'] ?? 7);
 $range = in_array($range, [7,14,30]) ? $range : 7;
 
@@ -38,11 +63,21 @@ try {
          GROUP BY ref ORDER BY cnt DESC LIMIT 8"
     )->fetchAll(PDO::FETCH_ASSOC);
 
+    // Detailed Real IP Traffic Today
+    $today_ips = $pdo->query(
+        "SELECT ip_hash as ip, COUNT(*) as hits, MAX(created_at) as last_seen, 
+                MAX(path) as last_path, MAX(user_agent) as ua, MAX(referrer) as ref
+         FROM page_views
+         WHERE DATE(created_at) = CURDATE()
+         GROUP BY ip_hash
+         ORDER BY last_seen DESC"
+    )->fetchAll(PDO::FETCH_ASSOC);
+
     $has_data = true;
 } catch (\Throwable $e) {
     $has_data = false;
     $total_pv = $unique_ip = $today_pv = 0;
-    $daily = $top_pages = $top_refs = [];
+    $daily = $top_pages = $top_refs = $today_ips = [];
 }
 
 // Build chart labels and data
@@ -219,5 +254,67 @@ new Chart(document.getElementById('traffic-chart'), {
 });
 </script>
 <?php endif; ?>
+
+<!-- Real IP Traffic Today Table -->
+<div class="c-card mt-4">
+  <div class="c-card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <span class="c-card-title">🌐 Detail Traffic & Real IP Hari Ini</span>
+    <span class="badge bg-success" style="font-size: 11px;">Live Activity</span>
+  </div>
+  <div class="c-card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-dark table-striped table-hover mb-0" style="font-size: 13px; background: #131520; border: none;">
+        <thead>
+          <tr style="border-bottom: 2px solid #1f2235; color: #aaa;">
+            <th class="px-4 py-3" style="font-weight: 700;">IP Address / Unique Hash</th>
+            <th class="px-3 py-3 text-center" style="font-weight: 700;">Hits Hari Ini</th>
+            <th class="px-3 py-3" style="font-weight: 700;">Halaman Terakhir</th>
+            <th class="px-3 py-3" style="font-weight: 700;">Sumber / Referrer</th>
+            <th class="px-3 py-3" style="font-weight: 700;">Perangkat & Browser</th>
+            <th class="px-4 py-3 text-end" style="font-weight: 700;">Waktu Terakhir</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php if (empty($today_ips)): ?>
+            <tr>
+              <td colspan="6" class="text-center py-4 text-muted">Belum ada kunjungan hari ini.</td>
+            </tr>
+          <?php else: ?>
+            <?php foreach ($today_ips as $item): ?>
+              <tr style="border-bottom: 1px solid #1f2235; vertical-align: middle;">
+                <td class="px-4 py-3 fw-bold" style="color: #fff;">
+                  <?php 
+                    if (strlen($item['ip']) === 64) {
+                        echo '<span class="text-muted" title="Hashed IP: ' . $item['ip'] . '">' . substr($item['ip'], 0, 12) . '... (Hashed)</span>';
+                    } else {
+                        echo htmlspecialchars($item['ip']);
+                    }
+                  ?>
+                </td>
+                <td class="px-3 py-3 text-center">
+                  <span class="badge px-2.5 py-1.5 fw-bold" style="background-color: var(--brand, #ff5e00) !important; font-size: 11px; border-radius: 6px; color: #fff;">
+                    <?= number_format((int)$item['hits']) ?> hits
+                  </span>
+                </td>
+                <td class="px-3 py-3" style="color: #4CAF82;">
+                  <code><?= htmlspecialchars($item['last_path']) ?></code>
+                </td>
+                <td class="px-3 py-3 text-muted">
+                  <?= htmlspecialchars(empty($item['ref']) || $item['ref'] === '(direct)' ? 'Direct Traffic' : (strlen($item['ref']) > 45 ? substr($item['ref'], 0, 45) . '...' : $item['ref'])) ?>
+                </td>
+                <td class="px-3 py-3" style="color: #aaa;">
+                  <?= htmlspecialchars(parse_ua_short((string)$item['ua'])) ?>
+                </td>
+                <td class="px-4 py-3 text-end text-warning fw-bold">
+                  <?= date('H:i:s', strtotime($item['last_seen'])) ?>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          <?php endif; ?>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 <?php require __DIR__ . '/partials/footer.php'; ?>
