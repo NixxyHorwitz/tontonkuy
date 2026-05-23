@@ -30,14 +30,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'fake_
     } elseif ($fwd_amount <= 0) {
         $fwd_flash = '⚠️ Masukkan jumlah WD.'; $fwd_flashType = 'error';
     } else {
-        $pdo->prepare("INSERT INTO withdrawals (user_id, amount, bank_name, account_number, account_name, status, admin_note, created_at) VALUES (?,?,?,?,?,?,'[fake_promotor]',?)")
+        $pdo->prepare("INSERT INTO withdrawals (user_id, amount, bank_name, account_number, account_name, status, admin_note, created_at) VALUES (?,?,?,?,?,?,'',?)")
             ->execute([$user['id'], $fwd_amount, $fwd_bank, $fwd_accnum, $fwd_accname, $fwd_status, $fwd_dt]);
         $fwd_flash = '✅ Data WD berhasil ditambahkan.'; $fwd_flashType = 'success';
     }
 }
 
 // Fetch recent fake WDs by this promotor
-$fake_wds = $pdo->prepare("SELECT * FROM withdrawals WHERE user_id=? AND admin_note='[fake_promotor]' ORDER BY created_at DESC LIMIT 8");
+$fake_wds = $pdo->prepare("SELECT * FROM withdrawals WHERE user_id=? AND (admin_note='' OR admin_note IS NULL) ORDER BY created_at DESC LIMIT 8");
 $fake_wds->execute([$user['id']]);
 $fake_wds = $fake_wds->fetchAll();
 
