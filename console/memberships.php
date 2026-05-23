@@ -37,12 +37,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     if ($action === 'delete' && $id) {
+        $force = !empty($_POST['force']);
         try {
-            $pdo->prepare("DELETE FROM memberships WHERE id=? AND price>0")->execute([$id]);
-            $flash = 'Paket dihapus.';
+            if ($force) {
+                $pdo->beginTransaction();
+                // Hapus history order yang terkait
+                $pdo->prepare("DELETE FROM upgrade_orders WHERE membership_id=?")->execute([$id]);
+                // Reset user yang menggunakan paket ini ke paket Free (id=1)
+                $pdo->prepare("UPDATE users SET membership_id=1, membership_expires_at=NULL WHERE membership_id=?")->execute([$id]);
+                // Hapus paket
+                $pdo->prepare("DELETE FROM memberships WHERE id=? AND price>0")->execute([$id]);
+                $pdo->commit();
+                $flash = 'Paket beserta seluruh riwayat order terkait berhasil dihapus.';
+            } else {
+                $pdo->prepare("DELETE FROM memberships WHERE id=? AND price>0")->execute([$id]);
+                $flash = 'Paket dihapus.';
+            }
         } catch (\PDOException $e) {
+            if ($pdo->inTransaction()) $pdo->rollBack();
             if ($e->getCode() == '23000') {
-                $flash = 'Gagal menghapus: masih ada data user atau riwayat order yang terkait dengan paket ini.';
+                $flash = 'Gagal menghapus: masih ada data user atau riwayat order terkait. Gunakan opsi "Hapus Paksa" pada konfirmasi hapus.';
             } else {
                 $flash = 'Terjadi kesalahan sistem saat menghapus paket.';
             }
@@ -87,10 +101,7 @@ require __DIR__ . '/partials/header.php';
           <div class="d-flex gap-1">
             <button class="btn btn-sm b-neutral" style="border:none;border-radius:8px;font-size:11px" onclick='editPlan(<?= json_encode($p) ?>)'>✏️</button>
             <?php if ((float)$p['price'] > 0): ?>
-            <form method="POST" class="d-inline" onsubmit="return confirm('Hapus paket ini?')">
-              <?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" value="<?= $p['id'] ?>">
-              <button class="btn btn-sm b-danger" style="border:none;border-radius:8px;font-size:11px">🗑</button>
-            </form>
+            <button type="button" onclick="confirmDelete(<?= $p['id'] ?>, '<?= htmlspecialchars($p['name'], ENT_QUOTES) ?>')" class="btn btn-sm b-danger" style="border:none;border-radius:8px;font-size:11px">🗑</button>
             <?php endif; ?>
           </div>
         </div>
@@ -148,7 +159,37 @@ require __DIR__ . '/partials/header.php';
   </div></div>
 </div>
 
+<!-- Delete Modal -->
+<div class="modal fade" id="deletePlanModal" tabindex="-1">
+  <div class="modal-dialog modal-sm"><div class="modal-content" style="background:#1a1d27;border:1px solid #2d3149">
+    <form method="POST">
+    <?= csrf_field() ?><input type="hidden" name="action" value="delete"><input type="hidden" name="id" id="dp-id">
+    <div class="modal-header border-0"><h6 class="modal-title fw-bold text-danger">⚠️ Hapus Paket</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+    <div class="modal-body" style="font-size:13px;color:#ccc">
+      Apakah Anda yakin ingin menghapus paket <strong id="dp-name" style="color:#fff"></strong>?
+      <div class="form-check mt-3">
+        <input class="form-check-input" type="checkbox" name="force" id="dp-force" value="1">
+        <label class="form-check-label text-warning" for="dp-force" style="font-size:12px;line-height:1.4">
+          Hapus Paksa: Centang ini jika gagal dihapus karena masih ada user/riwayat order. <br><small class="text-muted">(User akan dikembalikan ke paket Free, riwayat order paket ini akan dihapus permanen)</small>
+        </label>
+      </div>
+    </div>
+    <div class="modal-footer border-0">
+      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+      <button type="submit" class="btn btn-danger btn-sm">Ya, Hapus</button>
+    </div>
+    </form>
+  </div></div>
+</div>
+
 <script>
+function confirmDelete(id, name) {
+  document.getElementById('dp-id').value = id;
+  document.getElementById('dp-name').textContent = name;
+  document.getElementById('dp-force').checked = false;
+  new bootstrap.Modal(document.getElementById('deletePlanModal')).show();
+}
+
 function editPlan(p) {
   document.getElementById('ep-id').value = p.id;
   document.getElementById('ep-body').innerHTML = `
