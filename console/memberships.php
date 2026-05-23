@@ -203,9 +203,9 @@ function editPlan(p) {
       <input type="text" name="name" class="c-form-control" value="${escH(p.name)}" required></div>
     <div class="row g-2 mb-3">
       <div class="col-6"><label class="c-label">Harga (Rp)</label>
-        <input type="number" name="price" class="c-form-control" value="${p.price}" min="0" step="1000"></div>
+        <input type="number" name="price" class="c-form-control" value="${p.price}" min="0" step="1"></div>
       <div class="col-6"><label class="c-label">Harga Coret (Rp)</label>
-        <input type="number" name="original_price" class="c-form-control" value="${p.original_price}" min="0" step="1000"></div>
+        <input type="number" name="original_price" class="c-form-control" value="${p.original_price}" min="0" step="1"></div>
     </div>
     <div class="row g-2 mb-3">
       <div class="col-6"><label class="c-label">Limit Tonton/Hari</label>
@@ -217,9 +217,9 @@ function editPlan(p) {
       <input type="number" name="sort_order" class="c-form-control" value="${p.sort_order}"></div>
     <div class="row g-2 mb-3">
       <div class="col-6"><label class="c-label">Min. WD (Rp)</label>
-        <input type="number" name="min_wd" class="c-form-control" value="${p.min_wd}" min="0" step="1000"></div>
+        <input type="number" name="min_wd" class="c-form-control" value="${p.min_wd}" min="0" step="1"></div>
       <div class="col-6"><label class="c-label">Max. WD (Rp)</label>
-        <input type="number" name="max_wd" class="c-form-control" value="${p.max_wd}" min="0" step="1000">
+        <input type="number" name="max_wd" class="c-form-control" value="${p.max_wd}" min="0" step="1">
         <small style="font-size:10px;color:#888">0 = Tanpa batas</small></div>
     </div>
     <div class="c-form-group mb-3"><label class="c-label">Deskripsi</label>

@@ -4,8 +4,12 @@
 </div>
 <div class="row g-2 mb-3">
   <div class="col-6">
-    <label class="c-label">Harga (Rp)</label>
-    <input type="number" name="price" class="c-form-control" value="0" min="0" step="1000">
+    <label class="c-label">Harga Jual (Rp)</label>
+    <input type="number" name="price" class="c-form-control" value="0" min="0" step="1">
+  </div>
+  <div class="col-6">
+    <label class="c-label">Harga Asli/Coret (Rp)</label>
+    <input type="number" name="original_price" class="c-form-control" value="0" min="0" step="1">
   </div>
   <div class="col-6">
     <label class="c-label">Limit Tonton/Hari</label>
@@ -25,11 +29,11 @@
 <div class="row g-2 mb-3">
   <div class="col-6">
     <label class="c-label">Min. Withdraw (Rp)</label>
-    <input type="number" name="min_wd" class="c-form-control" value="50000" min="0" step="1000">
+    <input type="number" name="min_wd" class="c-form-control" value="50000" min="0" step="1">
   </div>
   <div class="col-6">
     <label class="c-label">Max. Withdraw (Rp)</label>
-    <input type="number" name="max_wd" class="c-form-control" value="0" min="0" step="1000">
+    <input type="number" name="max_wd" class="c-form-control" value="0" min="0" step="1">
     <small style="font-size:10px;color:#888">0 = Tanpa batas max</small>
   </div>
 </div>
