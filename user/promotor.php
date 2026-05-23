@@ -1,0 +1,260 @@
+<?php
+declare(strict_types=1);
+require_once dirname(__DIR__) . '/auth/guard.php';
+
+// Enforce promotor access
+if ((int)$user['is_promotor'] !== 1) {
+    redirect('/home');
+}
+
+// 1. Sync targets for today and yesterday
+sync_promotor_daily_targets($pdo, $user['id'], date('Y-m-d'));
+sync_promotor_daily_targets($pdo, $user['id'], date('Y-m-d', strtotime('-1 day')));
+
+// 2. Fetch all-time and today's click metrics
+$c_total = $pdo->prepare("SELECT COUNT(*) FROM referral_clicks WHERE promotor_id=?");
+$c_total->execute([$user['id']]);
+$total_clicks = (int)$c_total->fetchColumn();
+
+$c_today = $pdo->prepare("SELECT COUNT(*) FROM referral_clicks WHERE promotor_id=? AND DATE(created_at)=CURDATE()");
+$c_today->execute([$user['id']]);
+$today_clicks = (int)$c_today->fetchColumn();
+
+// 3. Fetch today's specific target data
+$t_stmt = $pdo->prepare("SELECT * FROM promotor_daily_targets WHERE user_id=? AND date=CURDATE()");
+$t_stmt->execute([$user['id']]);
+$today_target = $t_stmt->fetch() ?: [
+    'target_deposits' => $user['promotor_target_deposits'],
+    'actual_deposits' => 0.0,
+    'target_regs' => $user['promotor_target_regs'],
+    'actual_regs' => 0,
+    'percentage' => 0.0,
+    'salary_rate' => $user['promotor_salary_rate'],
+    'is_paid' => 0
+];
+
+// 4. Fetch paginated daily target history
+$limit = 5;
+$page = max(1, (int)($_GET['page'] ?? 1));
+$offset = ($page - 1) * $limit;
+
+$tot_stmt = $pdo->prepare("SELECT COUNT(*) FROM promotor_daily_targets WHERE user_id=?");
+$tot_stmt->execute([$user['id']]);
+$total_rows = (int)$tot_stmt->fetchColumn();
+$total_pages = max(1, (int)ceil($total_rows / $limit));
+if ($page > $total_pages) {
+    $page = $total_pages;
+    $offset = ($page - 1) * $limit;
+}
+
+$h_stmt = $pdo->prepare("SELECT * FROM promotor_daily_targets WHERE user_id=? ORDER BY date DESC LIMIT ? OFFSET ?");
+$h_stmt->bindValue(1, $user['id'], PDO::PARAM_INT);
+$h_stmt->bindValue(2, $limit, PDO::PARAM_INT);
+$h_stmt->bindValue(3, $offset, PDO::PARAM_INT);
+$h_stmt->execute();
+$history_logs = $h_stmt->fetchAll();
+
+// 5. Fetch Click Chart Data (last 7 days)
+$chart_days = 7;
+$daily_clicks = [];
+$chart_labels = [];
+$chart_data = [];
+
+// Prepare daily click volume query
+$click_stmt = $pdo->prepare("
+    SELECT DATE(created_at) as d, COUNT(*) as cnt 
+    FROM referral_clicks 
+    WHERE promotor_id=? AND created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+    GROUP BY d ORDER BY d ASC
+");
+$click_stmt->bindValue(1, $user['id'], PDO::PARAM_INT);
+$click_stmt->bindValue(2, $chart_days, PDO::PARAM_INT);
+$click_stmt->execute();
+$clicks_grouped = $click_stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
+for ($i = $chart_days - 1; $i >= 0; $i--) {
+    $day = date('Y-m-d', strtotime("-{$i} days"));
+    $chart_labels[] = date('d/m', strtotime($day));
+    $chart_data[] = (int)($clicks_grouped[$day] ?? 0);
+}
+
+$pageTitle  = 'Promotor Dashboard — TontonKuy';
+$activePage = 'referral';
+require dirname(__DIR__) . '/partials/header.php';
+?>
+
+<div class="page-title-bar">
+  <h1>🚀 Promotor Dashboard</h1>
+  <p>Analisis traffic, pencapaian target harian, &amp; info gaji</p>
+</div>
+
+<!-- Target progress card -->
+<div class="card card--yellow" style="margin-bottom:16px">
+  <div class="card__body" style="padding:16px 18px">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-1" style="margin-bottom:8px">
+      <span style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.5px;color:#555">🎯 Target Hari Ini</span>
+      <span class="badge badge--success" style="font-size:10px;padding:3px 8px;border-radius:6px;background:var(--lime)">
+        Gaji: <?= format_rp((float)$today_target['salary_rate']) ?> / Hari
+      </span>
+    </div>
+
+    <!-- Combined percentage and Neobrutalist progress bar -->
+    <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">
+      <span style="font-size:36px;font-weight:900;letter-spacing:-1px;line-height:1"><?= number_format((float)$today_target['percentage'], 1) ?>%</span>
+      <span style="font-size:12px;font-weight:800;color:#555">tercapai</span>
+    </div>
+
+    <div style="background:var(--white);border:2.5px solid var(--ink);border-radius:var(--radius-sm);height:20px;overflow:hidden;position:relative;margin-bottom:12px;box-shadow:2px 2px 0 var(--ink)">
+      <div style="height:100%;width:<?= min(100.0, (float)$today_target['percentage']) ?>%;background:var(--brand);transition:width .4s ease"></div>
+    </div>
+
+    <!-- Metrics splits -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;border-top:1.5px dashed var(--ink);padding-top:12px">
+      <div>
+        <div style="font-size:10px;font-weight:800;color:#666;text-transform:uppercase">💰 Volume Deposit</div>
+        <div style="font-size:14px;font-weight:900;color:var(--ink);margin-top:2px">
+          <?= format_rp((float)$today_target['actual_deposits']) ?>
+          <span style="font-size:10px;color:#666;font-weight:600">/ <?= format_rp((float)$today_target['target_deposits']) ?></span>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:10px;font-weight:800;color:#666;text-transform:uppercase">🧑‍🤝‍🧑 Member Baru</div>
+        <div style="font-size:14px;font-weight:900;color:var(--ink);margin-top:2px">
+          <?= $today_target['actual_regs'] ?>
+          <span style="font-size:10px;color:#666;font-weight:600">/ <?= $today_target['target_regs'] ?> member</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Click stats mini row -->
+<div class="stat-row" style="margin-bottom:16px">
+  <div class="stat-mini" style="background:var(--sky)">
+    <div class="stat-mini__val"><?= number_format($today_clicks) ?></div>
+    <div class="stat-mini__lbl">Clicks Hari Ini</div>
+  </div>
+  <div class="stat-mini" style="background:var(--mint)">
+    <div class="stat-mini__val"><?= number_format($total_clicks) ?></div>
+    <div class="stat-mini__lbl">Total Clicks</div>
+  </div>
+  <div class="stat-mini" style="background:var(--lavender);cursor:pointer" onclick="location.href='/referral'">
+    <div class="stat-mini__val">👥</div>
+    <div class="stat-mini__lbl">Program Referral</div>
+  </div>
+</div>
+
+<!-- Traffic Chart -->
+<div class="card" style="margin-bottom:16px">
+  <div class="card__header"><div class="card__title">📈 Grafik Traffic Clicks (7 Hari)</div></div>
+  <div class="card__body" style="padding:14px 16px">
+    <?php if (array_sum($chart_data) === 0): ?>
+    <div style="text-align:center;padding:24px 10px;color:#aaa;font-size:12px;font-weight:700">
+      Belum ada traffic klik dalam 7 hari terakhir.
+    </div>
+    <?php else: ?>
+    <canvas id="clicks-chart" style="max-height:180px;width:100%"></canvas>
+    <?php endif; ?>
+  </div>
+</div>
+
+<!-- Target achievement logs -->
+<div class="section-header"><div class="section-title">📜 Riwayat Target &amp; Gaji</div></div>
+<div class="card" style="margin-bottom:16px">
+  <div class="card__body" style="padding:4px 0">
+    <?php if (empty($history_logs)): ?>
+    <div style="text-align:center;padding:30px 20px;color:#aaa;font-size:12px;font-weight:700">
+      Belum ada riwayat target tercatat.
+    </div>
+    <?php else: ?>
+      <?php foreach ($history_logs as $log): ?>
+      <div class="list-item" style="padding:12px 14px;align-items:flex-start">
+        <div class="list-item__icon" style="background:<?= (float)$log['percentage'] >= 100 ? 'var(--lime)' : 'var(--peach)' ?>;width:30px;height:30px;font-size:13px;margin-top:2px">
+          <?= (float)$log['percentage'] >= 100 ? '⭐' : '📊' ?>
+        </div>
+        <div class="list-item__body" style="margin-left:2px">
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px">
+            <span style="font-weight:800;font-size:13px;color:var(--ink)"><?= date('d M Y', strtotime($log['date'])) ?></span>
+            <span class="badge" style="font-size:9px;padding:2px 6px;background:<?= $log['is_paid'] ? 'var(--lime)' : 'var(--white)' ?>">
+              <?= $log['is_paid'] ? '✅ Paid' : '⏳ Unpaid' ?>
+            </span>
+          </div>
+          <div style="font-size:10px;color:#666;font-weight:700;margin-top:3px">
+            Pencapaian: <strong style="color:var(--ink)"><?= number_format((float)$log['percentage'], 1) ?>%</strong>
+            (Depo: <?= format_rp((float)$log['actual_deposits']) ?> · Reg: <?= $log['actual_regs'] ?>)
+          </div>
+          <?php if ((float)$log['percentage'] >= 100 && !$log['is_paid']): ?>
+          <div style="font-size:9px;color:#ff8c00;font-weight:700;margin-top:2px">
+            🎉 Target tercapai! Gaji <?= format_rp((float)$log['salary_rate']) ?> akan segera diproses admin.
+          </div>
+          <?php endif; ?>
+        </div>
+      </div>
+      <?php endforeach; ?>
+
+      <!-- Pagination -->
+      <?php if ($total_pages > 1): ?>
+      <div class="d-flex justify-content-between align-items-center p-3" style="border-top:2px solid var(--ink)">
+        <a href="?page=<?= max(1, $page - 1) ?>" 
+           class="btn btn--ghost btn--sm <?= $page <= 1 ? 'disabled' : '' ?>"
+           style="<?= $page <= 1 ? 'pointer-events:none;opacity:0.5' : '' ?>;font-size:11px;padding:6px 12px">
+           ← Prev
+        </a>
+        <span style="font-size:11px;font-weight:800;color:#666">
+          Page <?= $page ?> of <?= $total_pages ?>
+        </span>
+        <a href="?page=<?= min($total_pages, $page + 1) ?>" 
+           class="btn btn--ghost btn--sm <?= $page >= $total_pages ? 'disabled' : '' ?>"
+           style="<?= $page >= $total_pages ? 'pointer-events:none;opacity:0.5' : '' ?>;font-size:11px;padding:6px 12px">
+           Next →
+        </a>
+      </div>
+      <?php endif; ?>
+    <?php endif; ?>
+  </div>
+</div>
+
+<?php if (array_sum($chart_data) > 0): ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  new Chart(document.getElementById('clicks-chart'), {
+    type: 'line',
+    data: {
+      labels: <?= json_encode($chart_labels) ?>,
+      datasets: [{
+        label: 'Clicks',
+        data: <?= json_encode($chart_data) ?>,
+        backgroundColor: 'rgba(196,181,253,.2)',
+        borderColor: '#C4B5FD',
+        borderWidth: 3,
+        tension: 0.3,
+        fill: true,
+        pointBackgroundColor: '#1A1A1A',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { 
+          beginAtZero: true, 
+          ticks: { color: '#666', stepSize: 1, font: { weight: '800', size: 9 } }, 
+          grid: { color: 'rgba(0,0,0,.04)' } 
+        },
+        x: { 
+          ticks: { color: '#666', font: { weight: '800', size: 9 } }, 
+          grid: { display: false } 
+        }
+      }
+    }
+  });
+});
+</script>
+<?php endif; ?>
+
+<?php require dirname(__DIR__) . '/partials/footer.php'; ?>

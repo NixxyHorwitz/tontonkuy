@@ -357,4 +357,107 @@ function track_pageview(PDO $pdo, string $path): void {
     }
 }
 
+// ============================================================
+// PROMOTOR CLICK TRACKING & DAILY TARGET SYNC
+// ============================================================
+
+// Detect referral code in URL and track promotor clicks
+if (!empty($_GET['ref'])) {
+    try {
+        $ref_code = strtoupper(trim($_GET['ref']));
+        $stmt = $pdo->prepare("SELECT id, is_promotor FROM users WHERE referral_code = ? LIMIT 1");
+        $stmt->execute([$ref_code]);
+        $promotor = $stmt->fetch();
+        if ($promotor && (int)$promotor['is_promotor'] === 1) {
+            // Log click if not logged in the last 1 hour for this IP to prevent spamming
+            $ip = $_SERVER['REMOTE_ADDR'] ?? '';
+            if (isset($_SERVER['HTTP_CF_CONNECTING_IP'])) {
+                $ip = $_SERVER['HTTP_CF_CONNECTING_IP'];
+            } elseif (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+                $ip = explode(',', $_SERVER['HTTP_X_FORWARDED_FOR'])[0];
+            } elseif (isset($_SERVER['HTTP_CLIENT_IP'])) {
+                $ip = $_SERVER['HTTP_CLIENT_IP'];
+            }
+            $ip = trim($ip);
+
+            $chk = $pdo->prepare("SELECT 1 FROM referral_clicks WHERE promotor_id = ? AND ip_address = ? AND created_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)");
+            $chk->execute([$promotor['id'], $ip]);
+            if (!$chk->fetchColumn()) {
+                $ua = substr($_SERVER['HTTP_USER_AGENT'] ?? '', 0, 300);
+                // Skip bots
+                if (!preg_match('/bot|crawl|spider|slurp|baidu|bing|google/i', $ua)) {
+                    $pdo->prepare("INSERT INTO referral_clicks (promotor_id, ip_address, user_agent) VALUES (?, ?, ?)")
+                        ->execute([$promotor['id'], $ip, $ua]);
+                }
+            }
+            // Set cookie so the register page automatically picks it up
+            setcookie('ref_code', $ref_code, time() + 86400 * 30, '/');
+        }
+    } catch (\Throwable $e) {
+        // Silently fail to never break user loading experience
+    }
+}
+
+/**
+ * Dynamically computes and updates the snapshot for a promotor's daily performance.
+ */
+function sync_promotor_daily_targets(PDO $pdo, int $promotor_id, string $date = null): void {
+    if (!$date) $date = date('Y-m-d');
+    
+    try {
+        // Get promotor info
+        $p_stmt = $pdo->prepare("SELECT referral_code, promotor_target_deposits, promotor_target_regs, promotor_salary_rate FROM users WHERE id=? AND is_promotor=1");
+        $p_stmt->execute([$promotor_id]);
+        $p = $p_stmt->fetch();
+        if (!$p) return;
+        
+        // Calculate actual deposits today from referred users
+        $dep_stmt = $pdo->prepare(
+            "SELECT COALESCE(SUM(d.amount), 0) 
+             FROM deposits d 
+             JOIN users u ON u.id = d.user_id 
+             WHERE u.referred_by = ? AND d.status = 'confirmed' AND DATE(d.confirmed_at) = ?"
+        );
+        $dep_stmt->execute([$p['referral_code'], $date]);
+        $actual_deposits = (float)$dep_stmt->fetchColumn();
+        
+        // Calculate actual registrations today
+        $reg_stmt = $pdo->prepare(
+            "SELECT COUNT(*) 
+             FROM users 
+             WHERE referred_by = ? AND DATE(created_at) = ?"
+        );
+        $reg_stmt->execute([$p['referral_code'], $date]);
+        $actual_regs = (int)$reg_stmt->fetchColumn();
+        
+        // Calculate percentage
+        $target_deposits = (float)$p['promotor_target_deposits'];
+        $target_regs = (int)$p['promotor_target_regs'];
+        
+        $dep_progress = $target_deposits > 0 ? min(1.0, $actual_deposits / $target_deposits) : 1.0;
+        $reg_progress = $target_regs > 0 ? min(1.0, $actual_regs / $target_regs) : 1.0;
+        $percentage = round((($dep_progress + $reg_progress) / 2) * 100, 2);
+        
+        // Upsert into promotor_daily_targets
+        $check = $pdo->prepare("SELECT id, is_paid, salary_rate FROM promotor_daily_targets WHERE user_id=? AND date=?");
+        $check->execute([$promotor_id, $date]);
+        $exist = $check->fetch();
+        
+        if ($exist) {
+            $pdo->prepare(
+                "UPDATE promotor_daily_targets 
+                 SET actual_deposits=?, actual_regs=?, percentage=? 
+                 WHERE id=?"
+            )->execute([$actual_deposits, $actual_regs, $percentage, $exist['id']]);
+        } else {
+            $pdo->prepare(
+                "INSERT INTO promotor_daily_targets (user_id, date, target_deposits, actual_deposits, target_regs, actual_regs, percentage, salary_rate, is_paid) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)"
+            )->execute([$promotor_id, $date, $target_deposits, $actual_deposits, $target_regs, $actual_regs, $percentage, $p['promotor_salary_rate']]);
+        }
+    } catch (\Throwable $th) {
+        // Silently fail to not block requests
+    }
+}
+
 require_once __DIR__ . '/depo_canceller.php';

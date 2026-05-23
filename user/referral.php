@@ -67,6 +67,21 @@ require dirname(__DIR__) . '/partials/header.php';
   <p>Ajak teman, dapatkan komisi otomatis</p>
 </div>
 
+<?php if ((int)$user['is_promotor'] === 1): ?>
+<!-- Promotor banner card -->
+<div class="card card--mint" style="margin-bottom:16px; border:2.5px solid var(--ink); box-shadow:var(--shadow);">
+  <div class="card__body" style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding: 14px 16px;">
+    <div style="text-align: left;">
+      <div style="font-weight:900; font-size:14px; color: var(--ink);">🚀 Kamu adalah Promotor!</div>
+      <div style="font-size:11px; color:#555; font-weight:700; margin-top:2px;">Pantau traffic clicks, target harian, &amp; info gaji kamu di sini.</div>
+    </div>
+    <a href="/user/promotor.php" class="btn btn--primary btn--sm" style="white-space:nowrap; flex-shrink:0; font-size:11px; padding: 7px 13px;">
+      Dashboard
+    </a>
+  </div>
+</div>
+<?php endif; ?>
+
 <!-- Stats -->
 <div class="stat-row" style="margin-bottom:16px">
   <div class="stat-mini">
