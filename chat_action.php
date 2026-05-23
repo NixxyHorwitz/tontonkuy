@@ -48,6 +48,21 @@ function tg_api(PDO $pdo, string $method, array $params): array {
     return json_decode($res ?: '{}', true) ?: [];
 }
 
+function tg_api_upload(PDO $pdo, string $method, array $params): array {
+    $token = setting($pdo, 'lc_tg_token', '');
+    if (!$token) return ['ok' => false];
+    $ch = curl_init("https://api.telegram.org/bot{$token}/{$method}");
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $params,
+        CURLOPT_TIMEOUT        => 30,
+    ]);
+    $res  = curl_exec($ch);
+    curl_close($ch);
+    return json_decode($res ?: '{}', true) ?: [];
+}
+
 // ─── Helper: OpenAI chat completion ──────────────────────────
 function openai_chat(PDO $pdo, array $messages): string {
     $apiKey = setting($pdo, 'openai_api_key', '');
@@ -297,7 +312,24 @@ switch ($action) {
         $sessionKey = $_COOKIE['chat_session'] ?? $_POST['session_key'] ?? '';
         $text       = trim($_POST['message'] ?? '');
         if (!$sessionKey) json_err('Sesi tidak ditemukan.');
-        if (!$text || mb_strlen($text) > 2000) json_err('Pesan tidak valid.');
+        if (!$text && empty($_FILES['attachment']['tmp_name'])) json_err('Pesan tidak valid.');
+        if (mb_strlen($text) > 2000) json_err('Pesan terlalu panjang.');
+        
+        $attachmentPath = null;
+        if (setting($pdo, 'lc_attachment_enabled', '1') === '1' && !empty($_FILES['attachment']['tmp_name'])) {
+            $f = $_FILES['attachment'];
+            if ($f['error'] === UPLOAD_ERR_OK && $f['size'] <= 5*1024*1024) {
+                $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
+                if (in_array($ext, ['jpg','jpeg','png','gif','pdf','zip','rar'])) {
+                    $dir = __DIR__ . '/uploads/chat/' . date('Y/m');
+                    if (!is_dir($dir)) mkdir($dir, 0777, true);
+                    $filename = uniqid('att_') . '.' . $ext;
+                    if (move_uploaded_file($f['tmp_name'], $dir . '/' . $filename)) {
+                        $attachmentPath = 'uploads/chat/' . date('Y/m') . '/' . $filename;
+                    }
+                }
+            }
+        }
 
         $sess = get_chat_session($pdo, $sessionKey);
         if (!$sess) json_err('Sesi tidak valid.');
@@ -306,8 +338,8 @@ switch ($action) {
         $sessId = (int)$sess['id'];
 
         $pdo->prepare(
-            "INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'user',?)"
-        )->execute([$sessId, $text]);
+            "INSERT INTO chat_messages (session_id,sender,message,attachment) VALUES (?,'user',?,?)"
+        )->execute([$sessId, $text, $attachmentPath]);
         $userMsgId = (int)$pdo->lastInsertId();
 
         // Update last_message_at so session doesn't auto-close while active
@@ -319,13 +351,26 @@ switch ($action) {
         if ($chatId) {
             $tgParams = [
                 'chat_id' => $chatId,
-                'text'    => "Sesi #{$sessId} | User: " . $sess['user_name'] . "\n\n" . $text,
+                'caption' => "Sesi #{$sessId} | User: " . $sess['user_name'] . "\n\n" . $text,
             ];
             if ($sess['tg_thread_id']) {
                 $tgParams['message_thread_id'] = (int)$sess['tg_thread_id'];
-                $tgParams['text'] = "User: " . $sess['user_name'] . "\n" . $text;
+                $tgParams['caption'] = "User: " . $sess['user_name'] . "\n" . $text;
             }
-            $tgRes = tg_api($pdo, 'sendMessage', $tgParams);
+            if ($attachmentPath) {
+                $ext = strtolower(pathinfo($attachmentPath, PATHINFO_EXTENSION));
+                if (in_array($ext, ['jpg','jpeg','png','gif'])) {
+                    $tgParams['photo'] = new CURLFile(__DIR__ . '/' . $attachmentPath);
+                    $tgRes = tg_api_upload($pdo, 'sendPhoto', $tgParams);
+                } else {
+                    $tgParams['document'] = new CURLFile(__DIR__ . '/' . $attachmentPath);
+                    $tgRes = tg_api_upload($pdo, 'sendDocument', $tgParams);
+                }
+            } else {
+                $tgParams['text'] = $tgParams['caption'];
+                unset($tgParams['caption']);
+                $tgRes = tg_api($pdo, 'sendMessage', $tgParams);
+            }
             $tgMsgId = $tgRes['result']['message_id'] ?? null;
             $pdo->prepare("UPDATE chat_messages SET tg_msg_id=? WHERE id=?")
                 ->execute([$tgMsgId, $userMsgId]);
@@ -411,7 +456,7 @@ switch ($action) {
         }
 
         json_ok([
-            'user_message' => ['id' => $userMsgId, 'sender' => 'user', 'message' => $text, 'created_at' => date('Y-m-d H:i:s')],
+            'user_message' => ['id' => $userMsgId, 'sender' => 'user', 'message' => $text, 'attachment' => $attachmentPath, 'created_at' => date('Y-m-d H:i:s')],
             'last_msg_id'  => $replyMsg ? (int)$replyMsg['id'] : $userMsgId,
             'reply'        => $replyMsg,
         ]);
@@ -428,7 +473,7 @@ switch ($action) {
         if (!$sess) json_err('Sesi tidak valid.');
 
         $msgs = $pdo->prepare(
-            "SELECT id,sender,message,created_at FROM chat_messages
+            "SELECT id,sender,message,attachment,created_at FROM chat_messages
              WHERE session_id=? AND id>? ORDER BY id ASC LIMIT 50"
         );
         $msgs->execute([$sess['id'], $afterId]);
@@ -814,11 +859,41 @@ switch ($action) {
 
         $msg      = $input['message'];
         $threadId = $msg['message_thread_id'] ?? null;
-        $text     = $msg['text'] ?? '';
+        $text     = $msg['text'] ?? $msg['caption'] ?? '';
         $fromUser = $msg['from'] ?? [];
 
         if (!empty($fromUser['is_bot'])) { echo '{}'; exit; }
-        if (!$threadId || !$text) { echo '{}'; exit; }
+        
+        // Handle attachment download
+        $attachmentPath = null;
+        $fileId = null;
+        if (!empty($msg['photo'])) {
+            $photo = end($msg['photo']);
+            $fileId = $photo['file_id'];
+        } elseif (!empty($msg['document'])) {
+            $fileId = $msg['document']['file_id'];
+        }
+        
+        if ($fileId && setting($pdo, 'lc_attachment_enabled', '1') === '1') {
+            $token = setting($pdo, 'lc_tg_token', '');
+            $fileInfo = tg_api($pdo, 'getFile', ['file_id' => $fileId]);
+            if (!empty($fileInfo['result']['file_path'])) {
+                $filePath = $fileInfo['result']['file_path'];
+                $dlUrl = "https://api.telegram.org/file/bot{$token}/{$filePath}";
+                $fileData = @file_get_contents($dlUrl);
+                if ($fileData) {
+                    $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION)) ?: 'jpg';
+                    $dir = __DIR__ . '/uploads/chat/' . date('Y/m');
+                    if (!is_dir($dir)) mkdir($dir, 0777, true);
+                    $filename = uniqid('tg_') . '.' . $ext;
+                    if (file_put_contents($dir . '/' . $filename, $fileData)) {
+                        $attachmentPath = 'uploads/chat/' . date('Y/m') . '/' . $filename;
+                    }
+                }
+            }
+        }
+
+        if (!$threadId || (!$text && !$attachmentPath)) { echo '{}'; exit; }
 
         $s = $pdo->prepare("SELECT * FROM chat_sessions WHERE tg_thread_id=? AND status='open' LIMIT 1");
         $s->execute([$threadId]);
@@ -829,8 +904,8 @@ switch ($action) {
         $fullText  = "[{$adminName}] {$text}";
 
         $pdo->prepare(
-            "INSERT INTO chat_messages (session_id,sender,message,tg_msg_id) VALUES (?,'admin',?,?)"
-        )->execute([$sess['id'], $fullText, $msg['message_id']]);
+            "INSERT INTO chat_messages (session_id,sender,message,attachment,tg_msg_id) VALUES (?,'admin',?,?,?)"
+        )->execute([$sess['id'], $fullText, $attachmentPath, $msg['message_id']]);
 
         if ($sess['mode'] === 'ai') {
             $pdo->prepare("UPDATE chat_sessions SET mode='admin' WHERE id=?")->execute([$sess['id']]);

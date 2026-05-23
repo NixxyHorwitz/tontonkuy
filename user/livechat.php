@@ -12,6 +12,7 @@ $_seo_title   = setting($pdo, 'seo_title', 'TontonKuy');
 $_lc_enabled  = setting($pdo, 'livechat_enabled', '1') === '1';
 $_ai_enabled  = setting($pdo, 'chat_ai_enabled', '1') === '1';
 $_adm_enabled = setting($pdo, 'chat_admin_enabled', '1') === '1';
+$_att_enabled = setting($pdo, 'lc_attachment_enabled', '1') === '1';
 $_debug_on    = setting($pdo, 'lc_debug_panel', '0') === '1';
 if (!$_ai_enabled && !$_adm_enabled) $_lc_enabled = false;
 
@@ -368,6 +369,23 @@ body { margin: 0; padding: 0; overflow: hidden; background: var(--bg); }
 }
 .chat-textarea:focus { box-shadow: 5px 5px 0 var(--ink); }
 .chat-textarea::placeholder { color: #bbb; font-size: 15px; }
+.chat-attach-btn {
+  width: 44px; height: 44px;
+  flex-shrink: 0;
+  background: var(--white);
+  border: var(--border);
+  border-radius: 12px;
+  box-shadow: 2px 2px 0 var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .12s;
+  font-size: 20px;
+}
+.chat-attach-btn:hover { transform: translate(-2px,-2px); box-shadow: 4px 4px 0 var(--ink); }
+.chat-attach-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--ink); }
+
 .chat-send-btn {
   width: 44px; height: 44px;
   flex-shrink: 0;
@@ -527,11 +545,21 @@ body { margin: 0; padding: 0; overflow: hidden; background: var(--bg); }
 
     <!-- Input bar -->
     <div class="chat-inputbar" id="chat-inputbar">
-      <textarea class="chat-textarea" id="chat-input"
-        placeholder="Ketik pesan..." rows="1"
-        onkeydown="handleKey(event)"
-        oninput="autoResize(this)"
-      ></textarea>
+      <?php if ($_att_enabled): ?>
+      <button class="chat-attach-btn" onclick="document.getElementById('chat-attachment-input').click()">📎</button>
+      <input type="file" id="chat-attachment-input" style="display:none;" accept="image/jpeg,image/png,image/gif,application/pdf,.zip,.rar" onchange="previewAttachment(this)">
+      <?php endif; ?>
+      <div style="flex:1; display:flex; flex-direction:column; gap:4px; position:relative;">
+        <div id="attachment-preview" style="display:none; font-size:11px; background:#f0f0f0; border-radius:8px; padding:4px 8px; border:1px solid #ccc;">
+            <span id="att-preview-name" style="font-weight:600;"></span>
+            <span style="color:red; cursor:pointer; float:right; padding: 0 4px;" onclick="clearAttachment()">&times; Hapus</span>
+        </div>
+        <textarea class="chat-textarea" id="chat-input"
+          placeholder="Ketik pesan..." rows="1" style="width:100%"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+      </div>
       <button class="chat-send-btn" id="chat-send-btn" onclick="sendMessage()">
         <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
           <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
@@ -632,7 +660,7 @@ async function startChat() {
     // Render existing messages
     const msgs = document.getElementById('chat-messages');
     msgs.innerHTML = '';
-    (data.messages || []).forEach(m => appendBubble(m.sender, m.message, m.created_at, false));
+    (data.messages || []).forEach(m => appendBubble(m.sender, m.message, m.created_at, false, m.attachment));
 
     // Mode sudah di-set di server, langsung update UI
     updateModeUI(currentMode);
@@ -654,7 +682,7 @@ async function startChat() {
 
 // ── Append bubble ─────────────────────────────────────────
 let _msgIdCounter = 0;
-function appendBubble(sender, text, time, animate = true) {
+function appendBubble(sender, text, time, animate = true, attachment = null) {
   const msgs = document.getElementById('chat-messages');
   const wrap = document.createElement('div');
   const id   = ++_msgIdCounter;
@@ -670,9 +698,19 @@ function appendBubble(sender, text, time, animate = true) {
   // AI dan admin pakai markdown, user dan system pakai plain text
   const bodyHtml = (sender === 'ai' || sender === 'admin') ? renderMarkdown(text) : (sender === 'system' ? escHtml(text) : escHtml(text) + '');
 
+  let attHtml = '';
+  if (attachment) {
+      const ext = attachment.split('.').pop().toLowerCase();
+      if (['jpg','jpeg','png','gif'].includes(ext)) {
+          attHtml = `<div style="margin-bottom:6px;"><a href="/${attachment}" target="_blank"><img src="/${attachment}" style="max-width:100%; border-radius:8px; border:1px solid rgba(0,0,0,0.1);"></a></div>`;
+      } else {
+          attHtml = `<div style="margin-bottom:6px;"><a href="/${attachment}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:rgba(0,0,0,.05); border-radius:8px; text-decoration:none; color:inherit; border:1px solid rgba(0,0,0,.1); font-size:12px; font-weight:bold;">📎 Download Lampiran</a></div>`;
+      }
+  }
+
   wrap.innerHTML = `
     ${label}
-    <div class="bubble">${bodyHtml}</div>
+    <div class="bubble">${attHtml}${bodyHtml}</div>
     ${sender !== 'system' ? `<div class="bubble-meta">${timeStr}</div>` : ''}
   `;
   msgs.appendChild(wrap);
@@ -715,18 +753,47 @@ function scrollBottom() {
 }
 
 // ── Send message ──────────────────────────────────────────
+function previewAttachment(input) {
+  const file = input.files[0];
+  if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+          alert('Maksimal ukuran file adalah 5MB.');
+          clearAttachment();
+          return;
+      }
+      document.getElementById('attachment-preview').style.display = 'block';
+      document.getElementById('att-preview-name').textContent = file.name;
+  }
+}
+function clearAttachment() {
+  const input = document.getElementById('chat-attachment-input');
+  if (input) input.value = '';
+  document.getElementById('attachment-preview').style.display = 'none';
+}
+
 async function sendMessage() {
   if (sessionStatus === 'closed') return;
   const input = document.getElementById('chat-input');
+  const attInput = document.getElementById('chat-attachment-input');
   const text  = input.value.trim();
-  if (!text) return;
+  const file = attInput && attInput.files[0] ? attInput.files[0] : null;
+
+  if (!text && !file) return;
 
   const sendBtn = document.getElementById('chat-send-btn');
   input.value = '';
   input.style.height = '';
   sendBtn.disabled = true;
 
-  appendBubble('user', text, new Date().toISOString());
+  if (file) {
+      document.getElementById('attachment-preview').style.display = 'none';
+      if (attInput) attInput.value = '';
+  }
+
+  let bubbleText = text;
+  if (file && !text) bubbleText = '(Mengirim file...)';
+
+  appendBubble('user', bubbleText, new Date().toISOString());
 
   // Show typing if AI mode
   if (currentMode === 'ai') showTyping(true);
@@ -734,6 +801,7 @@ async function sendMessage() {
   try {
     const fd = new FormData();
     fd.append('message', text);
+    if (file) fd.append('attachment', file);
     fd.append('session_key', sessionKey);
     const res  = await fetch('/chat_action?action=send', { method:'POST', body:fd, credentials:'include' });
     const data = await res.json();
@@ -742,7 +810,7 @@ async function sendMessage() {
     // Update lastMsgId dari DB agar poll tidak re-render pesan yg sudah tampil
     if (data.last_msg_id) lastMsgId = parseInt(data.last_msg_id);
     if (data.reply) {
-      appendBubble(data.reply.sender, data.reply.message, data.reply.created_at);
+      appendBubble(data.reply.sender, data.reply.message, data.reply.created_at, true, data.reply.attachment);
     }
   } catch(e) {
     showTyping(false);
@@ -838,7 +906,7 @@ async function pollMessages() {
     (data.messages || []).forEach(m => {
       if (parseInt(m.id) > lastMsgId) {
         lastMsgId = parseInt(m.id);
-        appendBubble(m.sender, m.message, m.created_at);
+        appendBubble(m.sender, m.message, m.created_at, true, m.attachment);
       }
     });
 

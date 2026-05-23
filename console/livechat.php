@@ -16,8 +16,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'lc_tg_token','lc_tg_chat_id','lc_tg_forum',
             'openai_api_key','openai_model','ai_system_prompt',
             'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled','chat_admin_name','livechat_enabled','lc_site_url',
-            'lc_debug_panel',
+            'lc_debug_panel','lc_attachment_enabled',
         ];
+        if (!isset($_POST['lc_attachment_enabled'])) $_POST['lc_attachment_enabled'] = '0';
+        if (!isset($_POST['livechat_enabled'])) $_POST['livechat_enabled'] = '0';
+        if (!isset($_POST['chat_ai_enabled'])) $_POST['chat_ai_enabled'] = '0';
+        if (!isset($_POST['chat_admin_enabled'])) $_POST['chat_admin_enabled'] = '0';
+        if (!isset($_POST['lc_debug_panel'])) $_POST['lc_debug_panel'] = '0';
+
         foreach ($keys as $k) {
             $v = trim($_POST[$k] ?? '');
             $pdo->prepare("INSERT INTO settings (`key`,`value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `value`=?")
@@ -55,10 +61,11 @@ foreach ([
     'lc_tg_token','lc_tg_chat_id','lc_tg_forum',
     'openai_api_key','openai_model','ai_system_prompt',
     'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled','chat_admin_name','livechat_enabled','lc_site_url',
-    'lc_debug_panel',
+    'lc_debug_panel','lc_attachment_enabled',
 ] as $k) { $cfg[$k] = setting($pdo, $k, ''); }
 if (empty($cfg['chat_admin_name'])) $cfg['chat_admin_name'] = 'Admin';
 if (empty($cfg['livechat_enabled'])) $cfg['livechat_enabled'] = '1';
+if (!isset($cfg['lc_attachment_enabled']) || $cfg['lc_attachment_enabled'] === '') $cfg['lc_attachment_enabled'] = '1';
 
 // ── Load sessions ─────────────────────────────────────────────
 $sessions = $pdo->query(
@@ -89,26 +96,63 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['tab'] ?? '') === 'reply') 
     $sid      = (int)($_POST['session_id'] ?? 0);
     $msg      = trim($_POST['reply_msg'] ?? '');
     $adminName = setting($pdo, 'chat_admin_name', 'Admin') ?: 'Admin';
-    if (!$sid || !$msg) { echo json_encode(['ok'=>false,'error'=>'Invalid']); exit; }
-    $fullMsg = "[{$adminName}] {$msg}";
-    $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'admin',?)")
-        ->execute([$sid, $fullMsg]);
+    
+    $attachmentPath = null;
+    if (setting($pdo, 'lc_attachment_enabled', '1') === '1' && !empty($_FILES['attachment']['tmp_name'])) {
+        $f = $_FILES['attachment'];
+        if ($f['error'] === UPLOAD_ERR_OK && $f['size'] <= 5*1024*1024) {
+            $ext = strtolower(pathinfo($f['name'], PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg','jpeg','png','gif','pdf','zip','rar'])) {
+                $dir = __DIR__ . '/../uploads/chat/' . date('Y/m');
+                if (!is_dir($dir)) mkdir($dir, 0777, true);
+                $filename = uniqid('att_') . '.' . $ext;
+                if (move_uploaded_file($f['tmp_name'], $dir . '/' . $filename)) {
+                    $attachmentPath = 'uploads/chat/' . date('Y/m') . '/' . $filename;
+                }
+            }
+        }
+    }
+
+    if (!$sid || (!$msg && !$attachmentPath)) { echo json_encode(['ok'=>false,'error'=>'Invalid']); exit; }
+    
+    $fullMsg = $msg ? "[{$adminName}] {$msg}" : "[{$adminName}] Mengirim lampiran";
+    $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message,attachment) VALUES (?,'admin',?,?)")
+        ->execute([$sid, $fullMsg, $attachmentPath]);
     $newId = (int)$pdo->lastInsertId();
     $pdo->prepare("UPDATE chat_sessions SET last_message_at=NOW() WHERE id=?")->execute([$sid]);
+    
     // Kirim ke Telegram
     $sess = $pdo->prepare("SELECT * FROM chat_sessions WHERE id=?");
     $sess->execute([$sid]); $sessRow = $sess->fetch();
     $token = setting($pdo, 'lc_tg_token', '');
     $chatId = setting($pdo, 'lc_tg_chat_id', '');
     if ($token && $chatId && $sessRow) {
-        $params = ['chat_id' => $chatId, 'text' => "🖥️ {$adminName}: {$msg}"];
+        $params = ['chat_id' => $chatId];
         if ($sessRow['tg_thread_id']) $params['message_thread_id'] = (int)$sessRow['tg_thread_id'];
-        $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
-        curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,
-            CURLOPT_POSTFIELDS=>json_encode($params),CURLOPT_HTTPHEADER=>['Content-Type: application/json']]);
-        curl_exec($ch); curl_close($ch);
+        
+        if ($attachmentPath) {
+            $ext = strtolower(pathinfo($attachmentPath, PATHINFO_EXTENSION));
+            if (in_array($ext, ['jpg','jpeg','png','gif'])) {
+                $method = 'sendPhoto';
+                $params['photo'] = new CURLFile(__DIR__ . '/../' . $attachmentPath);
+                $params['caption'] = "🖥️ {$adminName}: {$msg}";
+            } else {
+                $method = 'sendDocument';
+                $params['document'] = new CURLFile(__DIR__ . '/../' . $attachmentPath);
+                $params['caption'] = "🖥️ {$adminName}: {$msg}";
+            }
+            $ch = curl_init("https://api.telegram.org/bot{$token}/{$method}");
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true, CURLOPT_POSTFIELDS=>$params]);
+            curl_exec($ch); curl_close($ch);
+        } else {
+            $params['text'] = "🖥️ {$adminName}: {$msg}";
+            $ch = curl_init("https://api.telegram.org/bot{$token}/sendMessage");
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER=>true,CURLOPT_POST=>true,
+                CURLOPT_POSTFIELDS=>json_encode($params),CURLOPT_HTTPHEADER=>['Content-Type: application/json']]);
+            curl_exec($ch); curl_close($ch);
+        }
     }
-    echo json_encode(['ok'=>true,'id'=>$newId,'message'=>$fullMsg,'created_at'=>date('Y-m-d H:i:s')]);
+    echo json_encode(['ok'=>true,'id'=>$newId,'message'=>$fullMsg,'attachment'=>$attachmentPath,'created_at'=>date('Y-m-d H:i:s')]);
     exit;
 }
 
@@ -118,7 +162,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && ($_GET['action'] ?? '') === 'console
     $sid     = (int)($_GET['session_id'] ?? 0);
     $afterId = (int)($_GET['after_id'] ?? 0);
     if (!$sid) { echo json_encode(['ok'=>false]); exit; }
-    $rows = $pdo->prepare("SELECT id,sender,message,created_at FROM chat_messages WHERE session_id=? AND id>? ORDER BY id ASC LIMIT 50");
+    $rows = $pdo->prepare("SELECT id,sender,message,attachment,created_at FROM chat_messages WHERE session_id=? AND id>? ORDER BY id ASC LIMIT 50");
     $rows->execute([$sid, $afterId]);
     echo json_encode(['ok'=>true,'messages'=>$rows->fetchAll(PDO::FETCH_ASSOC)]);
     exit;
@@ -320,7 +364,17 @@ require_once __DIR__ . '/partials/header.php';
         <?php foreach ($viewMsgs as $m): ?>
         <div class="msg-row msg-<?= $m['sender'] ?>" data-id="<?= $m['id'] ?>">
           <div>
-            <div class="msg-bubble"><?= nl2br(htmlspecialchars($m['message'])) ?></div>
+            <div class="msg-bubble">
+              <?php if ($m['attachment']): ?>
+                <?php $ext = strtolower(pathinfo($m['attachment'], PATHINFO_EXTENSION)); ?>
+                <?php if (in_array($ext, ['jpg','jpeg','png','gif'])): ?>
+                  <div style="margin-bottom:6px;"><a href="/<?= $m['attachment'] ?>" target="_blank"><img src="/<?= $m['attachment'] ?>" style="max-width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.1);"></a></div>
+                <?php else: ?>
+                  <div style="margin-bottom:6px;"><a href="/<?= $m['attachment'] ?>" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:rgba(255,255,255,.1); border-radius:8px; text-decoration:none; color:inherit; border:1px solid rgba(255,255,255,.2); font-size:12px; font-weight:bold;">📎 Download Lampiran</a></div>
+                <?php endif; ?>
+              <?php endif; ?>
+              <?= nl2br(htmlspecialchars($m['message'])) ?>
+            </div>
             <div class="msg-time"><?= date('H:i', strtotime($m['created_at'])) ?></div>
           </div>
         </div>
@@ -330,11 +384,21 @@ require_once __DIR__ . '/partials/header.php';
       <?php if ($viewSess['status']==='open'): ?>
       <div class="detail-reply" id="detail-reply">
         <div style="display:flex;gap:8px;align-items:flex-end;">
-          <textarea id="console-reply-input" class="c-form-control" rows="2"
-            placeholder="Ketik balasan sebagai <?= htmlspecialchars($cfg['chat_admin_name']) ?>..."
-            style="flex:1;resize:none;"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendConsoleReply();}"
-          ></textarea>
+          <div style="flex:1; display:flex; flex-direction:column; gap:4px; position:relative;">
+            <div id="console-attachment-preview" style="display:none; font-size:11px; background:#1f2235; color:#a0b4f0; border-radius:8px; padding:4px 8px; border:1px solid #2a2d3e;">
+                <span id="console-att-preview-name" style="font-weight:600;"></span>
+                <span style="color:#F44E3B; cursor:pointer; float:right; padding: 0 4px;" onclick="clearConsoleAttachment()">&times; Hapus</span>
+            </div>
+            <textarea id="console-reply-input" class="c-form-control" rows="2"
+              placeholder="Ketik balasan sebagai <?= htmlspecialchars($cfg['chat_admin_name']) ?>..."
+              style="width:100%;resize:none;"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendConsoleReply();}"
+            ></textarea>
+          </div>
+          <?php if (setting($pdo, 'lc_attachment_enabled', '1') === '1'): ?>
+          <button onclick="document.getElementById('console-attachment-input').click()" style="background:#2a2d3e;border:1px solid #1f2235;color:#fff;padding:10px 14px;border-radius:8px;font-size:16px;cursor:pointer;height:fit-content;white-space:nowrap;">📎</button>
+          <input type="file" id="console-attachment-input" style="display:none;" accept="image/jpeg,image/png,image/gif,application/pdf,.zip,.rar" onchange="previewConsoleAttachment(this)">
+          <?php endif; ?>
           <button onclick="sendConsoleReply()" id="console-reply-btn"
             style="background:var(--brand);border:none;color:#fff;padding:10px 18px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;height:fit-content;white-space:nowrap;">
             Kirim
@@ -356,12 +420,23 @@ require_once __DIR__ . '/partials/header.php';
   let consoleLastId    = <?= !empty($viewMsgs) ? (int)end($viewMsgs)['id'] : 0 ?>;
 
   // ── Append bubble (console side) ──────────────────────────
-  function appendConsoleBubble(sender, message, time, id) {
+  function appendConsoleBubble(sender, message, time, id, attachment = null) {
     const row = document.createElement('div');
     row.className = `msg-row msg-${sender}`;
     row.dataset.id = id;
     const t = time ? new Date(time).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) : '';
-    row.innerHTML = `<div><div class="msg-bubble">${nl2html(message)}</div><div class="msg-time">${t}</div></div>`;
+    
+    let attHtml = '';
+    if (attachment) {
+        const ext = attachment.split('.').pop().toLowerCase();
+        if (['jpg','jpeg','png','gif'].includes(ext)) {
+            attHtml = `<div style="margin-bottom:6px;"><a href="/${attachment}" target="_blank"><img src="/${attachment}" style="max-width:100%; border-radius:8px; border:1px solid rgba(255,255,255,0.1);"></a></div>`;
+        } else {
+            attHtml = `<div style="margin-bottom:6px;"><a href="/${attachment}" target="_blank" style="display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:rgba(255,255,255,.1); border-radius:8px; text-decoration:none; color:inherit; border:1px solid rgba(255,255,255,.2); font-size:12px; font-weight:bold;">📎 Download Lampiran</a></div>`;
+        }
+    }
+    
+    row.innerHTML = `<div><div class="msg-bubble">${attHtml}${nl2html(message)}</div><div class="msg-time">${t}</div></div>`;
     dm.appendChild(row);
     dm.scrollTop = dm.scrollHeight;
   }
@@ -369,22 +444,51 @@ require_once __DIR__ . '/partials/header.php';
     return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
   }
 
+  function previewConsoleAttachment(input) {
+    const file = input.files[0];
+    if (file) {
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Maksimal ukuran file adalah 5MB.');
+            clearConsoleAttachment();
+            return;
+        }
+        document.getElementById('console-attachment-preview').style.display = 'block';
+        document.getElementById('console-att-preview-name').textContent = file.name;
+    }
+  }
+  function clearConsoleAttachment() {
+    const input = document.getElementById('console-attachment-input');
+    if (input) input.value = '';
+    document.getElementById('console-attachment-preview').style.display = 'none';
+  }
+
   // ── Send reply via AJAX ────────────────────────────────────
   async function sendConsoleReply() {
     const input = document.getElementById('console-reply-input');
+    const attInput = document.getElementById('console-attachment-input');
     const btn   = document.getElementById('console-reply-btn');
     const msg   = input.value.trim();
-    if (!msg) return;
+    const file = attInput && attInput.files[0] ? attInput.files[0] : null;
+
+    if (!msg && !file) return;
+
     input.value = ''; btn.disabled = true; btn.textContent = '...';
+    if (file) {
+        document.getElementById('console-attachment-preview').style.display = 'none';
+        if (attInput) attInput.value = '';
+    }
+
     try {
       const fd = new FormData();
       fd.append('tab', 'reply');
       fd.append('session_id', CONSOLE_SESSION_ID);
       fd.append('reply_msg', msg);
+      if (file) fd.append('attachment', file);
+      
       const res  = await fetch('/console/livechat.php', {method:'POST',body:fd});
       const data = await res.json();
       if (data.ok) {
-        appendConsoleBubble('admin', data.message, data.created_at, data.id);
+        appendConsoleBubble('admin', data.message, data.created_at, data.id, data.attachment);
         if (data.id > consoleLastId) consoleLastId = data.id;
       }
     } catch(e) { alert('Gagal kirim: ' + e.message); }
@@ -401,7 +505,7 @@ require_once __DIR__ . '/partials/header.php';
       (data.messages||[]).forEach(m => {
         if (parseInt(m.id) > consoleLastId) {
           consoleLastId = parseInt(m.id);
-          appendConsoleBubble(m.sender, m.message, m.created_at, m.id);
+          appendConsoleBubble(m.sender, m.message, m.created_at, m.id, m.attachment);
         }
       });
     } catch {}
@@ -491,6 +595,10 @@ require_once __DIR__ . '/partials/header.php';
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
               <input type="checkbox" name="chat_admin_enabled" value="1" <?= $cfg['chat_admin_enabled']==='1'?'checked':'' ?>>
               Aktifkan Mode Admin
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">
+              <input type="checkbox" name="lc_attachment_enabled" value="1" <?= $cfg['lc_attachment_enabled']==='1'?'checked':'' ?>>
+              Aktifkan Fitur Lampiran (Gambar/File)
             </label>
           </div>
           <!-- Debug Panel Toggle -->
