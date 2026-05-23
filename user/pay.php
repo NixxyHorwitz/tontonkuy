@@ -11,16 +11,29 @@ $dep->execute([$dep_id, $user['id']]);
 $dep = $dep->fetch();
 if (!$dep || $dep['method'] !== 'qris') redirect('/deposit');
 
-// ── AJAX: check_status HARUS di sini (sebelum redirect confirmed!) ──
-// Jika check_status POST dikirim saat deposit sudah confirmed, tanpa ini
-// PHP akan redirect ke /history dan mengirim HTML, menyebabkan JSON parse error di JS.
+// ── AJAX: check_status — HARUS sebelum redirect confirmed ──
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check_status') {
     header('Content-Type: application/json; charset=utf-8');
-    // Re-fetch fresh status from DB
     $st = $pdo->prepare("SELECT status FROM deposits WHERE id=? AND user_id=?");
     $st->execute([$dep_id, $user['id']]);
     $row = $st->fetch();
     echo json_encode(['confirmed' => ($row && $row['status'] === 'confirmed')]);
+    exit;
+}
+
+// ── PHP Proxy: download QR image (avoid exposing external URL to browser) ──
+if (($_GET['action'] ?? '') === 'dl_qr') {
+    $qris_raw_dl = setting($pdo, 'qris_raw', '');
+    $qris_str_dl = !empty($qris_raw_dl) ? qris_with_amount($qris_raw_dl, (int)(float)$dep['amount']) : '';
+    if (!$qris_str_dl) { http_response_code(404); exit('QR not available'); }
+    $remote = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' . urlencode($qris_str_dl);
+    $img    = @file_get_contents($remote);
+    if (!$img) { http_response_code(502); exit('Failed to generate QR'); }
+    header('Content-Type: image/png');
+    header('Content-Disposition: attachment; filename="QRIS-TontonKuy-dep' . $dep_id . '.png"');
+    header('Content-Length: ' . strlen($img));
+    header('Cache-Control: no-store');
+    echo $img;
     exit;
 }
 
@@ -33,7 +46,7 @@ $qris_str     = !empty($qris_raw) ? qris_with_amount($qris_raw, (int)$amount) : 
 $_favicon     = setting($pdo, 'favicon_path', '');
 $fav_url      = $_favicon ? '/' . ltrim($_favicon, '/') : '';
 
-// Handle upload bukti
+// Upload bukti
 $flash = $flashType = '';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'upload_proof') {
     if (empty($_FILES['proof']['tmp_name'])) {
@@ -54,7 +67,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
     $dep2 = $pdo->prepare("SELECT * FROM deposits WHERE id=?"); $dep2->execute([$dep_id]); $dep = $dep2->fetch();
 }
 
-// Handle cancel
+// Cancel
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cancel_deposit') {
     if (time() - strtotime($dep['created_at']) >= 60) {
         $pdo->prepare("UPDATE deposits SET status='rejected', admin_note='Dibatalkan oleh Pengguna' WHERE id=? AND user_id=? AND status='pending'")
@@ -65,10 +78,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'cance
     }
 }
 
-$seconds_left = max(0, 60 - (time() - strtotime($dep['created_at'])));
-$qr_url = !empty($qris_str)
+// Countdown: 1 jam dari created_at, tidak reset saat refresh
+$created_ts       = strtotime($dep['created_at']);
+$expire_secs      = max(0, 3600 - (time() - $created_ts));   // sisa waktu 1 jam
+$cancel_secs_left = max(0, 60   - (time() - $created_ts));   // sisa cooldown batal
+
+$qr_url      = !empty($qris_str)
     ? 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' . urlencode($qris_str)
     : '';
+$qr_dl_url   = '?id=' . $dep_id . '&action=dl_qr';
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -82,348 +100,326 @@ $qr_url = !empty($qris_str)
 <?php endif; ?>
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'].'/assets/css/app.css') ?: time() ?>">
 <style>
-:root{--pay-radius:10px;}
-.pay-wrap{min-height:100dvh;display:flex;flex-direction:column;background:var(--bg);}
+* { box-sizing: border-box; }
+.pay-wrap { min-height:100dvh; display:flex; flex-direction:column; background:var(--bg); }
 
-/* topbar */
-.pay-topbar{
-  background:var(--white);border-bottom:2px solid var(--ink);
-  padding:0 14px;height:46px;
-  display:flex;align-items:center;justify-content:space-between;
-  position:sticky;top:0;z-index:100;
+/* Topbar */
+.pay-topbar {
+  background:var(--white); border-bottom:2.5px solid var(--ink);
+  padding:0 16px; height:52px;
+  display:flex; align-items:center; justify-content:space-between;
+  position:sticky; top:0; z-index:100;
 }
-.pay-topbar__back{display:flex;align-items:center;gap:4px;color:var(--ink);text-decoration:none;font-weight:800;font-size:13px;}
-.pay-topbar__title{font-size:12px;font-weight:900;color:#666;}
-.pay-topbar__amt{font-size:12px;font-weight:900;background:var(--yellow);border:1.5px solid var(--ink);border-radius:6px;padding:2px 8px;}
-
-/* body */
-.pay-body{padding:12px;flex:1;display:flex;flex-direction:column;gap:10px;}
-
-/* auto strip */
-.auto-strip{display:flex;align-items:center;gap:8px;background:#f0fdf4;border:1.5px solid #4ade80;border-radius:8px;padding:7px 11px;}
-.auto-strip__dot{width:7px;height:7px;border-radius:50%;background:#22c55e;flex-shrink:0;animation:blink .9s ease-in-out infinite;}
-@keyframes blink{0%,100%{opacity:1}50%{opacity:.15}}
-.auto-strip__lbl{font-size:11px;font-weight:700;flex:1;color:#166534;}
-.auto-strip__time{font-size:12px;font-weight:900;color:#166534;flex-shrink:0;}
-
-/* QR centre */
-.qr-centre{
-  background:#fff;border:2px solid var(--ink);
-  border-radius:var(--pay-radius);
-  padding:16px 12px 12px;
-  text-align:center;
+.pay-topbar__back {
+  display:flex; align-items:center; gap:6px;
+  color:var(--ink); text-decoration:none; font-weight:800; font-size:14px;
 }
-.qr-centre img{
-  width:180px;height:180px;
-  border:2px solid var(--ink);border-radius:10px;
-  display:block;margin:0 auto 10px;
-  padding:8px;background:#fff;
+.pay-topbar__title { font-size:14px; font-weight:900; }
+.pay-topbar__amt {
+  font-size:13px; font-weight:900;
+  background:var(--yellow); border:2px solid var(--ink);
+  border-radius:8px; padding:4px 10px;
 }
-.qr-centre__amt{font-size:20px;font-weight:900;letter-spacing:-.5px;margin-bottom:2px;}
-.qr-centre__id{font-size:11px;font-weight:700;color:#999;}
-.qr-centre__note{font-size:11px;color:#888;font-weight:600;margin-bottom:10px;}
-.qr-centre__row{display:flex;gap:8px;}
-.qr-btn{
-  flex:1;display:inline-flex;align-items:center;justify-content:center;
-  padding:7px 4px;font-size:12px;font-weight:800;
-  border:2px solid var(--ink);border-radius:7px;cursor:pointer;
-  text-decoration:none;color:var(--ink);
-  transition:opacity .15s;
-}
-.qr-btn:active{opacity:.7;}
-.qr-btn--dl{background:var(--yellow);box-shadow:2px 2px 0 var(--ink);}
-.qr-btn--open{background:var(--white);}
 
-/* steps pills */
-.steps-pills{
-  display:flex;flex-direction:column;gap:5px;
-  background:var(--yellow);border:1.5px solid var(--ink);
-  border-radius:var(--pay-radius);padding:10px 12px;
-}
-.pill{display:flex;align-items:center;gap:8px;}
-.pill__n{
-  width:20px;height:20px;flex-shrink:0;
-  background:#fff;border:1.5px solid var(--ink);border-radius:50%;
-  font-size:10px;font-weight:900;
-  display:flex;align-items:center;justify-content:center;
-}
-.pill span:last-child{font-size:11px;font-weight:700;line-height:1.3;}
+/* Body */
+.pay-body { padding:16px; flex:1; display:flex; flex-direction:column; gap:14px; }
 
-/* upload */
-.upload-card{background:#fff;border:2px solid var(--ink);border-radius:var(--pay-radius);padding:12px;}
-
-/* actions */
-.pay-actions{display:flex;flex-direction:column;gap:7px;}
-
-/* confirmed */
-.pay-confirmed{text-align:center;padding:24px 14px;background:var(--lime);border:2px solid var(--ink);border-radius:var(--pay-radius);}
-
-/* toast */
-#toast-container{
-  position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
-  z-index:9999;display:flex;flex-direction:column;align-items:center;gap:7px;
-  pointer-events:none;width:calc(100% - 28px);max-width:340px;
+/* Expiry strip */
+.exp-strip {
+  display:flex; align-items:center; gap:10px;
+  background:#fff7ed; border:2px solid #fb923c;
+  border-radius:10px; padding:10px 14px;
 }
-.nb-toast{
-  display:flex;align-items:center;gap:9px;
-  padding:10px 13px;
-  border:2.5px solid var(--ink);border-radius:9px;
-  box-shadow:3px 3px 0 var(--ink);
-  font-size:13px;font-weight:800;color:var(--ink);
-  pointer-events:auto;width:100%;
-  animation:toastIn .2s cubic-bezier(.2,.8,.4,1.2) both;
+.exp-strip__dot {
+  width:9px; height:9px; border-radius:50%;
+  background:#f97316; flex-shrink:0;
+  animation:blink .9s ease-in-out infinite;
 }
-.nb-toast.out{animation:toastOut .18s ease forwards;}
-.nb-toast--success{background:#d1fae5;}
-.nb-toast--error{background:#fee2e2;}
-.nb-toast--warn{background:#fff3cd;}
-.nb-toast__icon{font-size:15px;flex-shrink:0;}
-.nb-toast__msg{flex:1;line-height:1.3;}
-@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-@keyframes toastOut{from{opacity:1}to{opacity:0;transform:translateY(6px)}}
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.15} }
+.exp-strip__lbl  { font-size:13px; font-weight:700; flex:1; color:#9a3412; }
+.exp-strip__time { font-size:15px; font-weight:900; color:#9a3412; font-variant-numeric:tabular-nums; }
+
+/* QR Block */
+.qr-block {
+  background:#fff; border:2.5px solid var(--ink);
+  border-radius:16px; box-shadow:4px 4px 0 var(--ink);
+  padding:20px 16px 16px; text-align:center;
+}
+.qr-block img {
+  width:240px; height:240px;
+  border:2.5px solid var(--ink); border-radius:12px;
+  display:block; margin:0 auto 14px;
+  padding:10px; background:#fff;
+}
+.qr-block__amt  { font-size:24px; font-weight:900; letter-spacing:-1px; margin-bottom:2px; }
+.qr-block__id   { font-size:12px; font-weight:700; color:#aaa; margin-bottom:6px; }
+.qr-block__note { font-size:12px; color:#888; font-weight:600; margin-bottom:14px; }
+.qr-block__row  { display:flex; gap:10px; }
+.qr-btn {
+  flex:1; display:inline-flex; align-items:center; justify-content:center; gap:5px;
+  padding:10px 8px; font-size:13px; font-weight:800;
+  border:2px solid var(--ink); border-radius:9px; cursor:pointer;
+  text-decoration:none; color:var(--ink); transition:opacity .15s;
+}
+.qr-btn:active { opacity:.65; }
+.qr-btn--dl   { background:var(--yellow); box-shadow:3px 3px 0 var(--ink); }
+.qr-btn--open { background:var(--white); }
+
+/* Steps */
+.steps-card {
+  background:var(--yellow); border:2px solid var(--ink);
+  border-radius:12px; padding:14px 16px;
+  display:flex; flex-direction:column; gap:10px;
+}
+.steps-card__title { font-size:13px; font-weight:900; }
+.step-row  { display:flex; align-items:flex-start; gap:10px; }
+.step-num  {
+  width:24px; height:24px; flex-shrink:0;
+  background:#fff; border:2px solid var(--ink); border-radius:50%;
+  font-size:11px; font-weight:900;
+  display:flex; align-items:center; justify-content:center; margin-top:1px;
+}
+.step-txt  { font-size:13px; font-weight:700; line-height:1.4; }
+
+/* Upload */
+.upload-card {
+  background:#fff; border:2px solid var(--ink);
+  border-radius:12px; padding:16px;
+}
+.upload-card__title { font-size:14px; font-weight:900; margin-bottom:12px; }
+
+/* Actions */
+.pay-actions { display:flex; flex-direction:column; gap:10px; }
+
+/* Confirmed */
+.pay-confirmed {
+  text-align:center; padding:32px 16px;
+  background:var(--lime); border:2.5px solid var(--ink);
+  border-radius:16px; box-shadow:4px 4px 0 var(--ink);
+}
+
+/* Toast */
+#toast-container {
+  position:fixed; bottom:20px; left:50%; transform:translateX(-50%);
+  z-index:9999; display:flex; flex-direction:column; gap:8px;
+  pointer-events:none; width:calc(100% - 32px); max-width:380px;
+}
+.nb-toast {
+  display:flex; align-items:center; gap:10px;
+  padding:12px 16px; border:2.5px solid var(--ink); border-radius:11px;
+  box-shadow:3px 3px 0 var(--ink); font-size:14px; font-weight:800; color:var(--ink);
+  pointer-events:auto; width:100%;
+  animation:toastIn .22s cubic-bezier(.2,.8,.4,1.2) both;
+}
+.nb-toast.out { animation:toastOut .18s ease forwards; }
+.nb-toast--success { background:#d1fae5; }
+.nb-toast--error   { background:#fee2e2; }
+.nb-toast--warn    { background:#fff3cd; }
+.nb-toast__icon { font-size:18px; flex-shrink:0; }
+.nb-toast__msg  { flex:1; line-height:1.3; }
+@keyframes toastIn  { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+@keyframes toastOut { from{opacity:1} to{opacity:0;transform:translateY(6px)} }
 </style>
 </head>
 <body>
 <div id="toast-container"></div>
 <div class="pay-wrap">
 
-<div class="pay-topbar">
+  <div class="pay-topbar">
     <a href="/deposit" class="pay-topbar__back">
-      <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       Kembali
     </a>
-    <div class="pay-topbar__title">📱 QRIS</div>
+    <div class="pay-topbar__title">📱 Bayar QRIS</div>
     <div class="pay-topbar__amt"><?= format_rp($amount) ?></div>
   </div>
 
   <div class="pay-body">
     <?php if ($flash): ?>
-    <div class="alert alert--<?= $flashType==='error'?'error':'success' ?>" style="margin:0;font-size:12px"><?= htmlspecialchars($flash) ?></div>
+    <div class="alert alert--<?= $flashType==='error'?'error':'success' ?>"><?= htmlspecialchars($flash) ?></div>
     <?php endif; ?>
 
     <?php if ($dep['status'] === 'confirmed'): ?>
     <div class="pay-confirmed">
-      <div style="font-size:40px;margin-bottom:6px">✅</div>
-      <div style="font-size:17px;font-weight:900;margin-bottom:4px">Pembayaran Dikonfirmasi!</div>
-      <div style="font-size:11px;color:#555;margin-bottom:14px">Saldo deposit kamu sudah ditambahkan.</div>
+      <div style="font-size:48px;margin-bottom:10px">✅</div>
+      <div style="font-size:20px;font-weight:900;margin-bottom:6px">Pembayaran Dikonfirmasi!</div>
+      <div style="font-size:13px;color:#555;margin-bottom:18px">Saldo deposit kamu sudah ditambahkan.</div>
       <a href="/home" class="btn btn--primary btn--full">🏠 Ke Beranda</a>
     </div>
 
     <?php elseif ($dep['proof_image']): ?>
-    <div style="text-align:center;padding:20px 0">
-      <div style="font-size:32px;margin-bottom:8px">⏳</div>
-      <div style="font-size:13px;font-weight:800;margin-bottom:4px">Bukti Sudah Diupload</div>
-      <div style="font-size:11px;color:#777;margin-bottom:16px">Menunggu konfirmasi admin. Biasanya 1–24 jam.</div>
-      <a href="/history" class="btn btn--ghost btn--full" style="font-size:12px">📜 Lihat Riwayat</a>
+    <div style="text-align:center;padding:32px 0">
+      <div style="font-size:48px;margin-bottom:10px">⏳</div>
+      <div style="font-size:16px;font-weight:900;margin-bottom:6px">Bukti Sudah Diupload</div>
+      <div style="font-size:13px;color:#777;margin-bottom:20px">Menunggu konfirmasi admin. Biasanya 1–24 jam.</div>
+      <a href="/history" class="btn btn--ghost btn--full">📜 Lihat Riwayat</a>
     </div>
 
     <?php else: ?>
 
-    <!-- Auto-confirm strip -->
-    <?php if ($confirm_mode === 'auto'): ?>
-    <div class="auto-strip">
-      <div class="auto-strip__dot" id="strip-dot"></div>
-      <div class="auto-strip__lbl" id="strip-label">⚡ Menunggu konfirmasi…</div>
-      <div class="auto-strip__time" id="auto-timer">5:00</div>
+    <!-- Expiry strip — 1 jam dari created_at, persistent across refresh -->
+    <div class="exp-strip" id="exp-strip">
+      <div class="exp-strip__dot" id="exp-dot"></div>
+      <div class="exp-strip__lbl" id="exp-lbl">⏳ Menunggu pembayaran</div>
+      <div class="exp-strip__time" id="exp-timer">--:--</div>
     </div>
-    <?php endif; ?>
 
-    <!-- QR Centre block -->
+    <!-- QR Block -->
     <?php if ($qr_url): ?>
-    <div class="qr-centre">
-      <img id="qr-img" src="<?= htmlspecialchars($qr_url) ?>" alt="QRIS" crossorigin="anonymous">
-      <div class="qr-centre__amt"><?= format_rp($amount) ?> <span class="qr-centre__id">#<?= $dep_id ?></span></div>
-      <div class="qr-centre__note">Scan dengan app bank / dompet digital</div>
-      <div class="qr-centre__row">
-        <button onclick="downloadQR()" class="qr-btn qr-btn--dl">⬇ Unduh QR</button>
+    <div class="qr-block">
+      <img id="qr-img" src="<?= htmlspecialchars($qr_url) ?>" alt="QRIS">
+      <div class="qr-block__amt"><?= format_rp($amount) ?></div>
+      <div class="qr-block__id">Deposit #<?= $dep_id ?></div>
+      <div class="qr-block__note">Scan dengan app bank / dompet digital manapun</div>
+      <div class="qr-block__row">
+        <a href="<?= htmlspecialchars($qr_dl_url) ?>" class="qr-btn qr-btn--dl">⬇ Unduh QR</a>
         <a href="<?= htmlspecialchars($qr_url) ?>" target="_blank" class="qr-btn qr-btn--open">↗ Buka</a>
       </div>
     </div>
     <?php else: ?>
-    <div class="alert alert--warn" style="margin:0;font-size:12px">QRIS belum dikonfigurasi. Hubungi admin.</div>
+    <div class="alert alert--warn">QRIS belum dikonfigurasi. Hubungi admin.</div>
     <?php endif; ?>
 
-    <!-- Steps inline pills -->
-    <div class="steps-pills">
-      <div class="pill"><span class="pill__n">1</span><span>Buka app bank/e-wallet</span></div>
-      <div class="pill"><span class="pill__n">2</span><span>Scan QR, nominal otomatis terisi</span></div>
-      <div class="pill"><span class="pill__n">3</span><span>Konfirmasi di app kamu</span></div>
+    <!-- Steps -->
+    <div class="steps-card">
+      <div class="steps-card__title">📋 Cara Bayar</div>
+      <div class="step-row"><div class="step-num">1</div><div class="step-txt">Buka app bank atau e-wallet (GoPay, OVO, DANA, dll)</div></div>
+      <div class="step-row"><div class="step-num">2</div><div class="step-txt">Scan QR di atas — nominal sudah otomatis terisi</div></div>
+      <div class="step-row"><div class="step-num">3</div><div class="step-txt">Konfirmasi pembayaran di aplikasi kamu</div></div>
       <?php if ($confirm_mode === 'manual'): ?>
-      <div class="pill"><span class="pill__n">4</span><span>Upload bukti di bawah</span></div>
+      <div class="step-row"><div class="step-num">4</div><div class="step-txt">Screenshot bukti &amp; upload di bawah ini</div></div>
       <?php else: ?>
-      <div class="pill"><span class="pill__n">4</span><span>Tunggu — saldo masuk otomatis ⚡</span></div>
+      <div class="step-row"><div class="step-num">4</div><div class="step-txt">Tunggu — saldo otomatis masuk dalam hitungan detik ⚡</div></div>
       <?php endif; ?>
     </div>
 
     <!-- Upload bukti (manual only) -->
     <?php if ($confirm_mode !== 'auto'): ?>
     <div class="upload-card">
-      <div style="font-size:12px;font-weight:900;margin-bottom:8px">📸 Upload Bukti</div>
+      <div class="upload-card__title">📸 Upload Bukti Pembayaran</div>
       <form method="POST" enctype="multipart/form-data">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="upload_proof">
-        <input class="form-control" type="file" name="proof" accept="image/*" style="padding:7px;font-size:12px;margin-bottom:8px" required>
-        <button type="submit" class="btn btn--primary btn--full" style="font-size:12px">📤 Upload &amp; Konfirmasi</button>
+        <div class="form-group">
+          <input class="form-control" type="file" name="proof" accept="image/*" required>
+          <div class="form-hint">Screenshot notifikasi / struk pembayaran QRIS</div>
+        </div>
+        <button type="submit" class="btn btn--primary btn--full">📤 Upload &amp; Konfirmasi</button>
       </form>
-      <div style="text-align:center;margin-top:8px">
-        <a href="/history" style="font-size:11px;color:#aaa;font-weight:700">Nanti saja → Riwayat</a>
+      <div style="text-align:center;margin-top:12px">
+        <a href="/history" style="font-size:13px;color:#aaa;font-weight:700">Nanti saja → Lihat Riwayat</a>
       </div>
     </div>
     <?php endif; ?>
 
     <!-- Actions -->
     <div class="pay-actions">
-      <button id="btn-check-status" onclick="manualCheckStatus()" class="btn btn--primary btn--full" style="font-size:13px;font-weight:800">
-        🔄 Cek Status
+      <button id="btn-check-status" onclick="manualCheckStatus()" class="btn btn--primary btn--full">
+        🔄 Cek Status Pembayaran
       </button>
       <form method="POST" style="margin:0">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="cancel_deposit">
-        <button id="btn-cancel-dep" type="submit" class="btn btn--ghost btn--full" style="font-size:11px;font-weight:800;border-color:#ef4444;color:#ef4444;width:100%">
+        <button id="btn-cancel-dep" type="submit" class="btn btn--ghost btn--full"
+                style="border-color:#ef4444;color:#ef4444;width:100%;font-size:13px">
           ❌ Batalkan Deposit
         </button>
       </form>
     </div>
 
-    <!-- Scripts -->
     <script>
-    const DEP_ID   = <?= $dep_id ?>;
-    const CSRF_TOK = '<?= csrf_token() ?>';
-    let isChecking = false;
+    const DEP_ID      = <?= $dep_id ?>;
+    const CSRF_TOK    = '<?= csrf_token() ?>';
+    const EXPIRE_SECS = <?= $expire_secs ?>; // sisa detik dari PHP (tidak reset saat refresh)
+    let isChecking    = false;
 
-    // ── Neobrutalism Toast ──
-    function toast(msg, type = 'success', duration = 3000) {
+    // ── Toast ──
+    function toast(msg, type = 'success', duration = 3200) {
       const icons = { success:'✅', error:'❌', warn:'⚠️' };
-      const c = document.getElementById('toast-container');
+      const c  = document.getElementById('toast-container');
       const el = document.createElement('div');
       el.className = 'nb-toast nb-toast--' + type;
       el.innerHTML = '<span class="nb-toast__icon">' + icons[type] + '</span><span class="nb-toast__msg">' + msg + '</span>';
       c.appendChild(el);
-      const remove = () => {
-        el.classList.add('out');
-        setTimeout(() => el.remove(), 200);
-      };
-      el.addEventListener('click', remove);
-      setTimeout(remove, duration);
+      const dismiss = () => { el.classList.add('out'); setTimeout(() => el.remove(), 200); };
+      el.addEventListener('click', dismiss);
+      setTimeout(dismiss, duration);
     }
 
-    // ── Download QR via blob (cross-origin safe) ──
-    async function downloadQR() {
-      try {
-        const r   = await fetch('<?= htmlspecialchars($qr_url) ?>');
-        const blo = await r.blob();
-        const url = URL.createObjectURL(blo);
-        const a   = document.createElement('a');
-        a.href     = url;
-        a.download = 'QRIS-TontonKuy-<?= format_rp($amount) ?>.png';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      } catch(e) {
-        // Fallback: open in new tab so user can save manually
-        window.open('<?= htmlspecialchars($qr_url) ?>', '_blank');
+    // ── Expiry countdown (dari PHP, persistent) ──
+    let expSecs = EXPIRE_SECS;
+    const timerEl = document.getElementById('exp-timer');
+    const lblEl   = document.getElementById('exp-lbl');
+    const dotEl   = document.getElementById('exp-dot');
+
+    function updateExpTimer() {
+      if (expSecs <= 0) {
+        if (timerEl) timerEl.textContent = '00:00';
+        if (lblEl)   lblEl.textContent   = '⚠️ Deposit kedaluwarsa — hubungi admin';
+        if (dotEl)   { dotEl.style.background = '#ef4444'; dotEl.style.animation = 'none'; }
+        return;
       }
+      const m = Math.floor(expSecs / 60), s = expSecs % 60;
+      if (timerEl) timerEl.textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
     }
+    updateExpTimer();
+    const expTimer = setInterval(() => {
+      expSecs--;
+      updateExpTimer();
+      if (expSecs <= 0) clearInterval(expTimer);
+    }, 1000);
 
-    // ── Polling (every 5s) ──
+    // ── Polling (5s) ──
     const pollStatus = () => {
       if (isChecking) return;
       fetch('?id=' + DEP_ID, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: '_csrf=' + CSRF_TOK + '&action=check_status'
-      })
-      .then(r => r.json())
-      .then(d => {
-        if (d.confirmed) confirmAndRedirect();
-      })
-      .catch(() => {});
+        method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'_csrf=' + CSRF_TOK + '&action=check_status'
+      }).then(r=>r.json()).then(d=>{ if(d.confirmed) confirmAndRedirect(); }).catch(()=>{});
     };
     const pollTimer = setInterval(pollStatus, 5000);
 
     function confirmAndRedirect() {
-      clearInterval(pollTimer);
-      if (typeof countdown !== 'undefined') clearInterval(countdown);
-      const dot = document.getElementById('strip-dot');
-      const lbl = document.getElementById('strip-label');
-      const tmr = document.getElementById('auto-timer');
-      if (dot) { dot.style.background='#22c55e'; dot.style.animation='none'; }
-      if (lbl) lbl.textContent = '✅ Dikonfirmasi! Mengalihkan...';
-      if (tmr) tmr.textContent = '✓';
-      setTimeout(() => location.href = '/history?tab=deposit', 1500);
+      clearInterval(pollTimer); clearInterval(expTimer);
+      if (lblEl) lblEl.textContent = '✅ Dikonfirmasi! Mengalihkan...';
+      if (timerEl) timerEl.textContent = '✓';
+      if (dotEl) { dotEl.style.background='#22c55e'; dotEl.style.animation='none'; }
+      const strip = document.getElementById('exp-strip');
+      if (strip) { strip.style.background='#f0fdf4'; strip.style.borderColor='#4ade80'; }
+      setTimeout(()=>location.href='/history?tab=deposit', 1500);
     }
 
     // ── Manual check ──
     const manualCheckStatus = () => {
       if (isChecking) return;
       isChecking = true;
-      const btn = document.getElementById('btn-check-status');
+      const btn  = document.getElementById('btn-check-status');
       const orig = btn.innerHTML;
-      btn.disabled = true;
-      btn.innerHTML = '⏳ Mengecek...';
+      btn.disabled = true; btn.innerHTML = '⏳ Mengecek...';
       fetch('?id=' + DEP_ID, {
-        method: 'POST',
-        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-        body: '_csrf=' + CSRF_TOK + '&action=check_status'
-      })
-      .then(r => r.json())
-      .then(d => {
-        isChecking = false;
-        btn.disabled = false;
-        btn.innerHTML = orig;
-        if (d.confirmed) {
-          confirmAndRedirect();
-          toast('Pembayaran Sukses', 'success');
-        } else {
-          toast('Pembayaran belum diterima', 'error');
-        }
-      })
-      .catch(() => {
-        isChecking = false;
-        btn.disabled = false;
-        btn.innerHTML = orig;
-        toast('Gagal menghubungi server', 'warn');
+        method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'_csrf=' + CSRF_TOK + '&action=check_status'
+      }).then(r=>r.json()).then(d=>{
+        isChecking=false; btn.disabled=false; btn.innerHTML=orig;
+        if (d.confirmed) { confirmAndRedirect(); toast('Pembayaran Sukses 🎉','success'); }
+        else             { toast('Pembayaran belum diterima','error'); }
+      }).catch(()=>{
+        isChecking=false; btn.disabled=false; btn.innerHTML=orig;
+        toast('Gagal menghubungi server','warn');
       });
     };
 
-    <?php if ($confirm_mode === 'auto'): ?>
-    // ── Auto countdown ──
-    let secs = 300;
-    const countdown = setInterval(() => {
-      secs--;
-      const el = document.getElementById('auto-timer');
-      if (el) el.textContent = Math.floor(secs/60) + ':' + String(secs%60).padStart(2,'0');
-      if (secs <= 0) {
-        clearInterval(countdown);
-        const lbl = document.getElementById('strip-label');
-        const dot = document.getElementById('strip-dot');
-        if (lbl) lbl.textContent = '⚠️ Waktu habis — cek riwayat atau hubungi admin';
-        if (dot) { dot.style.background='#f97316'; dot.style.animation='none'; }
-      }
-    }, 1000);
-    <?php endif; ?>
-
     // ── Cancel cooldown ──
-    let cancelSecs = <?= $seconds_left ?>;
+    let cancelSecs = <?= $cancel_secs_left ?>;
     const cancelBtn = document.getElementById('btn-cancel-dep');
     if (cancelBtn && cancelSecs > 0) {
-      cancelBtn.disabled = true;
-      cancelBtn.style.opacity = '0.45';
-      cancelBtn.style.cursor  = 'not-allowed';
-      cancelBtn.textContent = '❌ Batalkan (Tunggu ' + cancelSecs + 's)';
-      const ci = setInterval(() => {
+      cancelBtn.disabled=true; cancelBtn.style.opacity='0.4'; cancelBtn.style.cursor='not-allowed';
+      cancelBtn.textContent='❌ Batalkan (Tunggu '+cancelSecs+'s)';
+      const ci = setInterval(()=>{
         cancelSecs--;
-        cancelBtn.textContent = cancelSecs > 0
-          ? '❌ Batalkan (Tunggu ' + cancelSecs + 's)'
-          : '❌ Batalkan Deposit';
-        if (cancelSecs <= 0) {
-          clearInterval(ci);
-          cancelBtn.disabled     = false;
-          cancelBtn.style.opacity = '1';
-          cancelBtn.style.cursor  = 'pointer';
-        }
-      }, 1000);
+        cancelBtn.textContent = cancelSecs>0 ? '❌ Batalkan (Tunggu '+cancelSecs+'s)' : '❌ Batalkan Deposit';
+        if(cancelSecs<=0){ clearInterval(ci); cancelBtn.disabled=false; cancelBtn.style.opacity='1'; cancelBtn.style.cursor='pointer'; }
+      },1000);
     }
     </script>
 
