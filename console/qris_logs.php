@@ -70,45 +70,39 @@ require __DIR__ . '/partials/header.php';
           </tr>
         </thead>
         <tbody>
-          <?php if (empty($logs)): ?>
-            <tr>
-              <td colspan="6" class="text-center py-4 text-muted">Belum ada log transaksi masuk dari payment gateway.</td>
+          <?php foreach ($logs as $log): ?>
+            <tr style="vertical-align: middle;">
+              <td><code>#<?= $log['id'] ?></code></td>
+              <td style="color:#aaa;"><?= htmlspecialchars($log['created_at']) ?></td>
+              <td style="font-weight: 700; color: #fff;"><?= format_rp((float)$log['extracted_amount']) ?></td>
+              <td>
+                <?php if ($log['status'] === 'matched'): ?>
+                  <span class="badge b-success" style="padding: 4px 8px; border-radius: 6px;">Matched ✅</span>
+                <?php elseif ($log['status'] === 'unmatched'): ?>
+                  <span class="badge b-warn" style="padding: 4px 8px; border-radius: 6px; background:#FF6B35; color:#fff">Unmatched ⏳</span>
+                <?php elseif ($log['status'] === 'disabled'): ?>
+                  <span class="badge b-neutral" style="padding: 4px 8px; border-radius: 6px; background:#444; color:#aaa">Disabled ❌</span>
+                <?php else: ?>
+                  <span class="badge b-neutral" style="padding: 4px 8px; border-radius: 6px; background:#ef4444; color:#fff">Failed ⚠️</span>
+                <?php endif; ?>
+              </td>
+              <td>
+                <?php if ($log['deposit_id'] && $log['user_id']): ?>
+                  <a href="/console/user_txns?uid=<?= $log['user_id'] ?>" class="text-info" style="text-decoration:none;font-weight:700">
+                    👤 @<?= htmlspecialchars($log['username']) ?> (Depo #<?= $log['deposit_id'] ?>)
+                  </a>
+                <?php else: ?>
+                  <span style="color:#555">—</span>
+                <?php endif; ?>
+              </td>
+              <td class="text-end">
+                <button class="btn btn-sm btn-info text-white" style="border:none;border-radius:6px;font-size:11px"
+                        onclick="showPayloadModal(<?= htmlspecialchars(json_encode($log['payload'])) ?>)">
+                  🔍 Lihat Payload
+                </button>
+              </td>
             </tr>
-          <?php else: ?>
-            <?php foreach ($logs as $log): ?>
-              <tr style="vertical-align: middle;">
-                <td><code>#<?= $log['id'] ?></code></td>
-                <td style="color:#aaa;"><?= htmlspecialchars($log['created_at']) ?></td>
-                <td style="font-weight: 700; color: #fff;"><?= format_rp((float)$log['extracted_amount']) ?></td>
-                <td>
-                  <?php if ($log['status'] === 'matched'): ?>
-                    <span class="badge b-success" style="padding: 4px 8px; border-radius: 6px;">Matched ✅</span>
-                  <?php elseif ($log['status'] === 'unmatched'): ?>
-                    <span class="badge b-warn" style="padding: 4px 8px; border-radius: 6px; background:#FF6B35; color:#fff">Unmatched ⏳</span>
-                  <?php elseif ($log['status'] === 'disabled'): ?>
-                    <span class="badge b-neutral" style="padding: 4px 8px; border-radius: 6px; background:#444; color:#aaa">Disabled ❌</span>
-                  <?php else: ?>
-                    <span class="badge b-neutral" style="padding: 4px 8px; border-radius: 6px; background:#ef4444; color:#fff">Failed ⚠️</span>
-                  <?php endif; ?>
-                </td>
-                <td>
-                  <?php if ($log['deposit_id'] && $log['user_id']): ?>
-                    <a href="/console/user_txns?uid=<?= $log['user_id'] ?>" class="text-info" style="text-decoration:none;font-weight:700">
-                      👤 @<?= htmlspecialchars($log['username']) ?> (Depo #<?= $log['deposit_id'] ?>)
-                    </a>
-                  <?php else: ?>
-                    <span style="color:#555">—</span>
-                  <?php endif; ?>
-                </td>
-                <td class="text-end">
-                  <button class="btn btn-sm btn-info text-white" style="border:none;border-radius:6px;font-size:11px"
-                          onclick="showPayloadModal(<?= htmlspecialchars(json_encode($log['payload'])) ?>)">
-                    🔍 Lihat Payload
-                  </button>
-                </td>
-              </tr>
-            <?php endforeach; ?>
-          <?php endif; ?>
+          <?php endforeach; ?>
         </tbody>
       </table>
     </div>
