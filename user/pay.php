@@ -259,12 +259,18 @@ $qr_url = !empty($qris_str)
     </div>
     <?php endif; ?>
 
-    <!-- Cancel button (unlocked after 1 minute of creation) -->
-    <div style="margin-top: 14px;">
-      <form method="POST" id="cancel-form">
+    <!-- Action Buttons Block (Check Status & Cancel Cooldown) -->
+    <div style="margin-top: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <!-- Manual Check Status Button -->
+      <button type="button" id="btn-check-status" onclick="manualCheckStatus()" class="btn btn--primary btn--full" style="font-weight: 800; box-shadow: 4px 4px 0 var(--ink);">
+        🔄 Cek Status Pembayaran
+      </button>
+
+      <!-- Cancel button (unlocked after 1 minute of creation) -->
+      <form method="POST" id="cancel-form" style="margin: 0; padding: 0; width: 100%;">
         <?= csrf_field() ?>
         <input type="hidden" name="action" value="cancel_deposit">
-        <button type="submit" id="btn-cancel-dep" class="btn btn--ghost btn--full" style="border: 2.5px solid #ef4444; color: #ef4444; font-weight: 800; background: transparent; box-shadow: 4px 4px 0 var(--ink);">
+        <button type="submit" id="btn-cancel-dep" class="btn btn--ghost btn--full" style="border: 2.5px solid #ef4444; color: #ef4444; font-weight: 800; background: transparent; box-shadow: 4px 4px 0 var(--ink); width: 100%;">
           ❌ Batalkan Deposit
         </button>
       </form>
@@ -272,9 +278,12 @@ $qr_url = !empty($qris_str)
 
     <!-- Unified Real-time Polling & Cooldown Script -->
     <script>
+    let isChecking = false;
+
     // ── 1. Global Real-time Polling (every 5 seconds) ──
     const pollStatus = () => {
-      fetch('', { method:'POST',
+      if (isChecking) return;
+      fetch('?id=<?= $dep_id ?>', { method:'POST',
         headers:{'Content-Type':'application/x-www-form-urlencoded'},
         body:'_csrf=<?= csrf_token() ?>&action=check_status'
       }).then(r=>r.json()).then(d=>{
@@ -295,7 +304,49 @@ $qr_url = !empty($qris_str)
     };
     const pollTimer = setInterval(pollStatus, 5000);
 
-    // ── 2. Auto-Confirm Countdown (If in Auto Mode) ──
+    // ── 2. Manual Check Status Trigger ──
+    const manualCheckStatus = () => {
+      if (isChecking) return;
+      isChecking = true;
+      
+      const checkBtn = document.getElementById('btn-check-status');
+      const originalText = checkBtn.innerHTML;
+      checkBtn.disabled = true;
+      checkBtn.innerHTML = '⏳ Mengecek Status...';
+      
+      fetch('?id=<?= $dep_id ?>', { method:'POST',
+        headers:{'Content-Type':'application/x-www-form-urlencoded'},
+        body:'_csrf=<?= csrf_token() ?>&action=check_status'
+      }).then(r=>r.json()).then(d=>{
+        isChecking = false;
+        checkBtn.disabled = false;
+        checkBtn.innerHTML = originalText;
+        
+        if (d.confirmed) {
+          clearInterval(pollTimer);
+          if (typeof countdown !== 'undefined') clearInterval(countdown);
+          
+          const timerEl  = document.getElementById('auto-timer');
+          const labelEl  = document.getElementById('strip-label');
+          const dotEl    = document.getElementById('strip-dot');
+          if (timerEl) timerEl.textContent = '✓';
+          if (labelEl) labelEl.textContent = '✅ Dikonfirmasi! Mengalihkan...';
+          if (dotEl)   { dotEl.style.background='#22c55e'; dotEl.style.animation='none'; }
+          
+          alert('🎉 Pembayaran terdeteksi sukses! Mengalihkan...');
+          location.href = '/history?tab=deposit';
+        } else {
+          alert('❌ Pembayaran belum terdeteksi di sistem. Pastikan Anda telah melakukan transfer QRIS dengan nominal yang sesuai (termasuk kode unik jika ada).');
+        }
+      }).catch(()=>{
+        isChecking = false;
+        checkBtn.disabled = false;
+        checkBtn.innerHTML = originalText;
+        alert('⚠️ Terjadi kesalahan saat menghubungi server. Silakan coba lagi.');
+      });
+    };
+
+    // ── 3. Auto-Confirm Countdown (If in Auto Mode) ──
     <?php if ($confirm_mode === 'auto'): ?>
     let secs = 300;
     const timerEl  = document.getElementById('auto-timer');
@@ -314,7 +365,7 @@ $qr_url = !empty($qris_str)
     }, 1000);
     <?php endif; ?>
 
-    // ── 3. Cancel Button Countdown & Logic ──
+    // ── 4. Cancel Button Countdown & Logic ──
     let cancelSecs = <?= $seconds_left ?>;
     const cancelBtn = document.getElementById('btn-cancel-dep');
     if (cancelBtn) {
