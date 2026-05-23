@@ -793,7 +793,7 @@ async function sendMessage() {
   let bubbleText = text;
   if (file && !text) bubbleText = '(Mengirim file...)';
 
-  appendBubble('user', bubbleText, new Date().toISOString());
+  const tmpBubble = appendBubble('user', bubbleText, new Date().toISOString());
 
   // Show typing if AI mode
   if (currentMode === 'ai') showTyping(true);
@@ -807,12 +807,19 @@ async function sendMessage() {
     const data = await res.json();
     showTyping(false);
     if (!data.ok) throw new Error(data.error || 'Gagal mengirim.');
-    // Update lastMsgId dari DB agar poll tidak re-render pesan yg sudah tampil
+    
+    // Ganti bubble sementara dengan data asli (termasuk gambar) dari server
+    tmpBubble.remove();
+    if (data.user_message) {
+        appendBubble('user', data.user_message.message, data.user_message.created_at, false, data.user_message.attachment);
+    }
+
     if (data.last_msg_id) lastMsgId = parseInt(data.last_msg_id);
     if (data.reply) {
       appendBubble(data.reply.sender, data.reply.message, data.reply.created_at, true, data.reply.attachment);
     }
   } catch(e) {
+    tmpBubble.remove();
     showTyping(false);
     appendBubble('system', '⚠️ ' + e.message, new Date().toISOString());
   }
