@@ -19,7 +19,7 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_url') {
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Pindah ke Server Baru — TontonKuy</title>
+<title>Pindah ke Server Baru — TontonKuy</title>22
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'].'/assets/css/app.css') ?: time() ?>">
 <style>
   /* Neo-brutalist style variables fallback (jika app.css tidak termuat) */

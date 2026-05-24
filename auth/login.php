@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($user && password_verify($pwd, $user['password_hash'])) {
         unset($_SESSION[$ip_key . '_att'], $_SESSION[$ip_key . '_lock']);
         session_regenerate_id(true);
-        $_SESSION['user_id'] = $user['id'];
+        set_auth_cookie((int)$user['id']);
         redirect('/home');
     }
 
@@ -36,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $_SESSION[$ip_key . '_att'] = $new_att;
     if ($new_att >= 5) {
         $_SESSION[$ip_key . '_lock'] = time() + 600;
-        $error = 'Terlalu banyak percobaan. Akun dikunci 10 menit.';
+        $error = 'Terlalu banyak percobaan. Coba lagi dalam 10 menit.';
     } else {
         $left  = 5 - $new_att;
         $error = "Username/email atau password salah. Sisa percobaan: {$left}";

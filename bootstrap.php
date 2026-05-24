@@ -209,12 +209,37 @@ function yt_thumb(string $youtube_id): string {
 }
 
 /** Get logged-in user or null */
+function set_auth_cookie(int $user_id): void {
+    $expires = time() + (86400 * 30); // 30 days
+    $data = $user_id . '|' . $expires;
+    $signature = hash_hmac('sha256', $data, $_ENV['APP_KEY'] ?? 'default_secret_key');
+    $cookie_val = $data . '|' . $signature;
+    setcookie('tonton_session', $cookie_val, $expires, '/', '', false, true); // HTTPOnly true
+}
+
+function get_auth_cookie(): ?int {
+    if (empty($_COOKIE['tonton_session'])) return null;
+    $parts = explode('|', $_COOKIE['tonton_session']);
+    if (count($parts) !== 3) return null;
+    [$user_id, $expires, $signature] = $parts;
+    if (time() > (int)$expires) return null; // expired
+    $data = $user_id . '|' . $expires;
+    $expected_sig = hash_hmac('sha256', $data, $_ENV['APP_KEY'] ?? 'default_secret_key');
+    if (!hash_equals($expected_sig, $signature)) return null; // tampered
+    return (int)$user_id;
+}
+
+function clear_auth_cookie(): void {
+    setcookie('tonton_session', '', time() - 3600, '/');
+}
+
 function auth_user(PDO $pdo): ?array {
-    if (empty($_SESSION['user_id'])) return null;
+    $uid = get_auth_cookie();
+    if (!$uid) return null;
     static $user = null;
     if ($user !== null) return $user;
     $s = $pdo->prepare("SELECT * FROM users WHERE id=? AND is_active=1");
-    $s->execute([$_SESSION['user_id']]);
+    $s->execute([$uid]);
     return $user = ($s->fetch() ?: null);
 }
 

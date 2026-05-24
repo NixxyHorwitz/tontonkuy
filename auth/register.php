@@ -108,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Reset rate limit
             unset($_SESSION[$ip_key . '_attempts'], $_SESSION[$ip_key . '_lock']);
             session_regenerate_id(true);
-            $_SESSION['user_id'] = $new_id;
+            set_auth_cookie((int)$new_id);
             redirect('/home');
         }
     }
