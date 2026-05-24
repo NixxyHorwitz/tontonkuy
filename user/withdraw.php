@@ -122,7 +122,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Regenerate token
             $_SESSION[$_ftk_wd] = bin2hex(random_bytes(16));
             $flash = '✅ Permintaan withdraw dikirim! Proses 1-10 menit.';
+            $flashType = 'success';
         }
+    }
+    
+    if (isset($_POST['ajax'])) {
+        header('Content-Type: application/json');
+        if ($flashType === 'error' || $flash === '') {
+            echo json_encode(['error' => $flash ?: 'Terjadi kesalahan.']);
+        } else {
+            echo json_encode(['ok' => true, 'message' => $flash]);
+        }
+        exit;
     }
 }
 end_wd:
@@ -347,8 +358,25 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   window.confirmBrutalWd = function() {
-    form.dataset.confirmed = '1';
-    form.submit();
+    document.getElementById('brutal-confirm').style.display = 'none';
+    if (btn) { btn.disabled = true; btn.innerText = 'Memproses...'; }
+    const fd = new FormData(form);
+    fd.append('ajax', '1');
+    fetch('', { method: 'POST', body: fd })
+    .then(r => r.json())
+    .then(res => {
+      if (res.error) {
+        if (typeof nToast !== 'undefined') nToast(res.error, 'error'); else alert(res.error);
+        if (btn) { btn.disabled = false; btn.innerText = '💸 Ajukan Penarikan'; }
+      } else {
+        if (typeof nToast !== 'undefined') nToast(res.message, 'success'); else alert(res.message);
+        setTimeout(() => window.location.reload(), 1500);
+      }
+    })
+    .catch(() => {
+      if (typeof nToast !== 'undefined') nToast('Koneksi terputus.', 'error'); else alert('Koneksi terputus.');
+      if (btn) { btn.disabled = false; btn.innerText = '💸 Ajukan Penarikan'; }
+    });
   };
 })();
 </script>
