@@ -134,7 +134,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <?php endif; ?>
       </div>
       <div class="list-item__right">
-        <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','rejected'=>'error',default=>'error'} ?>">
+        <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','rejected'=>'error','refunded'=>'info',default=>'error'} ?>">
           <?= ucfirst($w['status']) ?>
         </span>
         <div class="list-item__amount list-item__amount--red" style="margin-top:4px">-<?= format_rp((float)$w['amount']) ?></div>

@@ -44,7 +44,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($wd) {
             // Refund balance from hold state
             $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$wd['amount'], $wd['user_id']]);
-            $pdo->prepare("UPDATE withdrawals SET status='rejected',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$note ?: 'Refund dari status Hold', $id]);
+            $pdo->prepare("UPDATE withdrawals SET status='refunded',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$note ?: 'Refund dari status Hold', $id]);
             $flash = "Withdraw #{$id} di-refund. Status menjadi Rejected dan saldo dikembalikan.";
         }
     }
@@ -74,7 +74,7 @@ require __DIR__ . '/partials/header.php';
 
 <!-- Filter tabs -->
 <div class="d-flex gap-2 mb-3 flex-wrap">
-  <?php foreach (['all'=>'Semua','pending'=>'Pending','approved'=>'Approved','rejected'=>'Rejected','hold'=>'Hold'] as $s=>$lbl): ?>
+  <?php foreach (['all'=>'Semua','pending'=>'Pending','approved'=>'Approved','rejected'=>'Rejected','hold'=>'Hold','refunded'=>'Refunded'] as $s=>$lbl): ?>
   <a href="?status=<?= $s ?>" class="btn btn-sm <?= $filter===$s?'text-white':'btn-secondary' ?>" style="<?= $filter===$s?'background:var(--brand)':'' ?>">
     <?= $lbl ?> <?php $cnt=$s==='all'?array_sum($countMap):($countMap[$s]??0); if($cnt>0): ?><span class="badge bg-dark ms-1"><?= $cnt ?></span><?php endif; ?>
   </a>
@@ -97,7 +97,7 @@ require __DIR__ . '/partials/header.php';
           </td>
           <td style="font-size:12px;color:#666"><?= date('d M Y H:i', strtotime($w['created_at'])) ?></td>
           <td>
-            <span class="badge <?= match($w['status']){'approved'=>'b-success','pending'=>'b-warn','hold'=>'b-warn','rejected'=>'b-danger'} ?>" style="border-radius:6px;padding:4px 8px">
+            <span class="badge <?= match($w['status']){'approved'=>'b-success','pending'=>'b-warn','hold'=>'b-warn','rejected'=>'b-danger','refunded'=>'b-info'} ?>" style="border-radius:6px;padding:4px 8px">
               <?= ucfirst($w['status']) ?>
             </span>
             <?php if ($w['admin_note']): ?><div style="font-size:11px;color:#666;margin-top:3px"><?= htmlspecialchars($w['admin_note']) ?></div><?php endif; ?>

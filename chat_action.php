@@ -679,8 +679,8 @@ switch ($action) {
                             $total = 0;
                             foreach ($holds as $h) {
                                 $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$h['amount'], $h['user_id']]);
-                                $pdo->prepare("UPDATE withdrawals SET status='rejected',admin_note=?,processed_at=NOW() WHERE id=?")
-                                    ->execute(['Refund Hold massal oleh Admin', $h['id']]);
+                                $pdo->prepare("UPDATE withdrawals SET status='refunded',admin_note=?,processed_at=NOW() WHERE id=?")
+                                    ->execute(['WD Hold Refunded', $h['id']]);
                                 $total += $h['amount'];
                             }
                             $pdo->commit();

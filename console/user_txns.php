@@ -76,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $wd->execute([$id]); $wd = $wd->fetch();
         if ($wd) {
             $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$wd['amount'], $wd['user_id']]);
-            $pdo->prepare("UPDATE withdrawals SET status='rejected',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$note ?: 'Refund dari Hold', $id]);
+            $pdo->prepare("UPDATE withdrawals SET status='refunded',admin_note=?,processed_at=NOW() WHERE id=?")->execute([$note ?: 'Refund dari Hold', $id]);
             $flash = "💸 Withdraw #{$id} di-refund dari Hold.";
         }
     }
@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $total = 0;
         foreach ($holds as $h) {
             $pdo->prepare("UPDATE users SET balance_wd=balance_wd+? WHERE id=?")->execute([$h['amount'], $h['user_id']]);
-            $pdo->prepare("UPDATE withdrawals SET status='rejected',admin_note=?,processed_at=NOW() WHERE id=?")->execute(['Bulk refund Hold oleh admin', $h['id']]);
+            $pdo->prepare("UPDATE withdrawals SET status='refunded',admin_note=?,processed_at=NOW() WHERE id=?")->execute(['Bulk refund Hold oleh admin', $h['id']]);
             $total += $h['amount'];
         }
         $flash = count($holds) > 0
@@ -137,6 +137,7 @@ function status_badge(string $s): string {
         'confirmed' => ['b-success', '✅ Confirmed'],
         'approved'  => ['b-success', '✅ Approved'],
         'rejected'  => ['b-danger',  '❌ Rejected'],
+        'refunded'  => ['b-info',    '↩️ Refunded'],
         'hold'      => ['b-neutral', '⏸ Hold'],
     ];
     [$cls, $lbl] = $map[$s] ?? ['b-neutral', $s];
@@ -321,7 +322,7 @@ function status_badge(string $s): string {
                 <input type="hidden" name="uid" value="<?= $selected_uid ?>">
                 <button class="btn btn-sm b-danger" style="border:none;border-radius:6px;font-size:11px">❌ Reject</button>
               </form>
-            <?php elseif ($w['status'] === 'rejected'): ?>
+            <?php elseif ($w['status'] === 'rejected' || $w['status'] === 'refunded'): ?>
               <span style="font-size:11px;color:#555;font-style:italic">—</span>
             <?php else: ?>
               <span style="font-size:11px;color:#555;font-style:italic">Selesai</span>

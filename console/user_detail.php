@@ -149,7 +149,7 @@ require __DIR__ . '/partials/header.php';
                   <td style="font-size:12px;color:#888"><?= date('d M Y H:i', strtotime($w['created_at'])) ?></td>
                   <td style="color:#FF6B35;font-weight:700"><?= format_rp((float)$w['amount']) ?></td>
                   <td>
-                    <span class="badge <?= match($w['status']){'approved'=>'bg-success','pending'=>'bg-warning text-dark','hold'=>'bg-warning text-dark','rejected'=>'bg-danger',default=>'bg-secondary'} ?>" style="font-size:11px">
+                    <span class="badge <?= match($w['status']){'approved'=>'bg-success','pending'=>'bg-warning text-dark','hold'=>'bg-warning text-dark','rejected'=>'bg-danger','refunded'=>'bg-info text-dark',default=>'bg-secondary'} ?>" style="font-size:11px">
                       <?= ucfirst($w['status']) ?>
                     </span>
                   </td>

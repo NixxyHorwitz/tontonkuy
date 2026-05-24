@@ -399,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
       <?php endif; ?>
     </div>
     <div class="list-item__right">
-      <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','hold'=>'warn','rejected'=>'error',default=>'error'} ?>" style="font-size:10px">
+      <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','hold'=>'warn','rejected'=>'error','refunded'=>'info',default=>'error'} ?>" style="font-size:10px">
         <?= ucfirst($w['status']) ?>
       </span>
     </div>
