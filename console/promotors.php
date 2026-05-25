@@ -118,6 +118,7 @@ if ($tab === 'members') {
                COALESCE(m.name, 'Free') as membership_name
         FROM users u 
         JOIN users p ON u.referred_by = p.referral_code 
+        LEFT JOIN memberships m ON u.membership_id = m.id
         WHERE p.is_promotor = 1 
         ORDER BY u.created_at DESC
     ")->fetchAll();
