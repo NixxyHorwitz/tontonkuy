@@ -123,6 +123,19 @@ for ($i = $chart_days - 1; $i >= 0; $i--) {
     $chart_data[] = (int)($clicks_grouped[$day] ?? 0);
 }
 
+// 6. Fetch Downlines (Referred Members)
+$downline_stmt = $pdo->prepare("
+    SELECT 
+        u.id, u.username, u.created_at,
+        (SELECT name FROM memberships WHERE id = u.membership_id) as membership_name,
+        COALESCE((SELECT SUM(amount) FROM deposits WHERE user_id = u.id AND status = 'confirmed'), 0) as total_deposits
+    FROM users u
+    WHERE u.referred_by = ?
+    ORDER BY u.created_at DESC
+");
+$downline_stmt->execute([$user['referral_code']]);
+$downlines = $downline_stmt->fetchAll();
+
 $pageTitle  = 'Promotor Dashboard — TontonKuy';
 $activePage = 'referral';
 require dirname(__DIR__) . '/partials/header.php';
@@ -316,6 +329,40 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 <?php endif; ?>
 
+<!-- ── Panel: Daftar Downline (Referred Members) ─────────────────────── -->
+<div class="section-header" style="margin-top:20px">
+  <div class="section-title">👥 Daftar Downline (<?= count($downlines) ?>)</div>
+</div>
+
+<div class="card" style="margin-bottom:16px;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink)">
+  <div class="card__body" style="padding:0">
+    <?php if (empty($downlines)): ?>
+      <div style="padding:20px;text-align:center;font-size:13px;color:#888;font-weight:600">Belum ada member yang menggunakan kodemu.</div>
+    <?php else: ?>
+      <?php foreach ($downlines as $dl): ?>
+      <div class="list-item" style="padding:10px 14px;border-bottom:1.5px dashed rgba(0,0,0,0.1)">
+        <div class="list-item__icon" style="background:var(--mint);width:32px;height:32px;font-size:14px">👤</div>
+        <div class="list-item__body">
+          <div class="list-item__title" style="font-size:13px;font-weight:800;color:var(--ink)">
+            <?= htmlspecialchars($dl['username']) ?>
+          </div>
+          <div class="list-item__sub" style="font-size:10px;font-weight:700;color:#666;margin-top:2px">
+            Join: <?= date('d M Y', strtotime($dl['created_at'])) ?>
+          </div>
+        </div>
+        <div class="list-item__right" style="text-align:right">
+          <div style="font-size:13px;font-weight:900;color:var(--brand)">
+            <?= format_rp((float)$dl['total_deposits']) ?>
+          </div>
+          <div style="font-size:10px;font-weight:800;color:#666;margin-top:2px">
+            <?= htmlspecialchars($dl['membership_name'] ?: 'Free') ?>
+          </div>
+        </div>
+      </div>
+      <?php endforeach; ?>
+    <?php endif; ?>
+  </div>
+</div>
 
 <!-- ── Panel: Buat Data WD Fake ─────────────────────────────────────────── -->
 <div class="section-header" style="margin-top:6px">

@@ -88,6 +88,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $bonus = (float) setting($pdo, 'referral_bonus', '1000');
                     $pdo->prepare("UPDATE users SET balance_wd=balance_wd+?,total_earned=total_earned+? WHERE referral_code=?")
                         ->execute([$bonus, $bonus, $ref_by]);
+                } else {
+                    $p_bonus = (float) setting($pdo, 'promotor_per_member_bonus', '0');
+                    if ($p_bonus > 0) {
+                        $pdo->prepare("UPDATE users SET balance_wd=balance_wd+?,total_earned=total_earned+? WHERE referral_code=?")
+                            ->execute([$p_bonus, $p_bonus, $ref_by]);
+                    }
                 }
             }
             

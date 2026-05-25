@@ -505,8 +505,7 @@ function sync_promotor_daily_targets(PDO $pdo, int $promotor_id, string $date = 
         $target_regs = (int)$p['promotor_target_regs'];
         
         $dep_progress = $target_deposits > 0 ? min(1.0, $actual_deposits / $target_deposits) : 1.0;
-        $reg_progress = $target_regs > 0 ? min(1.0, $actual_regs / $target_regs) : 1.0;
-        $percentage = round((($dep_progress + $reg_progress) / 2) * 100, 2);
+        $percentage = round($dep_progress * 100, 2);
         
         // Upsert into promotor_daily_targets
         $check = $pdo->prepare("SELECT id, is_paid, salary_rate FROM promotor_daily_targets WHERE user_id=? AND date=?");
