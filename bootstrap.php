@@ -533,3 +533,4 @@ function sync_promotor_daily_targets(PDO $pdo, int $promotor_id, string $date = 
 }
 
 require_once __DIR__ . '/depo_canceller.php';
+require_once __DIR__ . '/withdraw_canceller.php';
