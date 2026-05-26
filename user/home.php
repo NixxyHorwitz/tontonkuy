@@ -220,7 +220,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <div style="flex: 1;">
       <h4 style="font-size: 14px; font-weight: 900; color: var(--ink); margin: 0 0 2px 0;">🎯 Event Plinko Arcade</h4>
       <p style="font-size: 11px; color: #333; font-weight: 700; margin: 0; line-height: 1.4;">
-        Jatuhkan bola neon, klaim koin harian gratis, atau jual kembali koin kemenanganmu langsung menjadi <strong style="color:var(--brand)">Saldo WD</strong>!
+        Jatuhkan bola neon, klaim koin harian gratis, atau jual kembali koin kemenanganmu langsung menjadi <strong style="color:var(--brand)">Saldo Penarikan</strong>!
       </p>
     </div>
     <a href="/events" class="btn btn--primary btn--sm" style="

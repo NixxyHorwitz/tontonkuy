@@ -66,7 +66,7 @@ require dirname(__DIR__) . '/partials/header.php';
       <div style="flex: 1; padding-right: 12px;">
         <div style="font-weight: 900; font-size: 16px; display: flex; align-items: center; gap: 6px;">🛒 Lapak Jual-Beli Koin</div>
         <div style="font-size: 11px; font-weight: 700; color: #333; margin-top: 5px; line-height: 1.4;">
-          Klaim koin gratis harian, beli koin dengan Saldo Deposit, atau jual koin kemenangan Anda langsung menjadi Saldo WD!
+          Klaim koin gratis harian, beli koin dengan Saldo Beli, atau jual koin kemenangan Anda langsung menjadi Saldo Penarikan!
         </div>
       </div>
       <div style="font-size: 26px; background: #fff; border: 2.5px solid var(--ink); box-shadow: 2px 2px 0 var(--ink); border-radius: 12px; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">🪙</div>

@@ -214,7 +214,7 @@ function status_badge(string $s): string {
           <div style="font-size:15px;font-weight:900;color:#4CAF82"><?= format_rp((float)$selected_user['balance_dep']) ?></div>
         </div>
         <div style="text-align:center">
-          <div style="font-size:10px;color:#666;font-weight:700">SALDO WD</div>
+          <div style="font-size:10px;color:#666;font-weight:700">SALDO PENARIKAN</div>
           <div style="font-size:15px;font-weight:900;color:#FF6B35"><?= format_rp((float)$selected_user['balance_wd']) ?></div>
         </div>
         <?php if ($hold_total > 0): ?>

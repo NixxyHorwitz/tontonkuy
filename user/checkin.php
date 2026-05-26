@@ -37,7 +37,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check
                 $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
                 $already = true;
                 $streak++; // Optimistically update streak for UI
-                $flash = '🎉 Check-in berhasil! +' . format_rp($checkin_reward) . ' masuk ke Saldo Deposit.';
+                $flash = '🎉 Check-in berhasil! +' . format_rp($checkin_reward) . ' masuk ke Saldo Beli.';
                 $flashType = 'success';
             } else {
                 $pdo->rollBack();
@@ -226,7 +226,7 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
 
 <div class="neo-wrapper">
   <div class="neo-title">Check-in Harian</div>
-  <div class="neo-subtitle">Kumpulkan streak & dapatkan saldo deposit!</div>
+  <div class="neo-subtitle">Kumpulkan streak & dapatkan saldo beli!</div>
 
   <?php if ($flash): ?>
   <div class="neo-alert neo-alert--<?= $flashType === 'error' ? 'error' : ($flashType === 'warn' ? 'warn' : 'success') ?>">
@@ -279,7 +279,7 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
     </div>
     <div class="neo-stat">
       <div class="neo-stat__val" style="font-size: 16px; margin-top: 8px;"><?= format_rp((float)$user['balance_dep']) ?></div>
-      <div class="neo-stat__lbl" style="margin-top: 6px;">Saldo Deposit</div>
+      <div class="neo-stat__lbl" style="margin-top: 6px;">Saldo Beli</div>
     </div>
   </div>
 

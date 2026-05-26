@@ -237,11 +237,11 @@ require __DIR__ . '/partials/header.php';
         <!-- Col 2 -->
         <div class="col-md-6">
           <div class="c-form-group mb-3">
-            <label class="c-label">Saldo WD (Rp)</label>
+            <label class="c-label">Saldo Penarikan (Rp)</label>
             <input type="number" name="balance_wd" id="eu-bal-wd" class="c-form-control" step="0.01" min="0">
           </div>
           <div class="c-form-group mb-3">
-            <label class="c-label">Saldo Deposit (Rp)</label>
+            <label class="c-label">Saldo Beli (Rp)</label>
             <input type="number" name="balance_dep" id="eu-bal-dep" class="c-form-control" step="0.01" min="0">
           </div>
           <div class="c-form-group mb-3">
@@ -287,7 +287,7 @@ require __DIR__ . '/partials/header.php';
         <label class="c-label">Jenis Saldo</label>
         <select name="bal_field" class="c-form-control">
           <option value="wd">Saldo Penarikan (WD)</option>
-          <option value="dep">Saldo Deposit</option>
+          <option value="dep">Saldo Beli</option>
         </select>
       </div>
       <div class="c-form-group mb-3">

@@ -173,7 +173,7 @@ require __DIR__ . '/partials/header.php';
       </div>
       <div style="overflow-x:auto">
         <table class="c-table">
-          <thead><tr><th>Username</th><th>Email</th><th>Saldo WD</th><th>Terdaftar</th><th>Status</th></tr></thead>
+          <thead><tr><th>Username</th><th>Email</th><th>Saldo Penarikan</th><th>Terdaftar</th><th>Status</th></tr></thead>
           <tbody>
             <?php foreach ($recentUsers as $u): ?>
             <tr>

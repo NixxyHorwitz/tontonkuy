@@ -215,7 +215,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
       <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       Kembali
     </a>
-    <div class="topbar__balance" title="Saldo WD"><?= format_rp((float)$user['balance_wd']) ?></div>
+    <div class="topbar__balance" title="Saldo Penarikan"><?= format_rp((float)$user['balance_wd']) ?></div>
   </div>
 
   <!-- YouTube player — BERSIH, tanpa overlay apapun -->

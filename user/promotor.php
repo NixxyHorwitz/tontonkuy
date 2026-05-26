@@ -253,7 +253,7 @@ require dirname(__DIR__) . '/partials/header.php';
           </div>
           <?php if ($log['is_paid']): ?>
           <div style="font-size:9px;color:#4CAF82;font-weight:700;margin-top:2px">
-            💸 Gaji sebesar <strong><?= format_rp((float)$log['paid_amount']) ?></strong> berhasil ditransfer ke Saldo WD Anda.
+            💸 Gaji sebesar <strong><?= format_rp((float)$log['paid_amount']) ?></strong> berhasil ditransfer ke Saldo Penarikan Anda.
           </div>
           <?php elseif ($earned > 0): ?>
           <div style="font-size:9px;color:#ff8c00;font-weight:700;margin-top:2px">

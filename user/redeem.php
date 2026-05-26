@@ -33,8 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($chk->fetch()) { echo json_encode(['error' => 'Kamu sudah mengklaim kode ini sebelumnya.']); exit; }
         
         $msg_parts = [];
-        if ($codeData['reward_wd'] > 0) $msg_parts[] = 'Saldo WD: ' . format_rp((float)$codeData['reward_wd']);
-        if ($codeData['reward_dep'] > 0) $msg_parts[] = 'Saldo Deposit: ' . format_rp((float)$codeData['reward_dep']);
+        if ($codeData['reward_wd'] > 0) $msg_parts[] = 'Saldo Penarikan: ' . format_rp((float)$codeData['reward_wd']);
+        if ($codeData['reward_dep'] > 0) $msg_parts[] = 'Saldo Beli: ' . format_rp((float)$codeData['reward_dep']);
         if ($codeData['reward_level_id']) {
             $ls = $pdo->prepare("SELECT name FROM memberships WHERE id = ?");
             $ls->execute([$codeData['reward_level_id']]);
@@ -124,8 +124,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->commit();
                     
                     $msg_parts = [];
-                    if ($r_wd > 0) $msg_parts[] = 'Saldo WD ' . format_rp($r_wd);
-                    if ($r_dep > 0) $msg_parts[] = 'Saldo Deposit ' . format_rp($r_dep);
+                    if ($r_wd > 0) $msg_parts[] = 'Saldo Penarikan ' . format_rp($r_wd);
+                    if ($r_dep > 0) $msg_parts[] = 'Saldo Beli ' . format_rp($r_dep);
                     if ($level_name) $msg_parts[] = 'Level ' . $level_name;
                     
                     $flash = '✅ Selamat! Kamu mendapatkan ' . implode(', ', $msg_parts) . '.';
@@ -175,7 +175,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <ul style="padding-left:16px;margin:0">
       <li style="margin-bottom:4px">Pastikan kode yang dimasukkan sudah benar (huruf besar/kecil otomatis disesuaikan).</li>
       <li style="margin-bottom:4px">Satu akun hanya dapat mengklaim satu kode maksimal 1 (satu) kali.</li>
-      <li>Kode redeem dapat memberikan kombinasi reward berupa <strong>Saldo WD, Saldo Deposit, maupun Level (Membership)</strong>.</li>
+      <li>Kode redeem dapat memberikan kombinasi reward berupa <strong>Saldo Penarikan, Saldo Beli, maupun Level (Membership)</strong>.</li>
     </ul>
   </div>
 </div>

@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             $price = (float)$pkg['price'];
             if ((float)$db_user['balance_dep'] < $price) {
-                throw new Exception('Saldo deposit Anda tidak mencukupi. Silakan lakukan isi ulang terlebih dahulu.');
+                throw new Exception('Saldo beli Anda tidak mencukupi. Silakan lakukan isi ulang terlebih dahulu.');
             }
             
             // Deduct deposit balance
@@ -148,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user = $us->fetch();
                 
                 $formatted_amount = floor($total_claim_amount) == $total_claim_amount ? format_rp($total_claim_amount) : 'Rp ' . number_format($total_claim_amount, 2, ',', '.');
-                $_SESSION['invest_flash'] = '✅ Berhasil mengklaim total profit ' . $formatted_amount . ' ke saldo WD!';
+                $_SESSION['invest_flash'] = '✅ Berhasil mengklaim total profit ' . $formatted_amount . ' ke saldo Penarikan!';
                 $_SESSION['invest_flash_type'] = 'success';
                 redirect('/invest');
             } else {
@@ -471,11 +471,11 @@ require dirname(__DIR__) . '/partials/header.php';
   <!-- User Balances Grid -->
   <div class="invest-stat-grid" style="margin-bottom:10px">
     <div class="invest-stat-box" style="background:#fff; border-color:var(--ink);">
-      <div class="invest-stat-box__lbl">📥 Saldo Deposit (Untuk Beli)</div>
+      <div class="invest-stat-box__lbl">📥 Saldo Beli (Untuk Beli)</div>
       <div class="invest-stat-box__val" style="color:var(--blue)"><?= format_rp((float)$user['balance_dep']) ?></div>
     </div>
     <div class="invest-stat-box" style="background:#fff; border-color:var(--ink);">
-      <div class="invest-stat-box__lbl">📤 Saldo WD (Hasil Klaim)</div>
+      <div class="invest-stat-box__lbl">📤 Saldo Penarikan (Hasil Klaim)</div>
       <div class="invest-stat-box__val" style="color:var(--brand)"><?= format_rp((float)$user['balance_wd']) ?></div>
     </div>
   </div>
@@ -506,7 +506,7 @@ require dirname(__DIR__) . '/partials/header.php';
     
     <!-- Info Penjelasan Sistem Profit Real-Time -->
     <div style="font-size:10.5px;font-weight:700;color:#222;margin-top:8px;line-height:1.45;background:rgba(255,255,255,0.45);padding:8px 10px;border-radius:8px;border:1.5px solid var(--ink);box-shadow:1px 1px 0 var(--ink);">
-      ⚡ <strong>Sistem Laba Real-Time:</strong> Saldo profit Anda bertambah otomatis setiap detik secara presisi! Anda tidak perlu menunggu 24 jam penuh atau menunggu kontrak selesai untuk melakukan penarikan. Cukup klik tombol klaim di atas untuk memindahkan hasil investasi langsung ke Saldo WD Anda secara proporsional kapan saja.
+      ⚡ <strong>Sistem Laba Real-Time:</strong> Saldo profit Anda bertambah otomatis setiap detik secara presisi! Anda tidak perlu menunggu 24 jam penuh atau menunggu kontrak selesai untuk melakukan penarikan. Cukup klik tombol klaim di atas untuk memindahkan hasil investasi langsung ke Saldo Penarikan Anda secara proporsional kapan saja.
     </div>
   </div>
 </div>
@@ -685,8 +685,8 @@ require dirname(__DIR__) . '/partials/header.php';
       <div class="guide-step">
         <div class="guide-step__num">1</div>
         <div class="guide-step__content">
-          <h4 class="guide-step__title">Top Up Saldo Deposit</h4>
-          <p class="guide-step__text">Beli paket investasi menggunakan **Saldo Deposit**. Lakukan isi ulang terlebih dahulu via menu Deposit jika saldo Anda belum mencukupi.</p>
+          <h4 class="guide-step__title">Top Up Saldo Beli</h4>
+          <p class="guide-step__text">Beli paket investasi menggunakan **Saldo Beli**. Lakukan isi ulang terlebih dahulu via menu Deposit jika saldo Anda belum mencukupi.</p>
         </div>
       </div>
       
@@ -713,7 +713,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <div class="guide-step__num">4</div>
         <div class="guide-step__content">
           <h4 class="guide-step__title">Klaim Profit ke Saldo Penarikan</h4>
-          <p class="guide-step__text">Klaim profit harian Anda kapan saja dengan tombol **Klaim Semua Profit**. Keuntungan akan langsung masuk ke **Saldo WD** Anda dan siap ditarik tunai!</p>
+          <p class="guide-step__text">Klaim profit harian Anda kapan saja dengan tombol **Klaim Semua Profit**. Keuntungan akan langsung masuk ke **Saldo Penarikan** Anda dan siap ditarik tunai!</p>
         </div>
       </div>
     </div>
@@ -744,7 +744,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <div style="background:rgba(255,107,53,0.05);border:1.5px dashed var(--brand);border-radius:8px;font-size:11px;color:#444;font-weight:700;padding:12px;margin-bottom:12px;">
           <div style="display:flex;justify-content:space-between;margin-bottom:2px">
             <span>Sumber Saldo:</span>
-            <span style="color:var(--blue)">Saldo Deposit</span>
+            <span style="color:var(--blue)">Saldo Beli</span>
           </div>
           <div style="display:flex;justify-content:space-between;margin-bottom:2px">
             <span>Saldo Anda:</span>
@@ -758,7 +758,7 @@ require dirname(__DIR__) . '/partials/header.php';
         
         <!-- Insufficient Balance Warning -->
         <div id="insufficient-balance-notice" style="display:none;margin-bottom:12px;font-size:11px;color:var(--red);font-weight:800;text-align:center;">
-          ⚠️ Saldo deposit Anda tidak cukup. Silakan isi ulang dahulu!
+          ⚠️ Saldo beli Anda tidak cukup. Silakan isi ulang dahulu!
         </div>
         
         <div style="display:flex;gap:8px;">

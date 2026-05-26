@@ -165,12 +165,12 @@ require __DIR__ . '/partials/header.php';
         </div>
         
         <div class="mb-3">
-          <label class="c-label">Reward Saldo WD (Rp)</label>
+          <label class="c-label">Reward Saldo Penarikan (Rp)</label>
           <input type="number" name="reward_wd" class="c-form-control" min="0" step="100" placeholder="Contoh: 10000" value="0">
         </div>
 
         <div class="mb-3">
-          <label class="c-label">Reward Saldo Deposit (Rp)</label>
+          <label class="c-label">Reward Saldo Beli (Rp)</label>
           <input type="number" name="reward_dep" class="c-form-control" min="0" step="100" placeholder="Contoh: 5000" value="0">
         </div>
 

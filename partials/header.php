@@ -78,11 +78,11 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
         </button>
         <div class="bal-dropdown__panel" id="bal-panel">
           <div class="bal-dropdown__row bal-dropdown__row--wd">
-            <span class="bal-dropdown__lbl">💸 Saldo WD</span>
+            <span class="bal-dropdown__lbl">💸 Saldo Penarikan</span>
             <span class="bal-dropdown__val"><?= format_rp((float)$user['balance_wd']) ?></span>
           </div>
           <div class="bal-dropdown__row bal-dropdown__row--dep">
-            <span class="bal-dropdown__lbl">🏦 Saldo Deposit</span>
+            <span class="bal-dropdown__lbl">🏦 Saldo Beli</span>
             <span class="bal-dropdown__val"><?= format_rp((float)$user['balance_dep']) ?></span>
           </div>
           <?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>

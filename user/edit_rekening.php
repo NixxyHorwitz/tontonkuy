@@ -38,7 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$can_edit_bank) {
         $flash = '❌ Level kamu belum memiliki izin untuk mengubah rekening.'; $flashType = 'error';
     } elseif (!$dep_ok_for_edit) {
-        $flash = '❌ Saldo deposit kamu belum mencukupi syarat minimum (Rp ' . number_format($edit_bank_min_dep, 0, ',', '.') . ').'; $flashType = 'error';
+        $flash = '❌ Saldo beli kamu belum mencukupi syarat minimum (Rp ' . number_format($edit_bank_min_dep, 0, ',', '.') . ').'; $flashType = 'error';
     } else {
         $new_bank    = trim($_POST['bank_name']      ?? '');
         $new_accnum  = trim($_POST['account_number'] ?? '');
@@ -107,7 +107,7 @@ require dirname(__DIR__) . '/partials/header.php';
 ?>
 <div class="card" style="margin-bottom:14px;border:2px solid #f59e0b;box-shadow:3px 3px 0 #f59e0b">
   <div class="card__body" style="padding:12px 14px">
-    <div style="font-size:11px;font-weight:800;color:#d97706;letter-spacing:.5px;margin-bottom:10px">🛡️ SYARAT SALDO DEPOSIT</div>
+    <div style="font-size:11px;font-weight:800;color:#d97706;letter-spacing:.5px;margin-bottom:10px">🛡️ SYARAT SALDO BELI</div>
     <div style="display:flex;flex-direction:column;gap:8px">
       <div style="display:flex;justify-content:space-between;align-items:center;font-size:13px">
         <span style="color:#888;font-weight:600">Minimal Deposit</span>
@@ -250,7 +250,7 @@ function confirmRek() {
       Level kamu belum mendukung fitur edit rekening.<br>
       <a href="/upgrade" style="color:var(--brand);font-weight:800">Upgrade level →</a>
     <?php else: ?>
-      Saldo deposit belum mencukupi untuk menggunakan fitur ini.
+      Saldo beli belum mencukupi untuk menggunakan fitur ini.
     <?php endif; ?>
   </div>
 </div>

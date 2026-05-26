@@ -250,14 +250,14 @@ $tabs = [
                 <div class="c-form-group mb-0">
                   <label class="c-label">Harga Beli Koin Plinko (Rp / 1 Koin)</label>
                   <input type="number" name="plinko_buy_rate" class="c-form-control" value="<?= htmlspecialchars($s('plinko_buy_rate','100')) ?>" min="1" required>
-                  <small style="color:#888;font-size:11px">Harga beli koin menggunakan saldo deposit.</small>
+                  <small style="color:#888;font-size:11px">Harga beli koin menggunakan saldo beli.</small>
                 </div>
               </div>
               <div class="col-md-6">
                 <div class="c-form-group mb-0">
                   <label class="c-label">Harga Jual Koin Plinko (Rp / 1 Koin)</label>
                   <input type="number" name="plinko_sell_rate" class="c-form-control" value="<?= htmlspecialchars($s('plinko_sell_rate','100')) ?>" min="1" required>
-                  <small style="color:#888;font-size:11px">Harga jual koin yang ditukarkan ke saldo WD.</small>
+                  <small style="color:#888;font-size:11px">Harga jual koin yang ditukarkan ke saldo Penarikan.</small>
                 </div>
               </div>
             </div>

@@ -243,7 +243,7 @@ $qr_dl_url   = '?id=' . $dep_id . '&action=dl_qr';
     <div class="pay-confirmed">
       <div style="font-size:48px;margin-bottom:10px">✅</div>
       <div style="font-size:20px;font-weight:900;margin-bottom:6px">Pembayaran Dikonfirmasi!</div>
-      <div style="font-size:13px;color:#555;margin-bottom:18px">Saldo deposit kamu sudah ditambahkan.</div>
+      <div style="font-size:13px;color:#555;margin-bottom:18px">Saldo beli kamu sudah ditambahkan.</div>
       <a href="/home" class="btn btn--primary btn--full">🏠 Ke Beranda</a>
     </div>
 

@@ -80,7 +80,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      . "📅 Tanggal Target: " . date('d M Y', strtotime($log['date'])) . "\n"
                      . "🎯 Pencapaian: <b>" . number_format((float)$log['percentage'], 1) . "%</b>\n"
                      . "💰 Gaji Diperoleh: <b>" . format_rp($pay_amount) . "</b> (dari total " . format_rp((float)$log['salary_rate']) . ")\n"
-                     . "✅ Status: Berhasil dicairkan langsung ke Saldo WD.";
+                     . "✅ Status: Berhasil dicairkan langsung ke Saldo Penarikan.";
                 send_telegram_notif($pdo, $msg);
                 
                 $flash = "Gaji promotor @{$username} sebesar " . format_rp($pay_amount) . " (" . number_format((float)$log['percentage'], 1) . "% pencapaian) berhasil dicairkan!";
@@ -429,7 +429,7 @@ require __DIR__ . '/partials/header.php';
             Tanggal Target: <strong id="pay_date" style="color:#fff"></strong><br>
             Pencapaian Target: <strong id="pay_pct" style="color:#FF6B35"></strong><br>
             Jumlah Pencairan Gaji: <strong id="pay_amount" style="color:#4CAF82;font-size:16px"></strong><br><br>
-            <span style="font-size:11px;color:#aaa">⚠️ Setelah diklik, saldo WD milik promotor akan langsung bertambah secara proporsional sesuai pencapaian target dan notifikasi Telegram akan terkirim.</span>
+            <span style="font-size:11px;color:#aaa">⚠️ Setelah diklik, saldo Penarikan milik promotor akan langsung bertambah secara proporsional sesuai pencapaian target dan notifikasi Telegram akan terkirim.</span>
           </p>
         </div>
         <div class="modal-footer border-0">

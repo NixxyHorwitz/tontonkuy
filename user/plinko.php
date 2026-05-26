@@ -188,7 +188,7 @@ require dirname(__DIR__) . '/partials/header.php';
   </div>
   <div style="flex:1;background:var(--mint);border:2px solid var(--ink);border-radius:8px;box-shadow:2.5px 2.5px 0 var(--ink);padding:7px 8px;text-align:center;">
     <div style="font-size:11px;font-weight:800;" id="disp-wd"><?= format_rp((float)$user['balance_wd']) ?></div>
-    <div style="font-size:9px;font-weight:800;">SALDO WD</div>
+    <div style="font-size:9px;font-weight:800;">SALDO PENARIKAN</div>
   </div>
 </div>
 

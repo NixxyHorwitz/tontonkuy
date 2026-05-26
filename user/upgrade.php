@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if ((float)$user['balance_dep'] < $final_price) {
-            $flash = 'Saldo Deposit tidak mencukupi. Deposit terlebih dahulu.'; $flashType = 'error';
+            $flash = 'Saldo Beli tidak mencukupi. Deposit terlebih dahulu.'; $flashType = 'error';
         } else {
             try {
                 $pdo->beginTransaction();
@@ -149,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $active_membership = $chosen;
                 } else {
                     $pdo->rollBack();
-                    $flash = 'Saldo Deposit tidak mencukupi. Transaksi digagalkan.'; $flashType = 'error';
+                    $flash = 'Saldo Beli tidak mencukupi. Transaksi digagalkan.'; $flashType = 'error';
                 }
             } catch (\Throwable $e) {
                 if ($pdo->inTransaction()) {
@@ -179,7 +179,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:#555">
       <div style="display:flex;gap:10px;align-items:flex-start">
         <span style="background:var(--yellow);border:1.5px solid var(--ink);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0">1</span>
-        <span><strong>Deposit saldo</strong> terlebih dahulu melalui menu Deposit (transfer bank atau QRIS). Saldo Deposit dipakai khusus untuk pembelian paket.</span>
+        <span><strong>Deposit saldo</strong> terlebih dahulu melalui menu Deposit (transfer bank atau QRIS). Saldo Beli dipakai khusus untuk pembelian paket.</span>
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start">
         <span style="background:var(--yellow);border:1.5px solid var(--ink);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0">2</span>
@@ -187,7 +187,7 @@ require dirname(__DIR__) . '/partials/header.php';
       </div>
       <div style="display:flex;gap:10px;align-items:flex-start">
         <span style="background:var(--yellow);border:1.5px solid var(--ink);border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0">3</span>
-        <span><strong>Konfirmasi upgrade</strong> — harga paket langsung dipotong dari Saldo Deposit, membership aktif seketika!</span>
+        <span><strong>Konfirmasi upgrade</strong> — harga paket langsung dipotong dari Saldo Beli, membership aktif seketika!</span>
       </div>
     </div>
   </div>
@@ -214,9 +214,9 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Balance dep info -->
 <div class="hero-card" style="background:var(--yellow);margin-bottom:16px">
-  <div class="hero-card__label">💳 Saldo Deposit (untuk Upgrade)</div>
+  <div class="hero-card__label">💳 Saldo Beli (untuk Upgrade)</div>
   <div class="hero-card__amount"><?= format_rp((float)$user['balance_dep']) ?></div>
-  <div class="hero-card__sub">Upgrade langsung dipotong dari saldo deposit</div>
+  <div class="hero-card__sub">Upgrade langsung dipotong dari saldo beli</div>
   <div class="hero-card__actions">
     <a href="/deposit" class="hero-card__btn">⬆️ Tambah Deposit</a>
     <a href="/checkin" class="hero-card__btn">📅 Check-in</a>
@@ -322,7 +322,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <!-- Balance Warning -->
     <div id="modal-balance-warning" style="display:none;font-size:12px;color:#F44E3B;font-weight:700;margin-bottom:12px;background:#FFF0EE;border:1.5px solid var(--ink);border-radius:8px;padding:8px 10px;"></div>
 
-    <div style="font-size:12px;color:#888;margin-bottom:16px">⚠️ Saldo Deposit akan dipotong langsung. Aksi ini tidak bisa dibatalkan.</div>
+    <div style="font-size:12px;color:#888;margin-bottom:16px">⚠️ Saldo Beli akan dipotong langsung. Aksi ini tidak bisa dibatalkan.</div>
     <div style="display:flex;gap:8px">
       <button type="button" class="btn btn--full" style="flex:1;font-size:13px" onclick="closeConfirm()">✖ Batal</button>
       <button type="button" id="modal-confirm-btn" class="btn btn--primary btn--full" style="flex:1;font-size:13px;font-weight:900" onclick="submitUpgrade()">✅ Ya, Upgrade!</button>
@@ -336,7 +336,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <div style="font-size:13px;font-weight:800;margin-bottom:8px">❓ Yang Perlu Kamu Tahu</div>
     <div style="display:flex;flex-direction:column;gap:8px;font-size:12px;color:#555">
       <div>🔄 <strong>Upgrade saat masih aktif</strong> akan <em>mengganti</em> paket yang berjalan. Durasi dimulai ulang dari sekarang.</div>
-      <div>💳 <strong>Saldo Deposit ≠ Saldo WD.</strong> Saldo Deposit hanya bisa dipakai beli paket, bukan ditarik langsung.</div>
+      <div>💳 <strong>Saldo Beli ≠ Saldo Penarikan.</strong> Saldo Beli hanya bisa dipakai beli paket, bukan ditarik langsung.</div>
       <div>💸 <strong>Limit Withdraw</strong> (Min & Max) mengikuti paket aktifmu. Upgrade untuk memperbesar limit withdraw.</div>
       <div>⚡ <strong>Aktivasi instan</strong> — tidak perlu menunggu konfirmasi admin. Paket langsung aktif begitu kamu klik upgrade.</div>
       <div>📅 <strong>Paket expired</strong> berarti kamu kembali ke limit free. Pastikan selalu perpanjang sebelum habis!</div>
@@ -360,7 +360,7 @@ function checkAffordability(finalPrice) {
     btn.innerText = '💳 Saldo Kurang';
     if (warnEl) {
       warnEl.style.display = 'block';
-      warnEl.innerHTML = '⚠️ Saldo Deposit tidak mencukupi (Kurang <strong>Rp ' + (finalPrice - userBalance).toLocaleString('id-ID') + '</strong>). Silakan gunakan voucher diskon atau isi saldo deposit Anda.';
+      warnEl.innerHTML = '⚠️ Saldo Beli tidak mencukupi (Kurang <strong>Rp ' + (finalPrice - userBalance).toLocaleString('id-ID') + '</strong>). Silakan gunakan voucher diskon atau isi saldo beli Anda.';
     }
   } else {
     btn.disabled = false;

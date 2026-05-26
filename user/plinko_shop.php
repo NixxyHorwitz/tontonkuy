@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $dep = (float)$stmt->fetchColumn();
             if ($dep < $cost) {
                 $pdo->rollBack();
-                echo json_encode(['error' => 'Saldo deposit tidak mencukupi. Butuh ' . format_rp($cost) . '.']);
+                echo json_encode(['error' => 'Saldo beli tidak mencukupi. Butuh ' . format_rp($cost) . '.']);
                 exit;
             }
             $pdo->prepare("UPDATE users SET balance_dep = balance_dep - ?, plinko_coins = plinko_coins + ? WHERE id = ?")->execute([$cost, $qty, $user['id']]);
@@ -92,7 +92,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pdo->prepare("UPDATE users SET plinko_coins = plinko_coins - ?, balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id = ?")->execute([$qty, $earnings, $earnings, $user['id']]);
             $pdo->commit();
             $fresh = $pdo->query("SELECT plinko_coins, balance_wd FROM users WHERE id = {$user['id']}")->fetch();
-            echo json_encode(['ok' => true, 'new_coins' => (int)$fresh['plinko_coins'], 'new_balance_wd' => format_rp((float)$fresh['balance_wd']), 'message' => '✓ Berhasil jual ' . $qty . ' Koin = ' . format_rp($earnings) . ' ke Saldo WD!']);
+            echo json_encode(['ok' => true, 'new_coins' => (int)$fresh['plinko_coins'], 'new_balance_wd' => format_rp((float)$fresh['balance_wd']), 'message' => '✓ Berhasil jual ' . $qty . ' Koin = ' . format_rp($earnings) . ' ke Saldo Penarikan!']);
         } catch (\Throwable $e) {
             if ($pdo->inTransaction()) $pdo->rollBack();
             echo json_encode(['error' => 'Gagal: ' . $e->getMessage()]);
@@ -134,7 +134,7 @@ $already_claimed = $user['last_plinko_claim'] === $today;
   </div>
   <div style="flex:1;background:var(--mint);border:2px solid var(--ink);border-radius:8px;box-shadow:2.5px 2.5px 0 var(--ink);padding:8px 10px;text-align:center;">
     <div style="font-size:11px;font-weight:800;" id="disp-wd"><?= format_rp((float)$user['balance_wd']) ?></div>
-    <div style="font-size:9px;font-weight:800;">SALDO WD</div>
+    <div style="font-size:9px;font-weight:800;">SALDO PENARIKAN</div>
   </div>
 </div>
 
@@ -188,7 +188,7 @@ $already_claimed = $user['last_plinko_claim'] === $today;
   <!-- Panel: JUAL -->
   <div id="panel-jual" style="display:none;padding:14px;">
     <div style="font-size:11px;color:#666;margin-bottom:10px;">
-      Rate: <strong style="color:var(--green);">1 Koin = Rp <?= number_format($plinko_sell_rate, 0, ',', '.') ?></strong> &nbsp;·&nbsp; Masuk Saldo WD
+      Rate: <strong style="color:var(--green);">1 Koin = Rp <?= number_format($plinko_sell_rate, 0, ',', '.') ?></strong> &nbsp;·&nbsp; Masuk Saldo Penarikan
     </div>
     <div style="display:flex;gap:6px;margin-bottom:10px;">
       <?php foreach ([50, 100, 250, 500] as $q): $e = $q * $plinko_sell_rate; ?>
@@ -285,14 +285,14 @@ function hideSummary(boxId){ document.getElementById(boxId).style.display='none'
 function setBuyQty(q){ document.getElementById('buy-qty').value=q; updateBuySummary(q); }
 document.getElementById('buy-qty').addEventListener('input',function(){ updateBuySummary(parseInt(this.value)||0); });
 function updateBuySummary(q){
-  if(q>=10) showSummary('buy-summary-box','buy-summary-val','buy-summary-sub', q*BUY_RATE, q.toLocaleString('id-ID')+' koin ← dari Saldo Deposit');
+  if(q>=10) showSummary('buy-summary-box','buy-summary-val','buy-summary-sub', q*BUY_RATE, q.toLocaleString('id-ID')+' koin ← dari Saldo Beli');
   else hideSummary('buy-summary-box');
 }
 
 function setSellQty(q){ document.getElementById('sell-qty').value=q; updateSellSummary(q); }
 document.getElementById('sell-qty').addEventListener('input',function(){ updateSellSummary(parseInt(this.value)||0); });
 function updateSellSummary(q){
-  if(q>=1) showSummary('sell-summary-box','sell-summary-val','sell-summary-sub', q*SELL_RATE, q.toLocaleString('id-ID')+' koin → masuk Saldo WD');
+  if(q>=1) showSummary('sell-summary-box','sell-summary-val','sell-summary-sub', q*SELL_RATE, q.toLocaleString('id-ID')+' koin → masuk Saldo Penarikan');
   else hideSummary('sell-summary-box');
 }
 

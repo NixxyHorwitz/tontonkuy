@@ -169,7 +169,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
 
             <div class="mb-3">
-                <label>Saldo Deposit</label>
+                <label>Saldo Beli</label>
                 <input type="number" name="balance_dep" class="form-control"
                        value="<?= (int)$u['balance_dep'] ?>" required>
                 <div class="hint">Saat ini: Rp <?= number_format((float)$u['balance_dep'], 0, ',', '.') ?></div>
@@ -179,10 +179,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="card">
             <div class="section-title">🛡️ Keamanan Edit Rekening</div>
             <div class="mb-3">
-                <label>Min. Saldo Deposit untuk Edit Rekening (Rp)</label>
+                <label>Min. Saldo Beli untuk Edit Rekening (Rp)</label>
                 <input type="number" name="edit_bank_deposit_min" class="form-control"
                        value="<?= (int)($u['edit_bank_deposit_min'] ?? 50000) ?>">
-                <div class="hint">Jika level user mengizinkan edit rekening, user wajib punya saldo deposit minimal ini. Default: 50.000</div>
+                <div class="hint">Jika level user mengizinkan edit rekening, user wajib punya saldo beli minimal ini. Default: 50.000</div>
             </div>
         </div>
 

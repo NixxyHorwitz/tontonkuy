@@ -92,7 +92,7 @@ $panduan_cta_url  = setting($pdo, 'panduan_cta_url', '/videos');
     </div>
     <div class="tip-box" style="background:var(--sky)">
       <div class="tip-box__icon">💳</div>
-      <div><strong>Saldo Deposit</strong> — Diisi manual lewat transfer/QRIS. Digunakan untuk upgrade paket membership agar bisa tonton lebih banyak video dan dapat reward lebih besar.</div>
+      <div><strong>Saldo Beli</strong> — Diisi manual lewat transfer/QRIS. Digunakan untuk upgrade paket membership agar bisa tonton lebih banyak video dan dapat reward lebih besar.</div>
     </div>
   </div>
 </div>

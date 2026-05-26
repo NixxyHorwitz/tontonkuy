@@ -150,16 +150,16 @@ require dirname(__DIR__) . '/partials/header.php';
 <!-- Balance strip -->
 <div class="dep-bal-strip">
   <div class="dep-bal-strip__item">
-    <div class="dep-bal-strip__lbl">💳 Saldo Deposit</div>
+    <div class="dep-bal-strip__lbl">💳 Saldo Beli</div>
     <div class="dep-bal-strip__val"><?= format_rp((float)$user['balance_dep']) ?></div>
   </div>
   <div class="dep-bal-strip__item">
-    <div class="dep-bal-strip__lbl">💸 Saldo WD</div>
+    <div class="dep-bal-strip__lbl">💸 Saldo Penarikan</div>
     <div class="dep-bal-strip__val"><?= format_rp((float)$user['balance_wd']) ?></div>
   </div>
 </div>
 
-<div style="font-size:11px;color:#888;margin-bottom:10px">Min. deposit <strong><?= format_rp($min_deposit) ?></strong> · Masuk ke Saldo Deposit</div>
+<div style="font-size:11px;color:#888;margin-bottom:10px">Min. deposit <strong><?= format_rp($min_deposit) ?></strong> · Masuk ke Saldo Beli</div>
 
 <?php if ($flash): ?>
 <div class="alert alert--<?= $flashType === 'error' ? 'error' : 'success' ?>" style="margin-bottom:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>

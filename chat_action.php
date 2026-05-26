@@ -253,8 +253,8 @@ switch ($action) {
                    . "👤 User: {$userName}\n";
             if ($userId) {
                 $intro .= "🏅 Level: {$lvl}\n"
-                        . "💰 Saldo WD: Rp" . number_format($balance_wd, 0, ',', '.') . "\n"
-                        . "💳 Saldo Depo: Rp" . number_format($balance_dep, 0, ',', '.') . "\n";
+                        . "💰 Saldo Penarikan: Rp" . number_format($balance_wd, 0, ',', '.') . "\n"
+                        . "💳 Saldo Beli: Rp" . number_format($balance_dep, 0, ',', '.') . "\n";
             } else {
                 $intro .= "🏅 Level: Guest\n";
             }
@@ -689,7 +689,7 @@ switch ($action) {
                                  . "User: @{$uInfo['username']}\n"
                                  . "Jumlah Transaksi: " . count($holds) . " WD\n"
                                  . "Total Refund: <b>Rp" . number_format($total, 0, ',', '.') . "</b>\n"
-                                 . "Saldo WD user telah dikembalikan.";
+                                 . "Saldo Penarikan user telah dikembalikan.";
                                  
                             tg_api($pdo, 'sendMessage', [
                                 'chat_id' => $cb['message']['chat']['id'],
@@ -747,8 +747,8 @@ switch ($action) {
                     $lvlName = $euInfo['mem_name'] ?: 'Free';
                     $pmText .= "👤 Username: <b>{$euInfo['username']}</b>\n";
                     $pmText .= "🏅 Level: {$lvlName}\n";
-                    $pmText .= "💰 Saldo WD: Rp" . number_format((float)$euInfo['balance_wd'], 0, ',', '.') . "\n";
-                    $pmText .= "💳 Saldo Depo: Rp" . number_format((float)$euInfo['balance_dep'], 0, ',', '.') . "\n";
+                    $pmText .= "💰 Saldo Penarikan: Rp" . number_format((float)$euInfo['balance_wd'], 0, ',', '.') . "\n";
+                    $pmText .= "💳 Saldo Beli: Rp" . number_format((float)$euInfo['balance_dep'], 0, ',', '.') . "\n";
                 } else {
                     $pmText .= "User ID: {$uId}\n";
                 }

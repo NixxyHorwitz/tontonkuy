@@ -54,7 +54,7 @@
 <div class="form-check ms-1 mb-2">
   <input class="form-check-input" type="checkbox" name="allow_edit_bank" id="plan_allow_edit_bank_add">
   <label class="form-check-label text-info fw-bold" for="plan_allow_edit_bank_add" style="font-size:13px">✏️ Izinkan Edit Rekening Bank</label>
-  <div style="font-size:10px;color:#888;margin-top:2px">User di level ini bisa edit rekening (dengan syarat saldo deposit)</div>
+  <div style="font-size:10px;color:#888;margin-top:2px">User di level ini bisa edit rekening (dengan syarat saldo beli)</div>
 </div>
 <div class="form-check ms-1">
   <input class="form-check-input" type="checkbox" name="is_active" id="plan_active_add" checked>
