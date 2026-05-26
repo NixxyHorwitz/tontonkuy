@@ -10,10 +10,8 @@ $already        = $last_checkin === $today;
 // Hitung streak (hari berturut-turut)
 $streak = 0;
 if ($last_checkin) {
-    // Sederhana: jika kemarin check-in, streak lanjut; jika 2 hari+ lalu, reset
     $diff = (int)((strtotime($today) - strtotime($last_checkin)) / 86400);
     if ($diff <= 1) {
-        // Count consecutive days from DB
         $streak_q = $pdo->prepare(
             "SELECT COUNT(DISTINCT DATE(watched_at)) FROM watch_history WHERE user_id=? AND watched_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)"
         );
@@ -38,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check
                 $pdo->commit();
                 $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
                 $already = true;
+                $streak++; // Optimistically update streak for UI
                 $flash = '🎉 Check-in berhasil! +' . format_rp($checkin_reward) . ' masuk ke Saldo Deposit.';
                 $flashType = 'success';
             } else {
@@ -56,140 +55,234 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check
 $pageTitle  = 'Check-in Harian — TontonKuy';
 $activePage = 'checkin';
 require dirname(__DIR__) . '/partials/header.php';
+
+$completed_days = $already ? ($streak % 7 ?: 7) : ($streak % 7);
+if ($streak == 0 && $already) { $completed_days = 1; } // fallback
 ?>
 
-<div class="page-title-bar">
-  <h1>📅 Check-in Harian</h1>
-  <p>Check-in setiap hari untuk mendapatkan bonus saldo deposit!</p>
-</div>
+<style>
+.neo-wrapper {
+  padding: 10px 0;
+}
+.neo-title {
+  font-size: 24px;
+  font-weight: 900;
+  text-transform: uppercase;
+  color: var(--ink, #000);
+  margin-bottom: 5px;
+  letter-spacing: -0.5px;
+}
+.neo-subtitle {
+  font-size: 13px;
+  color: #444;
+  font-weight: 700;
+  margin-bottom: 20px;
+}
+.neo-card {
+  background: #fff;
+  border: 3px solid var(--ink, #000);
+  box-shadow: 5px 5px 0px var(--ink, #000);
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  text-align: center;
+}
+.neo-card--yellow { background: #FFE873; }
 
-<?php if ($flash): ?>
-<div class="alert alert--<?= $flashType === 'error' ? 'error' : ($flashType === 'warn' ? 'warn' : 'success') ?>"><?= htmlspecialchars($flash) ?></div>
-<?php endif; ?>
+.neo-btn {
+  background: var(--brand, #FF6B35);
+  border: 3px solid var(--ink, #000);
+  box-shadow: 4px 4px 0px var(--ink, #000);
+  border-radius: 8px;
+  padding: 14px 20px;
+  font-weight: 900;
+  font-size: 15px;
+  color: #fff;
+  cursor: pointer;
+  width: 100%;
+  text-transform: uppercase;
+  transition: transform 0.1s, box-shadow 0.1s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.neo-btn:active:not(:disabled) {
+  transform: translate(4px, 4px);
+  box-shadow: 0px 0px 0px var(--ink, #000);
+}
+.neo-btn:disabled, .neo-btn.disabled {
+  background: #e0e0e0;
+  color: #888;
+  border-color: #888;
+  box-shadow: 4px 4px 0px #888;
+  cursor: not-allowed;
+}
 
-<!-- Main checkin card -->
-<div class="checkin-card">
-  <div class="checkin-card__orb <?= $already ? 'checkin-card__orb--done' : 'checkin-card__orb--ready' ?>" id="orb">
-    <?php if ($already): ?>
-      <span class="checkin-orb-icon">✅</span>
-      <span class="checkin-orb-label">Sudah Check-in</span>
+/* Weekly Stepper */
+.weekly-stepper {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  position: relative;
+  margin: 30px 0;
+  padding: 0 5px;
+}
+.weekly-stepper::before {
+  content: '';
+  position: absolute;
+  top: 14px; /* center of 32px node (border included) */
+  left: 16px;
+  right: 16px;
+  height: 4px;
+  background: var(--ink, #000);
+  z-index: 1;
+}
+.step-item {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+.step-node {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 3px solid var(--ink, #000);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 13px;
+  color: var(--ink, #000);
+  transition: all 0.2s ease;
+}
+.step-item.done .step-node {
+  background: #4ECDC4; /* Mint */
+  color: var(--ink, #000);
+  box-shadow: 2px 2px 0 var(--ink, #000);
+}
+.step-item.active .step-node {
+  background: #FF6B6B; /* Neo Red */
+  color: #fff;
+  transform: scale(1.15);
+  box-shadow: 3px 3px 0 var(--ink, #000);
+}
+.step-lbl {
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: #555;
+}
+
+/* Neo Alert */
+.neo-alert {
+  border: 3px solid var(--ink, #000);
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 20px;
+  box-shadow: 3px 3px 0 var(--ink, #000);
+}
+.neo-alert--success { background: #A8E6CF; color: var(--ink, #000); }
+.neo-alert--warn { background: #FFD3B6; color: var(--ink, #000); }
+.neo-alert--error { background: #FF8B94; color: var(--ink, #000); }
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.neo-stat {
+  background: #fff;
+  border: 3px solid var(--ink, #000);
+  box-shadow: 4px 4px 0 var(--ink, #000);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+.neo-stat__val {
+  font-size: 24px;
+  font-weight: 900;
+  color: var(--ink, #000);
+  margin-bottom: 4px;
+}
+.neo-stat__lbl {
+  font-size: 11px;
+  font-weight: 800;
+  color: #666;
+  text-transform: uppercase;
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+</style>
+
+<div class="neo-wrapper">
+  <div class="neo-title">Check-in Harian</div>
+  <div class="neo-subtitle">Kumpulkan streak & dapatkan saldo deposit!</div>
+
+  <?php if ($flash): ?>
+  <div class="neo-alert neo-alert--<?= $flashType === 'error' ? 'error' : ($flashType === 'warn' ? 'warn' : 'success') ?>">
+    <?= htmlspecialchars($flash) ?>
+  </div>
+  <?php endif; ?>
+
+  <div class="neo-card neo-card--yellow">
+    <div style="font-size: 48px; margin-bottom: 10px; animation: float 3s ease-in-out infinite;">🎁</div>
+    <div style="font-size: 14px; font-weight: 800; color: #444; text-transform: uppercase;">Reward Hari Ini</div>
+    <div style="font-size: 32px; font-weight: 900; color: var(--ink, #000); margin-bottom: 24px; letter-spacing: -1px;">
+      <?= format_rp($checkin_reward) ?>
+    </div>
+
+    <?php if (!$already): ?>
+    <form method="POST">
+      <?= csrf_field() ?>
+      <input type="hidden" name="action" value="checkin">
+      <button type="submit" class="neo-btn">
+        <span>🎯</span> Klaim Sekarang
+      </button>
+    </form>
     <?php else: ?>
-      <span class="checkin-orb-icon">🎁</span>
-      <span class="checkin-orb-label">Klik untuk Klaim!</span>
+    <button class="neo-btn" disabled>
+      <span>✅</span> Sudah Diklaim
+    </button>
     <?php endif; ?>
   </div>
 
-  <div class="checkin-card__reward">
-    <div class="checkin-reward-amount"><?= format_rp($checkin_reward) ?></div>
-    <div class="checkin-reward-label">Reward check-in hari ini</div>
-  </div>
-
-  <?php if (!$already): ?>
-  <form method="POST" id="checkin-form">
-    <?= csrf_field() ?>
-    <input type="hidden" name="action" value="checkin">
-    <button type="submit" class="btn btn--primary btn--full btn--lg" id="checkin-btn" onclick="animateOrb()">
-      🎯 Klaim Check-in Sekarang
-    </button>
-  </form>
-  <?php else: ?>
-  <div class="alert alert--success" style="text-align:center">
-    ✅ Sudah check-in hari ini!<br>
-    <small>Kembali besok untuk reward berikutnya</small>
-  </div>
-  <?php endif; ?>
-</div>
-
-<!-- Stats row -->
-<div class="stat-row" style="margin-top:16px">
-  <div class="stat-mini">
-    <div class="stat-mini__val"><?= $streak ?></div>
-    <div class="stat-mini__lbl">🔥 Hari Aktif</div>
-  </div>
-  <div class="stat-mini">
-    <div class="stat-mini__val" style="font-size:12px"><?= $already ? 'Sudah ✓' : 'Belum' ?></div>
-    <div class="stat-mini__lbl">Hari Ini</div>
-  </div>
-  <div class="stat-mini">
-    <div class="stat-mini__val" style="font-size:12px"><?= format_rp((float)$user['balance_dep']) ?></div>
-    <div class="stat-mini__lbl">Saldo Deposit</div>
-  </div>
-</div>
-
-<!-- Info card -->
-<div class="card" style="margin-top:16px">
-  <div class="card__header"><div class="card__title">📋 Cara Kerja Check-in</div></div>
-  <div class="card__body">
-    <div class="list-item">
-      <div class="list-item__icon" style="background:var(--yellow)">1️⃣</div>
-      <div class="list-item__body">
-        <div class="list-item__title">Check-in setiap hari</div>
-        <div class="list-item__sub">Kamu bisa check-in 1× per hari, reset tiap tengah malam</div>
-      </div>
+  <div class="neo-title" style="font-size: 18px; margin-top: 32px;">Minggu Ini</div>
+  <div class="neo-subtitle" style="margin-bottom: 16px;">Progres Check-in 7 Hari</div>
+  
+  <div class="weekly-stepper">
+    <?php for ($i = 1; $i <= 7; $i++): 
+      $is_done = $i <= $completed_days;
+      $is_active = (!$already && $i == $completed_days + 1);
+      $class = $is_done ? 'done' : ($is_active ? 'active' : '');
+    ?>
+    <div class="step-item <?= $class ?>">
+      <div class="step-node"><?= $is_done ? '✓' : $i ?></div>
+      <div class="step-lbl">Hari <?= $i ?></div>
     </div>
-    <div class="list-item">
-      <div class="list-item__icon" style="background:var(--mint)">2️⃣</div>
-      <div class="list-item__body">
-        <div class="list-item__title">Reward masuk ke Saldo Deposit</div>
-        <div class="list-item__sub">Reward digunakan untuk upgrade paket membership</div>
-      </div>
+    <?php endfor; ?>
+  </div>
+
+  <div class="stat-grid" style="margin-top: 36px;">
+    <div class="neo-stat">
+      <div class="neo-stat__val"><?= $streak ?></div>
+      <div class="neo-stat__lbl">🔥 Hari Aktif</div>
     </div>
-    <div class="list-item">
-      <div class="list-item__icon" style="background:var(--pink)">3️⃣</div>
-      <div class="list-item__body">
-        <div class="list-item__title">Konsisten = lebih banyak reward</div>
-        <div class="list-item__sub">Jangan sampai terlewat agar streak kamu terus naik!</div>
-      </div>
+    <div class="neo-stat">
+      <div class="neo-stat__val" style="font-size: 16px; margin-top: 8px;"><?= format_rp((float)$user['balance_dep']) ?></div>
+      <div class="neo-stat__lbl" style="margin-top: 6px;">Saldo Deposit</div>
     </div>
   </div>
+
 </div>
-
-<style>
-.checkin-card {
-  background: var(--yellow);
-  border: 3px solid var(--border);
-  box-shadow: 5px 5px 0 var(--border);
-  border-radius: 16px;
-  padding: 28px 20px;
-  text-align: center;
-  margin-bottom: 8px;
-}
-.checkin-card__orb {
-  width: 130px; height: 130px;
-  border-radius: 50%;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  margin: 0 auto 20px;
-  border: 3px solid var(--border);
-  cursor: pointer;
-  transition: transform .15s, box-shadow .15s;
-}
-.checkin-card__orb--ready {
-  background: var(--mint);
-  box-shadow: 4px 4px 0 var(--border);
-  animation: orb-pulse 2s ease-in-out infinite;
-}
-.checkin-card__orb--done {
-  background: #e0e0e0;
-  box-shadow: 2px 2px 0 var(--border);
-}
-@keyframes orb-pulse {
-  0%,100%{box-shadow:4px 4px 0 var(--border), 0 0 0 0 rgba(100,220,150,.4)}
-  50%{box-shadow:4px 4px 0 var(--border), 0 0 0 16px rgba(100,220,150,0)}
-}
-.checkin-orb-icon { font-size: 40px; }
-.checkin-orb-label { font-size: 11px; font-weight: 700; margin-top: 4px; color: var(--text2); }
-.checkin-card__reward { margin-bottom: 20px; }
-.checkin-reward-amount { font-size: 28px; font-weight: 900; color: var(--text); }
-.checkin-reward-label { font-size: 13px; color: var(--text2); margin-top: 2px; }
-</style>
-
-<script>
-function animateOrb() {
-  const orb = document.getElementById('orb');
-  orb.style.transform = 'scale(0.9)';
-  setTimeout(() => orb.style.transform = 'scale(1)', 150);
-}
-</script>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
