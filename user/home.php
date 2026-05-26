@@ -109,7 +109,7 @@ require dirname(__DIR__) . '/partials/header.php';
   <a href="/videos" class="stat-mini" style="text-decoration:none;cursor:pointer" title="Klik untuk tonton video">
     <div style="display:flex;align-items:center;justify-content:center;gap:2px;margin-bottom:2px">
       <div class="stat-mini__val"><?= $watch_today ?></div>
-      <div style="font-size:11px;color:#666;font-weight:700;align-self:flex-end;padding-bottom:1px">/<?= $watch_limit ?></div>
+      <div style="font-size:11px;color:var(--ink);opacity:0.8;font-weight:800;align-self:flex-end;padding-bottom:1px">/<?= $watch_limit ?></div>
     </div>
     <?php $pct = $watch_limit > 0 ? min(100, round(($watch_today / $watch_limit) * 100)) : 0; ?>
     <div style="width:100%;height:4px;background:#ddd;border-radius:3px;margin:3px 0;border:1px solid var(--ink);overflow:hidden">
@@ -120,13 +120,13 @@ require dirname(__DIR__) . '/partials/header.php';
   <!-- Video tersedia -->
   <a href="/videos" class="stat-mini" style="text-decoration:none;cursor:pointer">
     <div class="stat-mini__val" style="font-size:16px"><?= count($videos) ?></div>
-    <div style="font-size:10px;color:#888;font-weight:700;margin-top:1px">video tersisa</div>
+    <div style="font-size:10px;color:var(--ink);opacity:0.7;font-weight:800;margin-top:1px">video tersisa</div>
     <div class="stat-mini__lbl">📺 Tersedia</div>
   </a>
   <!-- Referral code -->
   <div class="stat-mini" style="cursor:pointer" onclick="copyRef('<?= htmlspecialchars($user['referral_code']) ?>')" title="Tap untuk salin kode">
     <div class="stat-mini__val" style="font-size:11px;letter-spacing:2px;font-family:monospace"><?= $user['referral_code'] ?></div>
-    <div style="font-size:9px;color:#888;margin-top:1px">tap untuk salin</div>
+    <div style="font-size:9px;color:var(--ink);opacity:0.7;font-weight:800;margin-top:1px">tap untuk salin</div>
     <div class="stat-mini__lbl">🔗 Referral</div>
   </div>
 </div>
