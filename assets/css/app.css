@@ -4,24 +4,24 @@
    TONTON — Neobrutalism UI
    ============================================= */
 :root {
-  --ink:     #1A1A1A;
-  --bg:      #FFFDF5;
+  --ink:     #111111;
+  --bg:      #F4F0EC;
   --white:   #FFFFFF;
 
-  /* Pastel palette */
-  --yellow:  #FFE566;
-  --mint:    #A8F0DC;
-  --lavender:#C4B5FD;
-  --salmon:  #FCA5A5;
-  --sky:     #BAE6FD;
-  --lime:    #BBF7D0;
-  --peach:   #FED7AA;
-  --orange:  #FF6B35;
+  /* Vibrant Neobrutalism palette */
+  --yellow:  #FFDF00;
+  --mint:    #00FFC6;
+  --lavender:#C084FC;
+  --salmon:  #FF499E;
+  --sky:     #38BDF8;
+  --lime:    #C6FF00;
+  --peach:   #FF8A4C;
+  --orange:  #FF3D00;
 
   /* Functional */
-  --brand:   #FF6B35;
-  --green:   #22C55E;
-  --red:     #EF4444;
+  --brand:   #FF3D00;
+  --green:   #10B981;
+  --red:     #F43F5E;
   --blue:    #3B82F6;
 
   /* Shadows & borders */
