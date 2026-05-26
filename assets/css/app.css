@@ -4,25 +4,25 @@
    TONTON — Neobrutalism UI
    ============================================= */
 :root {
-  --ink:     #111111;
-  --bg:      #F4F0EC;
+  --ink:     #000000;
+  --bg:      #4BC0FF; /* Super vibrant sky blue */
   --white:   #FFFFFF;
 
-  /* Vibrant Neobrutalism palette */
-  --yellow:  #FFDF00;
-  --mint:    #00FFC6;
-  --lavender:#C084FC;
-  --salmon:  #FF499E;
-  --sky:     #38BDF8;
-  --lime:    #C6FF00;
-  --peach:   #FF8A4C;
-  --orange:  #FF3D00;
+  /* Extreme Vibrant Neobrutalism palette */
+  --yellow:  #FFE800;
+  --mint:    #00FA9A;
+  --lavender:#B258FF;
+  --salmon:  #FF3366;
+  --sky:     #00BFFF;
+  --lime:    #CFFF00;
+  --peach:   #FF8A5B;
+  --orange:  #FF5400;
 
   /* Functional */
-  --brand:   #FF3D00;
-  --green:   #10B981;
-  --red:     #F43F5E;
-  --blue:    #3B82F6;
+  --brand:   #FF3366; /* Hot pink brand */
+  --green:   #00D154;
+  --red:     #FF003C;
+  --blue:    #007BFF;
 
   /* Shadows & borders */
   --border:  2.5px solid var(--ink);
@@ -533,7 +533,7 @@ select.form-control {
 
 /* ── Desktop shell ──────────────────────── */
 @media (min-width: 520px) {
-  body { background: #E8E4DA; }
+  body { background: #FF1053; }
   .app-shell { border-left: var(--border); border-right: var(--border); }
 }
 
