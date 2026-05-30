@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }
       div.addEventListener('click', function() {
         select.value = opt.value;
-        trigger.innerHTML = `${div.innerHTML} <svg width="12" height="8" viewBox="0 0 12 8" fill="none" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round"><path d="M1 1l5 5 5-5"/></svg>`;
+        trigger.innerHTML = `<div class="sel-val">${div.innerHTML}</div> <svg width="12" height="8" viewBox="0 0 12 8" fill="none" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round"><path d="M1 1l5 5 5-5"/></svg>`;
         optionsContainer.classList.remove('open');
         trigger.classList.remove('open');
         select.dispatchEvent(new Event('change'));
