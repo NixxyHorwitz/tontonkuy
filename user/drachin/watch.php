@@ -95,6 +95,7 @@ $streamUrl = '';
                     curl_setopt($ch2, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
                     $res2 = curl_exec($ch2);
                     curl_close($ch2);
+                    $debug_res2 = $res2; // save for debug
                     if ($res2) {
                         $dec2 = json_decode($res2, true);
                         $rawUrl = $dec2['streamUrl'] ?? '';
@@ -321,13 +322,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
   </div>
 
   <!-- Player -->
-  <div class="yt-wrapper" style="aspect-ratio:9/16; max-height:80vh; max-width:100%; margin: 0 auto;">
+  <div class="yt-wrapper" style="position:relative; aspect-ratio:9/16; max-height:80vh; max-width:100%; margin: 0 auto;">
+
+      <!-- LIVE DEBUG -->
+      <div style="position:absolute;top:0;left:0;z-index:999;background:rgba(0,0,0,.85);color:lime;font-family:monospace;font-size:10px;padding:8px;width:100%;max-height:160px;overflow-y:auto;word-break:break-all;">
+          <b>[DEBUG]</b><br>
+          <b>API1:</b> <?= htmlspecialchars($api1 ?? 'n/a') ?><br>
+          <b>Res1 (150):</b> <?= htmlspecialchars(substr($res1 ?? '', 0, 150)) ?><br>
+          <b>encryptedUrl:</b> <?= htmlspecialchars($encryptedUrl ?? 'EMPTY') ?><br>
+          <b>API2 res (decrypt):</b> <?= htmlspecialchars(substr($debug_res2 ?? '', 0, 200)) ?><br>
+          <b>rawUrl:</b> <?= htmlspecialchars($rawUrl ?? 'EMPTY') ?><br>
+          <b>Final streamUrl:</b> <?= htmlspecialchars($streamUrl ?? 'EMPTY') ?>
+      </div>
+      <!-- END DEBUG -->
 
       <?php if ($streamUrl): ?>
         <video id="drachin-player" controls playsinline style="width:100%;height:100%;background:#000;" data-src="<?= htmlspecialchars($streamUrl) ?>"></video>
       <?php else: ?>
-        <div style="width:100%;height:100%;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;">
-          Video tidak tersedia atau gagal dimuat.<br>Cobalah episode lain.
+        <div style="width:100%;height:100%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;">
+          ⚠️ Stream URL kosong. Lihat debug di atas.
         </div>
       <?php endif; ?>
   </div>
