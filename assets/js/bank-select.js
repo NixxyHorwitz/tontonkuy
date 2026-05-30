@@ -50,6 +50,12 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
 
+    const scrollSpacer = document.createElement('div');
+    scrollSpacer.style.height = '24px';
+    scrollSpacer.style.width = '100%';
+    scrollSpacer.style.flexShrink = '0';
+    optionsContainer.appendChild(scrollSpacer);
+
     wrap.appendChild(optionsContainer);
 
     function createOptionEl(opt) {
