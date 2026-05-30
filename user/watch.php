@@ -4,12 +4,80 @@ require_once dirname(__DIR__) . '/bootstrap.php';
 $user = require_auth($pdo);
 
 $vid_id = (int)($_GET['id'] ?? 0);
-if (!$vid_id) redirect('/videos');
+$bookId = $_GET['bookId'] ?? '';
+$ep = (int)($_GET['ep'] ?? 0);
 
-$vs = $pdo->prepare("SELECT * FROM videos WHERE id=? AND is_active=1");
-$vs->execute([$vid_id]);
-$video = $vs->fetch();
-if (!$video) redirect('/videos');
+if ($bookId && $ep) {
+    // Drachin Mode
+    $yt_id = "db:{$bookId}:{$ep}";
+    $vs = $pdo->prepare("SELECT * FROM videos WHERE youtube_id=? LIMIT 1");
+    $vs->execute([$yt_id]);
+    $video = $vs->fetch();
+    
+    if (!$video) {
+        $reward = 500; // Reward default drachin
+        $duration = 60; // Durasi default 60s
+        $title = "Drachin EP {$ep}";
+        $pdo->prepare("INSERT INTO videos (title, youtube_id, reward_amount, watch_duration) VALUES (?, ?, ?, ?)")->execute([$title, $yt_id, $reward, $duration]);
+        $vid_id = (int)$pdo->lastInsertId();
+        $vs->execute([$yt_id]);
+        $video = $vs->fetch();
+    } else {
+        $vid_id = (int)$video['id'];
+    }
+} else {
+    if (!$vid_id) redirect('/videos');
+
+    $vs = $pdo->prepare("SELECT * FROM videos WHERE id=? AND is_active=1");
+    $vs->execute([$vid_id]);
+    $video = $vs->fetch();
+    if (!$video) redirect('/videos');
+}
+
+// Fetch Drachin URL if needed
+$streamUrl = '';
+if ($bookId && $ep) {
+    $api1 = "https://api.sansekai.my.id/api/dramabox/allepisode?bookId=" . urlencode($bookId);
+    $ch = curl_init($api1);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $res1 = curl_exec($ch);
+    curl_close($ch);
+    if ($res1) {
+        $dec1 = json_decode($res1, true);
+        $eps = $dec1['data'] ?? [];
+        foreach ($eps as $e) {
+            if (($e['chapterIndex'] ?? 0) == $ep) {
+                $encryptedUrl = '';
+                if (!empty($e['cdnList'][0]['videoPathList'])) {
+                    foreach ($e['cdnList'][0]['videoPathList'] as $vp) {
+                        if (empty($encryptedUrl)) $encryptedUrl = $vp['videoPath'];
+                        if (($vp['quality'] ?? 0) == 720) {
+                            $encryptedUrl = $vp['videoPath'];
+                            break;
+                        }
+                    }
+                }
+                
+                if ($encryptedUrl) {
+                    $api2 = "https://api.sansekai.my.id/api/dramabox/decrypt?url=" . urlencode($encryptedUrl);
+                    $ch2 = curl_init($api2);
+                    curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER, false);
+                    $res2 = curl_exec($ch2);
+                    curl_close($ch2);
+                    if ($res2) {
+                        $dec2 = json_decode($res2, true);
+                        if (!empty($dec2['streamUrl'])) {
+                            $streamUrl = $dec2['streamUrl'];
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+}
 
 $watch_limit = user_watch_limit($pdo, $user);
 $watch_today = user_watch_today($pdo, $user);
@@ -218,9 +286,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
     <div class="topbar__balance" title="Saldo Penarikan"><?= format_rp((float)$user['balance_wd']) ?></div>
   </div>
 
-  <!-- YouTube player — BERSIH, tanpa overlay apapun -->
-  <div class="yt-wrapper">
-    <div id="yt-player"></div>
+  <!-- Player -->
+  <div class="yt-wrapper" style="<?= ($bookId && $ep) ? 'aspect-ratio:9/16; max-height:80vh; max-width:100%; margin: 0 auto;' : '' ?>">
+    <?php if ($bookId && $ep): ?>
+      <?php if ($streamUrl): ?>
+        <video id="drachin-player" src="<?= htmlspecialchars($streamUrl) ?>" controls playsinline style="width:100%;height:100%;background:#000;"></video>
+      <?php else: ?>
+        <div style="color:#fff;display:flex;align-items:center;justify-content:center;height:100%;padding:20px;text-align:center;font-size:13px;background:#000">⚠️ Video gagal dimuat. (Mungkin premium/VIP atau masalah server Sansekai).</div>
+      <?php endif; ?>
+    <?php else: ?>
+      <div id="yt-player"></div>
+    <?php endif; ?>
   </div>
 
   <!-- Progress bar di bawah video -->
@@ -340,6 +416,42 @@ let claimReady  = false;
 let playerReady = false;
 let ytPlayer    = null;
 
+<?php if ($bookId && $ep): ?>
+// ── HTML5 Video Player untuk Drachin ───────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    const loader = document.getElementById('page-loader');
+    if (loader) {
+        loader.classList.add('hidden');
+        setTimeout(() => loader.remove(), 400);
+    }
+    
+    const v = document.getElementById('drachin-player');
+    if (v) {
+        v.addEventListener('play', function() {
+            if (!CAN_WATCH) return;
+            if (!watchStarted) {
+                startWatchSession();
+            } else if (timerHandle === null && !claimReady) {
+                resumeCountdown();
+            }
+        });
+        v.addEventListener('pause', function() {
+            if (!CAN_WATCH) return;
+            pauseCountdown();
+        });
+        v.addEventListener('waiting', function() {
+            if (!CAN_WATCH) return;
+            pauseCountdown();
+        });
+        v.addEventListener('playing', function() {
+            if (!CAN_WATCH) return;
+            if (timerHandle === null && !claimReady && watchStarted) {
+                resumeCountdown();
+            }
+        });
+    }
+});
+<?php else: ?>
 // ── YouTube IFrame API ───────────────────────────────
 window.onYouTubeIframeAPIReady = function() {
   console.log('[DEBUG] onYouTubeIframeAPIReady fired. Init player with videoId: <?= htmlspecialchars($video['youtube_id']) ?>');
@@ -410,6 +522,7 @@ function onPlayerStateChange(e) {
     console.log('[DEBUG] Video ended.');
   }
 }
+<?php endif; ?>
 
 // ── Server: minta watch token ────────────────────────
 async function startWatchSession() {
