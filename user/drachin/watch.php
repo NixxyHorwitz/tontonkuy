@@ -456,7 +456,11 @@ document.addEventListener('DOMContentLoaded', function() {
         // HLS.js Initialization
         const videoSrc = v.getAttribute('data-src');
         if (videoSrc) {
-            if (Hls.isSupported() && videoSrc.includes('.m3u8')) {
+            const isMp4 = videoSrc.toLowerCase().includes('.mp4');
+            
+            if (isMp4) {
+                v.src = videoSrc;
+            } else if (Hls.isSupported()) {
                 const hls = new Hls({
                     debug: false,
                     enableWorker: true
@@ -477,16 +481,17 @@ document.addEventListener('DOMContentLoaded', function() {
                                 break;
                             default:
                                 hls.destroy();
-                                setStatus('⚠️ Gagal memutar video.', 'Terjadi masalah pada stream (CORS / Terblokir).');
+                                // Fallback native if HLS parse fails
+                                v.src = videoSrc;
                                 break;
                         }
                     }
                 });
-            } else if (v.canPlayType('application/vnd.apple.mpegurl') || !videoSrc.includes('.m3u8')) {
-                // Native HLS (Safari/iOS) or MP4
+            } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
+                // Native HLS (Safari/iOS)
                 v.src = videoSrc;
             } else {
-                setStatus('⚠️ Browser tidak mendukung HLS.', 'Gunakan Chrome/Safari versi terbaru.');
+                v.src = videoSrc;
             }
         }
 
