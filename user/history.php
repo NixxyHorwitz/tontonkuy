@@ -105,9 +105,15 @@ require dirname(__DIR__) . '/partials/header.php';
         <img src="/assets/banks/<?= htmlspecialchars($dl) ?>" style="width:100%;height:100%;object-fit:contain;border-radius:12px;">
       </div>
       <?php else: ?>
-      <div class="list-item__icon" style="background:<?= $d['method']==='qris'?'var(--mint)':'var(--sky)' ?>">
-        <?= $d['method']==='qris' ? '📱' : '🏦' ?>
-      </div>
+        <?php if ($d['method'] === 'qris'): ?>
+        <div class="list-item__icon" style="background:transparent;padding:0;border:1.5px solid var(--ink);border-radius:12px;overflow:hidden">
+          <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjhvTtjN1Bj37W3jTiire9jlqgP046Je6-JPvIVEMjW6avji3kH1eC5HyUDIY8q1l6z89kidy_XZz4cX7-d_rdSentSrY94naUFcRo-NhiEvMUWmevEbQz-xRdMLUFSr61dHVvbVDq58GmxM0UAIgwnfCak8KWr0wTa0UmmjdUQTTcm2pEd3YjuHtPj9Q/s2161/Logo%20QRIS.png" style="width:100%;height:100%;object-fit:contain;background:#fff">
+        </div>
+        <?php else: ?>
+        <div class="list-item__icon" style="background:var(--sky)">
+          🏦
+        </div>
+        <?php endif; ?>
       <?php endif; ?>
       <div class="list-item__body">
         <div class="list-item__title"><?= format_rp((float)$d['amount']) ?></div>

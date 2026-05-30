@@ -222,7 +222,9 @@ require dirname(__DIR__) . '/partials/header.php';
 <!-- QRIS -->
 <div class="dep-method" id="card-qris">
   <div class="dep-method__hd" onclick="toggleCard('qris')">
-    <div class="dep-method__ico" style="background:var(--mint)">📱</div>
+    <div class="dep-method__ico" style="background:transparent;padding:0;border:1.5px solid var(--ink);border-radius:8px;overflow:hidden">
+      <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEjhvTtjN1Bj37W3jTiire9jlqgP046Je6-JPvIVEMjW6avji3kH1eC5HyUDIY8q1l6z89kidy_XZz4cX7-d_rdSentSrY94naUFcRo-NhiEvMUWmevEbQz-xRdMLUFSr61dHVvbVDq58GmxM0UAIgwnfCak8KWr0wTa0UmmjdUQTTcm2pEd3YjuHtPj9Q/s2161/Logo%20QRIS.png" style="width:100%;height:100%;object-fit:contain;background:#fff">
+    </div>
     <div class="dep-method__info">
       <div class="dep-method__name">QRIS</div>
       <div class="dep-method__sub">GoPay · OVO · Dana · ShopeePay</div>
