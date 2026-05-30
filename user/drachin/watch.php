@@ -105,7 +105,6 @@ $streamUrl = '';
             }
         }
     }
-}
 
 $watch_limit = user_watch_limit($pdo, $user);
 $watch_today = user_watch_today($pdo, $user);
