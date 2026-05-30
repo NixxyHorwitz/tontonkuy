@@ -92,12 +92,15 @@ $streamUrl = '';
                     $ch2 = curl_init($api2);
                     curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
                     curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER, false);
+                    curl_setopt($ch2, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
                     $res2 = curl_exec($ch2);
                     curl_close($ch2);
                     if ($res2) {
                         $dec2 = json_decode($res2, true);
-                        if (!empty($dec2['streamUrl'])) {
-                            $streamUrl = $dec2['streamUrl'];
+                        $rawUrl = $dec2['streamUrl'] ?? '';
+                        if ($rawUrl) {
+                            // Pipe through our own PHP proxy to bypass CORS
+                            $streamUrl = '/drachin/stream?url=' . urlencode($rawUrl);
                         }
                     }
                 }
@@ -319,15 +322,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
 
   <!-- Player -->
   <div class="yt-wrapper" style="aspect-ratio:9/16; max-height:80vh; max-width:100%; margin: 0 auto;">
-      
-      <!-- LIVE DEBUG -->
-      <div style="background: rgba(0,0,0,0.8); color: lime; font-family: monospace; font-size: 11px; padding: 10px; position: absolute; top: 0; left: 0; z-index: 999; max-height: 150px; overflow-y: auto; width: 100%; word-break: break-all;">
-          <b>[LIVE DEBUG]</b><br>
-          <b>API 1 URL:</b> <?= htmlspecialchars($api1 ?? '') ?><br>
-          <b>API 1 Response (substr):</b> <?= htmlspecialchars(substr($res1 ?? '', 0, 150)) ?><br>
-          <b>Stream URL:</b> <?= htmlspecialchars($streamUrl ?? 'EMPTY') ?>
-      </div>
-      <!-- END LIVE DEBUG -->
 
       <?php if ($streamUrl): ?>
         <video id="drachin-player" controls playsinline style="width:100%;height:100%;background:#000;" data-src="<?= htmlspecialchars($streamUrl) ?>"></video>
