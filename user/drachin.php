@@ -74,8 +74,15 @@ require dirname(__DIR__) . '/partials/header.php';
   <div class="card__body" style="padding:12px">
     <form method="GET" action="/drachin" style="display:flex;flex-direction:column;gap:8px">
       <select name="provider" class="form-control" style="font-size:14px;padding:8px;text-transform:capitalize;" onchange="this.form.submit()">
-        <?php foreach ($valid_providers as $vp): ?>
-          <option value="<?= $vp ?>" <?= $provider === $vp ? 'selected' : '' ?>><?= $vp === 'dramanova' ? 'DramaNova' : ($vp === 'freereels' ? 'FreeReels' : ($vp === 'dramabox' ? 'DramaBox' : ($vp === 'pinedrama' ? 'PineDrama' : ($vp === 'reelshort' ? 'ReelShort' : ($vp === 'shortmax' ? 'ShortMax' : ($vp === 'goodshort' ? 'GoodShort' : ($vp === 'moviebox' ? 'MovieBox' : ucfirst($vp))))))))) ?></option>
+        <?php 
+        $labels = [
+            'dramabox' => 'DramaBox', 'pinedrama' => 'PineDrama', 'reelshort' => 'ReelShort',
+            'shortmax' => 'ShortMax', 'goodshort' => 'GoodShort', 'freereels' => 'FreeReels',
+            'dramanova' => 'DramaNova', 'anime' => 'Anime', 'komik' => 'Komik', 'moviebox' => 'MovieBox'
+        ];
+        foreach ($valid_providers as $vp): 
+        ?>
+          <option value="<?= $vp ?>" <?= $provider === $vp ? 'selected' : '' ?>><?= $labels[$vp] ?? ucfirst($vp) ?></option>
         <?php endforeach; ?>
       </select>
       
