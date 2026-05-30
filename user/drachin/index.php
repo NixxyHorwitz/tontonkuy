@@ -2,6 +2,12 @@
 declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/auth/guard.php';
 
+// Guard: Drachin harus aktif
+if (setting($pdo, 'drachin_enabled', '1') !== '1') {
+    $_SESSION['flash'] = ['type' => 'error', 'msg' => 'Fitur Drachin sedang dinonaktifkan oleh admin.'];
+    redirect('/home');
+}
+
 $watch_limit = user_watch_limit($pdo, $user);
 $watch_today = user_watch_today($pdo, $user);
 

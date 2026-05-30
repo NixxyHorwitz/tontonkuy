@@ -29,24 +29,26 @@ $history = $pdo->prepare(
 $history->execute([$user['id']]);
 $history = $history->fetchAll();
 
-// Fetch Drachin FYP
+// Fetch Drachin FYP (hanya jika fitur aktif)
 $drachin_fyp = [];
-$ch = curl_init('https://api.sansekai.my.id/api/dramabox/foryou');
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
-curl_setopt($ch, CURLOPT_TIMEOUT, 5);
-$res = curl_exec($ch);
-curl_close($ch);
-if ($res) {
-    $decoded = json_decode($res, true);
-    if (isset($decoded['data']) && is_array($decoded['data'])) {
-        if (isset($decoded['data']['items']) && is_array($decoded['data']['items'])) {
-            $drachin_fyp = array_slice($decoded['data']['items'], 0, 3);
-        } else {
-            $drachin_fyp = array_slice($decoded['data'], 0, 3);
+if (setting($pdo, 'drachin_enabled', '1') === '1') {
+    $ch = curl_init('https://api.sansekai.my.id/api/dramabox/foryou');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+    $res = curl_exec($ch);
+    curl_close($ch);
+    if ($res) {
+        $decoded = json_decode($res, true);
+        if (isset($decoded['data']) && is_array($decoded['data'])) {
+            if (isset($decoded['data']['items']) && is_array($decoded['data']['items'])) {
+                $drachin_fyp = array_slice($decoded['data']['items'], 0, 3);
+            } else {
+                $drachin_fyp = array_slice($decoded['data'], 0, 3);
+            }
+        } elseif (is_array($decoded) && !isset($decoded['error'])) {
+            $drachin_fyp = array_slice($decoded, 0, 3);
         }
-    } elseif (is_array($decoded) && !isset($decoded['error'])) {
-        $drachin_fyp = array_slice($decoded, 0, 3);
     }
 }
 

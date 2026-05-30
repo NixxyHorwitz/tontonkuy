@@ -2,6 +2,12 @@
 declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/auth/guard.php';
 
+// Guard: Drachin harus aktif
+if (setting($pdo, 'drachin_enabled', '1') !== '1') {
+    $_SESSION['flash'] = ['type' => 'error', 'msg' => 'Fitur Drachin sedang dinonaktifkan oleh admin.'];
+    redirect('/home');
+}
+
 $bookId = $_GET['id'] ?? '';
 $provider = $_GET['provider'] ?? 'dramabox';
 if (empty($bookId)) {
