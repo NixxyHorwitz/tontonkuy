@@ -320,7 +320,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
   <!-- Player -->
   <div class="yt-wrapper" style="aspect-ratio:9/16; max-height:80vh; max-width:100%; margin: 0 auto;">
       <?php if ($streamUrl): ?>
-        <video id="drachin-player" src="<?= htmlspecialchars($streamUrl) ?>" controls playsinline style="width:100%;height:100%;background:#000;"></video>
+        <video id="drachin-player" controls playsinline style="width:100%;height:100%;background:#000;" data-src="<?= htmlspecialchars($streamUrl) ?>"></video>
       <?php else: ?>
         <div style="width:100%;height:100%;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;">
           Video tidak tersedia atau gagal dimuat.<br>Cobalah episode lain.
@@ -453,6 +453,43 @@ document.addEventListener('DOMContentLoaded', function() {
     
     const v = document.getElementById('drachin-player');
     if (v) {
+        // HLS.js Initialization
+        const videoSrc = v.getAttribute('data-src');
+        if (videoSrc) {
+            if (Hls.isSupported() && videoSrc.includes('.m3u8')) {
+                const hls = new Hls({
+                    debug: false,
+                    enableWorker: true
+                });
+                hls.loadSource(videoSrc);
+                hls.attachMedia(v);
+                hls.on(Hls.Events.MANIFEST_PARSED, function() {
+                    // Playback ready
+                });
+                hls.on(Hls.Events.ERROR, function(event, data) {
+                    if (data.fatal) {
+                        switch (data.type) {
+                            case Hls.ErrorTypes.NETWORK_ERROR:
+                                hls.startLoad();
+                                break;
+                            case Hls.ErrorTypes.MEDIA_ERROR:
+                                hls.recoverMediaError();
+                                break;
+                            default:
+                                hls.destroy();
+                                setStatus('⚠️ Gagal memutar video.', 'Terjadi masalah pada stream (CORS / Terblokir).');
+                                break;
+                        }
+                    }
+                });
+            } else if (v.canPlayType('application/vnd.apple.mpegurl') || !videoSrc.includes('.m3u8')) {
+                // Native HLS (Safari/iOS) or MP4
+                v.src = videoSrc;
+            } else {
+                setStatus('⚠️ Browser tidak mendukung HLS.', 'Gunakan Chrome/Safari versi terbaru.');
+            }
+        }
+
         v.addEventListener('play', function() {
             if (!CAN_WATCH) return;
             if (!watchStarted) {
@@ -588,5 +625,6 @@ function showPop(msg) {
 }
 </script>
 <script src="/assets/js/toast.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1"></script>
 </body>
 </html>
