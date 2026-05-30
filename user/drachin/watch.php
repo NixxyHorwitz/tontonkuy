@@ -95,7 +95,6 @@ $streamUrl = '';
                     curl_setopt($ch2, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)');
                     $res2 = curl_exec($ch2);
                     curl_close($ch2);
-                    $debug_res2 = $res2; // save for debug
                     if ($res2) {
                         $dec2 = json_decode($res2, true);
                         $rawUrl = $dec2['streamUrl'] ?? '';
@@ -109,6 +108,20 @@ $streamUrl = '';
             }
         }
     }
+
+// Hitung prev / next episode dari $eps_array
+$prevEp = null;
+$nextEp = null;
+if (!empty($eps_array)) {
+    $allIdx = array_map(fn($e) => (int)($e['chapterIndex'] ?? $e['index'] ?? $e['episode'] ?? -1), $eps_array);
+    sort($allIdx);
+    $curIdx = (int)$ep;
+    $pos = array_search($curIdx, $allIdx);
+    if ($pos !== false) {
+        $prevEp = ($pos > 0) ? $allIdx[$pos - 1] : null;
+        $nextEp = ($pos < count($allIdx) - 1) ? $allIdx[$pos + 1] : null;
+    }
+}
 
 $watch_limit = user_watch_limit($pdo, $user);
 $watch_today = user_watch_today($pdo, $user);
@@ -324,25 +337,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
   <!-- Player -->
   <div class="yt-wrapper" style="position:relative; aspect-ratio:9/16; max-height:80vh; max-width:100%; margin: 0 auto;">
 
-      <!-- LIVE DEBUG -->
-      <div style="position:absolute;top:0;left:0;z-index:999;background:rgba(0,0,0,.85);color:lime;font-family:monospace;font-size:10px;padding:8px;width:100%;max-height:160px;overflow-y:auto;word-break:break-all;">
-          <b>[DEBUG]</b><br>
-          <b>API1:</b> <?= htmlspecialchars($api1 ?? 'n/a') ?><br>
-          <b>Res1 (150):</b> <?= htmlspecialchars(substr($res1 ?? '', 0, 150)) ?><br>
-          <b>encryptedUrl:</b> <?= htmlspecialchars($encryptedUrl ?? 'EMPTY') ?><br>
-          <b>API2 res (decrypt):</b> <?= htmlspecialchars(substr($debug_res2 ?? '', 0, 200)) ?><br>
-          <b>rawUrl:</b> <?= htmlspecialchars($rawUrl ?? 'EMPTY') ?><br>
-          <b>Final streamUrl:</b> <?= htmlspecialchars($streamUrl ?? 'EMPTY') ?>
+      <!-- Buffering Loader -->
+      <div id="video-loader" style="display:none;position:absolute;inset:0;z-index:50;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;pointer-events:none;">
+          <div style="width:44px;height:44px;border:4px solid rgba(255,255,255,.25);border-top-color:#fff;border-radius:50%;animation:spin .75s linear infinite"></div>
+          <span style="color:#fff;font-size:12px;font-weight:700;letter-spacing:.5px">Memuat...</span>
       </div>
-      <!-- END DEBUG -->
 
       <?php if ($streamUrl): ?>
         <video id="drachin-player" controls playsinline style="width:100%;height:100%;background:#000;" data-src="<?= htmlspecialchars($streamUrl) ?>"></video>
       <?php else: ?>
-        <div style="width:100%;height:100%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;">
-          ⚠️ Stream URL kosong. Lihat debug di atas.
+        <div style="width:100%;height:100%;background:#111;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;flex-direction:column;gap:8px;">
+          <span style="font-size:32px">⚠️</span>
+          <b>Video tidak tersedia</b>
+          <small style="opacity:.7">Coba episode lain atau ganti provider</small>
         </div>
       <?php endif; ?>
+  </div>
+
+  <!-- Prev / Next Episode Nav -->
+  <?php
+  $prevUrl = $prevEp !== null ? '/drachin/watch?provider='.urlencode($provider).'&bookId='.urlencode($bookId).'&ep='.urlencode((string)$prevEp) : null;
+  $nextUrl = $nextEp !== null ? '/drachin/watch?provider='.urlencode($provider).'&bookId='.urlencode($bookId).'&ep='.urlencode((string)$nextEp) : null;
+  ?>
+  <div style="display:flex;gap:8px;padding:10px 12px;">
+    <?php if ($prevUrl): ?>
+    <a href="<?= $prevUrl ?>" class="btn btn--ghost btn--sm" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+      EP <?= $prevEp ?>
+    </a>
+    <?php else: ?>
+    <div style="flex:1"></div>
+    <?php endif; ?>
+
+    <a href="<?= '/drachin/detail?provider='.urlencode($provider).'&id='.urlencode($bookId) ?>" class="btn btn--ghost btn--sm" style="flex:0 0 auto;padding:0 14px;" title="Semua Episode">
+      ☰
+    </a>
+
+    <?php if ($nextUrl): ?>
+    <a href="<?= $nextUrl ?>" class="btn btn--ghost btn--sm" style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;">
+      EP <?= $nextEp ?>
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+    </a>
+    <?php else: ?>
+    <div style="flex:1"></div>
+    <?php endif; ?>
   </div>
 
   <!-- Progress bar di bawah video -->
@@ -469,7 +507,15 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     const v = document.getElementById('drachin-player');
+    const vLoader = document.getElementById('video-loader');
+
+    function showVideoLoader() { if (vLoader) vLoader.style.display = 'flex'; }
+    function hideVideoLoader() { if (vLoader) vLoader.style.display = 'none'; }
+
     if (v) {
+        // Show loader while initial src loads
+        showVideoLoader();
+
         // HLS.js Initialization
         const videoSrc = v.getAttribute('data-src');
         if (videoSrc) {
@@ -477,15 +523,12 @@ document.addEventListener('DOMContentLoaded', function() {
             
             if (isMp4) {
                 v.src = videoSrc;
-            } else if (Hls.isSupported()) {
-                const hls = new Hls({
-                    debug: false,
-                    enableWorker: true
-                });
+            } else if (typeof Hls !== 'undefined' && Hls.isSupported()) {
+                const hls = new Hls({ debug: false, enableWorker: true });
                 hls.loadSource(videoSrc);
                 hls.attachMedia(v);
                 hls.on(Hls.Events.MANIFEST_PARSED, function() {
-                    // Playback ready
+                    hideVideoLoader();
                 });
                 hls.on(Hls.Events.ERROR, function(event, data) {
                     if (data.fatal) {
@@ -498,19 +541,26 @@ document.addEventListener('DOMContentLoaded', function() {
                                 break;
                             default:
                                 hls.destroy();
-                                // Fallback native if HLS parse fails
                                 v.src = videoSrc;
                                 break;
                         }
                     }
                 });
             } else if (v.canPlayType('application/vnd.apple.mpegurl')) {
-                // Native HLS (Safari/iOS)
                 v.src = videoSrc;
             } else {
                 v.src = videoSrc;
             }
         }
+
+        // Buffering loader events
+        v.addEventListener('waiting',   showVideoLoader);
+        v.addEventListener('stalled',   showVideoLoader);
+        v.addEventListener('seeking',   showVideoLoader);
+        v.addEventListener('playing',   hideVideoLoader);
+        v.addEventListener('canplay',   hideVideoLoader);
+        v.addEventListener('seeked',    hideVideoLoader);
+        v.addEventListener('loadeddata',hideVideoLoader);
 
         v.addEventListener('play', function() {
             if (!CAN_WATCH) return;
