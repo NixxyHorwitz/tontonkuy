@@ -183,14 +183,16 @@ require dirname(__DIR__) . '/partials/header.php';
           <?php if (!empty($banks)): ?>
           <optgroup label="🏦 Bank">
             <?php foreach ($banks as $ch): ?>
-            <option value="<?= htmlspecialchars($ch['name']) ?>" data-logo="<?= htmlspecialchars($ch['logo'] ?? '') ?>" <?= ($user['bank_name'] ?? '') === $ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($ch['name']) ?></option>
+            <?php $logoPath = !empty($ch['logo']) ? (str_starts_with($ch['logo'], '/') || str_starts_with($ch['logo'], 'http') ? $ch['logo'] : '/assets/banks/' . $ch['logo']) : ''; ?>
+            <option value="<?= htmlspecialchars($ch['name']) ?>" data-logo="<?= htmlspecialchars($logoPath) ?>" <?= ($user['bank_name'] ?? '') === $ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($ch['name']) ?></option>
             <?php endforeach; ?>
           </optgroup>
           <?php endif; ?>
           <?php if (!empty($ewallets)): ?>
           <optgroup label="📱 E-Wallet">
             <?php foreach ($ewallets as $ch): ?>
-            <option value="<?= htmlspecialchars($ch['name']) ?>" data-logo="<?= htmlspecialchars($ch['logo'] ?? '') ?>" <?= ($user['bank_name'] ?? '') === $ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($ch['name']) ?></option>
+            <?php $logoPath = !empty($ch['logo']) ? (str_starts_with($ch['logo'], '/') || str_starts_with($ch['logo'], 'http') ? $ch['logo'] : '/assets/banks/' . $ch['logo']) : ''; ?>
+            <option value="<?= htmlspecialchars($ch['name']) ?>" data-logo="<?= htmlspecialchars($logoPath) ?>" <?= ($user['bank_name'] ?? '') === $ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($ch['name']) ?></option>
             <?php endforeach; ?>
           </optgroup>
           <?php endif; ?>

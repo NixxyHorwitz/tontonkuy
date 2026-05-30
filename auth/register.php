@@ -309,14 +309,16 @@ $final_og_desc = $_seo_desc;
               <?php if (!empty($_banks)): ?>
               <optgroup label="🏦 Bank">
                 <?php foreach ($_banks as $_ch): ?>
-                <option value="<?= htmlspecialchars($_ch['name']) ?>" data-logo="<?= htmlspecialchars($_ch['logo'] ?? '') ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
+                <?php $logoPath = !empty($_ch['logo']) ? (str_starts_with($_ch['logo'], '/') || str_starts_with($_ch['logo'], 'http') ? $_ch['logo'] : '/assets/banks/' . $_ch['logo']) : ''; ?>
+                <option value="<?= htmlspecialchars($_ch['name']) ?>" data-logo="<?= htmlspecialchars($logoPath) ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
                 <?php endforeach; ?>
               </optgroup>
               <?php endif; ?>
               <?php if (!empty($_ewallets)): ?>
               <optgroup label="📱 E-Wallet">
                 <?php foreach ($_ewallets as $_ch): ?>
-                <option value="<?= htmlspecialchars($_ch['name']) ?>" data-logo="<?= htmlspecialchars($_ch['logo'] ?? '') ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
+                <?php $logoPath = !empty($_ch['logo']) ? (str_starts_with($_ch['logo'], '/') || str_starts_with($_ch['logo'], 'http') ? $_ch['logo'] : '/assets/banks/' . $_ch['logo']) : ''; ?>
+                <option value="<?= htmlspecialchars($_ch['name']) ?>" data-logo="<?= htmlspecialchars($logoPath) ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
                 <?php endforeach; ?>
               </optgroup>
               <?php endif; ?>
