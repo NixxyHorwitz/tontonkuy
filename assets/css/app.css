@@ -351,7 +351,10 @@ select.form-control:focus, select.form-control:active {
   background: var(--white); border: var(--border); border-radius: var(--radius-sm);
   box-shadow: 6px 6px 0 var(--ink); z-index: 9999; max-height: 280px; overflow-y: auto;
   overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
-  padding-bottom: 8px; display: none;
+  display: none;
+}
+.custom-select-options::after {
+  content: ""; display: block; height: 16px;
 }
 .custom-select-options::-webkit-scrollbar { width: 12px; }
 .custom-select-options::-webkit-scrollbar-track { background: var(--bg); border-left: 1.5px solid var(--ink); border-radius: 0 4px 4px 0; }
