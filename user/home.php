@@ -99,7 +99,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <a href="/redeem"       class="hero-card__btn" style="flex:1;min-width:70px">🎁 Redeem</a>
     <a href="/panduan"      class="hero-card__btn" style="flex:1;min-width:70px;background:var(--white);color:var(--brand);border-color:var(--brand)">📖 Panduan</a>
   </div>
-  <a href="/upgrade" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;background:var(--yellow);color:var(--ink);text-decoration:none;padding:12px;border-radius:10px;font-weight:900;border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);font-size:15px;">
+  <a href="/upgrade" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;background:var(--blue);color:var(--white);text-decoration:none;padding:12px;border-radius:10px;font-weight:900;border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);font-size:15px;">
     🚀 UPGRADE LEVEL SEKARANG
   </a>
 </div>
