@@ -38,20 +38,49 @@ if ($bookId && $ep !== '') {
 // Fetch Drachin URL if needed
 $streamUrl = '';
 if ($bookId && $ep !== '') {
-    $api1 = "https://api.sansekai.my.id/api/{$provider}/allepisode?bookId=" . urlencode($bookId);
+    $api_config = [
+        'dramabox'  => ['ep' => 'allepisode', 'param' => 'bookId'],
+        'pinedrama' => ['ep' => 'detail', 'param' => 'collection_id'],
+        'reelshort' => ['ep' => 'allepisode', 'param' => 'bookId'],
+        'shortmax'  => ['ep' => 'allepisode', 'param' => 'shortPlayId'], // or detail
+        'goodshort' => ['ep' => 'allepisode', 'param' => 'bookId'],
+        'freereels' => ['ep' => 'detailAndAllEpisode', 'param' => 'key'],
+        'dramanova' => ['ep' => 'detail', 'param' => 'dramaId'],
+        'anime'     => ['ep' => 'detail', 'param' => 'urlId'],
+        'komik'     => ['ep' => 'chapterlist', 'param' => 'manga_id'],
+        'moviebox'  => ['ep' => 'detail', 'param' => 'subjectId']
+    ];
+    $conf = $api_config[$provider] ?? ['ep' => 'allepisode', 'param' => 'bookId'];
+    
+    $api1 = "https://api.sansekai.my.id/api/{$provider}/{$conf['ep']}?{$conf['param']}=" . urlencode($bookId);
     $ch = curl_init($api1);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
     $res1 = curl_exec($ch);
     curl_close($ch);
     if ($res1) {
-        $dec1 = json_decode($res1, true);
-        $eps = $dec1['data'] ?? [];
-        foreach ($eps as $e) {
-            if (($e['chapterIndex'] ?? 0) == $ep) {
+        $decoded = json_decode($res1, true);
+        $eps_array = [];
+        if (isset($decoded['data']) && is_array($decoded['data'])) {
+            if (isset($decoded['data']['items']) && is_array($decoded['data']['items'])) {
+                $eps_array = $decoded['data']['items'];
+            } else {
+                $eps_array = $decoded['data'];
+            }
+        } elseif (is_array($decoded) && !isset($decoded['error'])) {
+            $eps_array = $decoded;
+        }
+
+        foreach ($eps_array as $epData) {
+            $idx = $epData['chapterIndex'] ?? $epData['index'] ?? $epData['episode'] ?? '';
+            // Make sure types match or string cast works
+            if ((string)$idx === (string)$ep) {
+                // Video url might be video_url, stream, url, etc.
                 $encryptedUrl = '';
-                if (!empty($e['cdnList'][0]['videoPathList'])) {
-                    foreach ($e['cdnList'][0]['videoPathList'] as $vp) {
+                
+                // DramaBox specific
+                if (!empty($epData['cdnList'][0]['videoPathList'])) {
+                    foreach ($epData['cdnList'][0]['videoPathList'] as $vp) {
                         if (empty($encryptedUrl)) $encryptedUrl = $vp['videoPath'];
                         if (($vp['quality'] ?? 0) == 720) {
                             $encryptedUrl = $vp['videoPath'];
@@ -60,6 +89,11 @@ if ($bookId && $ep !== '') {
                     }
                 }
                 
+                // Other providers might give video_url directly or in stream
+                if (empty($encryptedUrl)) {
+                    $streamUrl = $epData['video_url'] ?? $epData['videoUrl'] ?? $epData['url'] ?? $epData['m3u8_url'] ?? '';
+                }
+
                 if ($encryptedUrl) {
                     $api2 = "https://api.sansekai.my.id/api/{$provider}/decrypt?url=" . urlencode($encryptedUrl);
                     $ch2 = curl_init($api2);

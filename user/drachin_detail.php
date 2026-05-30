@@ -13,7 +13,23 @@ $watch_today = user_watch_today($pdo, $user);
 
 // Fetch Episodes
 $episodes = [];
-$api_url = "https://api.sansekai.my.id/api/{$provider}/allepisode?bookId=" . urlencode($bookId);
+// API Configuration Map
+$api_config = [
+    'dramabox'  => ['ep' => 'allepisode', 'param' => 'bookId'],
+    'pinedrama' => ['ep' => 'detail', 'param' => 'collection_id'],
+    'reelshort' => ['ep' => 'allepisode', 'param' => 'bookId'],
+    'shortmax'  => ['ep' => 'allepisode', 'param' => 'shortPlayId'], // or detail
+    'goodshort' => ['ep' => 'allepisode', 'param' => 'bookId'],
+    'freereels' => ['ep' => 'detailAndAllEpisode', 'param' => 'key'],
+    'dramanova' => ['ep' => 'detail', 'param' => 'dramaId'],
+    'anime'     => ['ep' => 'detail', 'param' => 'urlId'],
+    'komik'     => ['ep' => 'chapterlist', 'param' => 'manga_id'],
+    'moviebox'  => ['ep' => 'detail', 'param' => 'subjectId']
+];
+
+$conf = $api_config[$provider] ?? ['ep' => 'allepisode', 'param' => 'bookId'];
+$api_url = "https://api.sansekai.my.id/api/{$provider}/{$conf['ep']}?{$conf['param']}=" . urlencode($bookId);
+
 $ch = curl_init($api_url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
