@@ -294,6 +294,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 .loader-label{font-size:13px;font-weight:800;color:#555}
+</style>
+</head>
+<body>
+<!-- Page loader -->
+<div id="page-loader">
+  <div class="loader-spinner"></div>
+  <div class="loader-label">⏳ Memuat video...</div>
+</div>
+<div class="app-shell">
 
 <div class="watch-container">
   <!-- Topbar -->
