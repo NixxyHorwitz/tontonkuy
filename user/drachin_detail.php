@@ -3,8 +3,9 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
 $bookId = $_GET['id'] ?? '';
+$provider = $_GET['provider'] ?? 'dramabox';
 if (empty($bookId)) {
-    redirect('/videos');
+    redirect('/drachin');
 }
 
 $watch_limit = user_watch_limit($pdo, $user);
@@ -12,7 +13,7 @@ $watch_today = user_watch_today($pdo, $user);
 
 // Fetch Episodes
 $episodes = [];
-$api_url = "https://api.sansekai.my.id/api/dramabox/allepisode?bookId=" . urlencode($bookId);
+$api_url = "https://api.sansekai.my.id/api/{$provider}/allepisode?bookId=" . urlencode($bookId);
 $ch = curl_init($api_url);
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -51,7 +52,7 @@ require dirname(__DIR__) . '/partials/header.php';
 ?>
 
 <div class="page-title-bar" style="display:flex;align-items:center;gap:12px">
-  <a href="/videos" style="color:var(--text1);text-decoration:none">
+  <a href="/drachin" style="color:var(--text1);text-decoration:none">
     <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
   </a>
   <div>
@@ -127,7 +128,7 @@ foreach ($episodes as $ep):
   $name = $ep['chapterName'] ?? "EP {$idx}";
   $done = in_array((int)$idx, $watched_eps);
   $blocked = !$done && ($watch_today >= $watch_limit);
-  $href = ($done || $blocked) ? 'javascript:void(0)' : '/watch?bookId='.urlencode($bookId).'&ep='.urlencode((string)$idx);
+  $href = ($done || $blocked) ? 'javascript:void(0)' : '/watch?provider='.urlencode($provider).'&bookId='.urlencode($bookId).'&ep='.urlencode((string)$idx);
 ?>
   <a href="<?= $href ?>" class="ep-item <?= $done ? 'ep-item--done' : '' ?>" <?= ($done || $blocked) ? 'style="pointer-events:none"' : '' ?>>
     <div>

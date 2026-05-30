@@ -6,10 +6,11 @@ $user = require_auth($pdo);
 $vid_id = (int)($_GET['id'] ?? 0);
 $bookId = $_GET['bookId'] ?? '';
 $ep = (int)($_GET['ep'] ?? 0);
+$provider = $_GET['provider'] ?? 'dramabox';
 
 if ($bookId && $ep) {
     // Drachin Mode
-    $yt_id = "db:{$bookId}:{$ep}";
+    $yt_id = "{$provider}:{$bookId}:{$ep}";
     $vs = $pdo->prepare("SELECT * FROM videos WHERE youtube_id=? LIMIT 1");
     $vs->execute([$yt_id]);
     $video = $vs->fetch();
@@ -37,7 +38,7 @@ if ($bookId && $ep) {
 // Fetch Drachin URL if needed
 $streamUrl = '';
 if ($bookId && $ep) {
-    $api1 = "https://api.sansekai.my.id/api/dramabox/allepisode?bookId=" . urlencode($bookId);
+    $api1 = "https://api.sansekai.my.id/api/{$provider}/allepisode?bookId=" . urlencode($bookId);
     $ch = curl_init($api1);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
@@ -60,7 +61,7 @@ if ($bookId && $ep) {
                 }
                 
                 if ($encryptedUrl) {
-                    $api2 = "https://api.sansekai.my.id/api/dramabox/decrypt?url=" . urlencode($encryptedUrl);
+                    $api2 = "https://api.sansekai.my.id/api/{$provider}/decrypt?url=" . urlencode($encryptedUrl);
                     $ch2 = curl_init($api2);
                     curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
                     curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER, false);
@@ -279,7 +280,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
 
   <!-- Topbar -->
   <div class="watch-topbar">
-    <a href="/videos" class="back-btn">
+    <?php
+       $backUrl = ($bookId && $ep) ? "/drachin_detail?provider=".urlencode($provider)."&id=".urlencode($bookId) : "/videos";
+    ?>
+    <a href="<?= $backUrl ?>" class="back-btn">
       <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       Kembali
     </a>

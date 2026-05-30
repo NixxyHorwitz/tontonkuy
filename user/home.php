@@ -29,6 +29,23 @@ $history = $pdo->prepare(
 $history->execute([$user['id']]);
 $history = $history->fetchAll();
 
+// Fetch Drachin FYP
+$drachin_fyp = [];
+$ch = curl_init('https://api.sansekai.my.id/api/dramabox/foryou');
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+$res = curl_exec($ch);
+curl_close($ch);
+if ($res) {
+    $decoded = json_decode($res, true);
+    if (isset($decoded['data']) && is_array($decoded['data'])) {
+        $drachin_fyp = array_slice($decoded['data'], 0, 3);
+    } elseif (is_array($decoded) && !isset($decoded['error'])) {
+        $drachin_fyp = array_slice($decoded, 0, 3);
+    }
+}
+
 // Membership name
 $membership_name = 'Free';
 if ($user['membership_id'] && $user['membership_expires_at'] && strtotime($user['membership_expires_at']) > time()) {
@@ -132,6 +149,38 @@ require dirname(__DIR__) . '/partials/header.php';
   </div>
 </div>
 <div id="ref-toast" style="display:none;text-align:center;font-size:11px;font-weight:800;color:var(--green);margin-top:4px">✓ Kode disalin!</div>
+
+<?php if (!empty($drachin_fyp)): ?>
+<!-- FYP Drachin -->
+<div class="card" style="margin-top:12px">
+  <div class="card__header" style="display:flex;align-items:center;justify-content:space-between">
+    <div style="font-size:14px;font-weight:900;display:flex;align-items:center;gap:6px">
+      🔥 FYP Drachin
+    </div>
+    <a href="/drachin" class="btn btn--ghost btn--sm">Lihat Semua →</a>
+  </div>
+  <div class="card__body" style="padding:10px 14px">
+    <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px">
+      <?php foreach ($drachin_fyp as $v):
+        $bId = $v['bookId'] ?? '';
+        $href = '/drachin_detail?provider=dramabox&id=' . urlencode((string)$bId);
+      ?>
+      <a href="<?= $href ?>" style="border-radius:8px;overflow:hidden;background:var(--card);text-decoration:none;display:block;border:1px solid var(--border);">
+        <div style="position:relative;aspect-ratio:3/4;overflow:hidden">
+          <img src="<?= htmlspecialchars($v['coverWap'] ?? '') ?>" alt="" style="width:100%;height:100%;object-fit:cover;object-position:top">
+          <div style="position:absolute;bottom:4px;right:4px;font-size:9px;font-weight:800;padding:2px 4px;border-radius:4px;background:var(--brand);color:#fff;">
+            <?= $v['chapterCount'] ?? 0 ?> EP
+          </div>
+        </div>
+        <div style="padding:6px;font-size:10px;font-weight:800;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text1);height:30px">
+          <?= htmlspecialchars($v['bookName'] ?? '') ?>
+        </div>
+      </a>
+      <?php endforeach; ?>
+    </div>
+  </div>
+</div>
+<?php endif; ?>
 
 <?php if (setting($pdo, 'investment_enabled', '1') === '1'): ?>
 <!-- CTA Investasi Banner -->
