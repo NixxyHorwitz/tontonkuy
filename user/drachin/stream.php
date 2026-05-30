@@ -11,7 +11,7 @@ if (!$url) {
     die('Missing url parameter');
 }
 
-$url = urldecode($url);
+// NOTE: $_GET already URL-decodes once. Do NOT urldecode() again — it would break the inner encoded URL params.
 
 // Security: only allow proxying from known trusted domains
 $allowed = [
