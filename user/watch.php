@@ -5,10 +5,10 @@ $user = require_auth($pdo);
 
 $vid_id = (int)($_GET['id'] ?? 0);
 $bookId = $_GET['bookId'] ?? '';
-$ep = (int)($_GET['ep'] ?? 0);
+$ep = $_GET['ep'] ?? '';
 $provider = $_GET['provider'] ?? 'dramabox';
 
-if ($bookId && $ep) {
+if ($bookId && $ep !== '') {
     // Drachin Mode
     $yt_id = "{$provider}:{$bookId}:{$ep}";
     $vs = $pdo->prepare("SELECT * FROM videos WHERE youtube_id=? LIMIT 1");
@@ -37,7 +37,7 @@ if ($bookId && $ep) {
 
 // Fetch Drachin URL if needed
 $streamUrl = '';
-if ($bookId && $ep) {
+if ($bookId && $ep !== '') {
     $api1 = "https://api.sansekai.my.id/api/{$provider}/allepisode?bookId=" . urlencode($bookId);
     $ch = curl_init($api1);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -281,7 +281,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
   <!-- Topbar -->
   <div class="watch-topbar">
     <?php
-       $backUrl = ($bookId && $ep) ? "/drachin_detail?provider=".urlencode($provider)."&id=".urlencode($bookId) : "/videos";
+       $backUrl = ($bookId && $ep !== '') ? "/drachin_detail?provider=".urlencode($provider)."&id=".urlencode($bookId) : "/videos";
     ?>
     <a href="<?= $backUrl ?>" class="back-btn">
       <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
@@ -291,8 +291,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
   </div>
 
   <!-- Player -->
-  <div class="yt-wrapper" style="<?= ($bookId && $ep) ? 'aspect-ratio:9/16; max-height:80vh; max-width:100%; margin: 0 auto;' : '' ?>">
-    <?php if ($bookId && $ep): ?>
+  <div class="yt-wrapper" style="<?= ($bookId && $ep !== '') ? 'aspect-ratio:9/16; max-height:80vh; max-width:100%; margin: 0 auto;' : '' ?>">
+    <?php if ($bookId && $ep !== ''): ?>
       <?php if ($streamUrl): ?>
         <video id="drachin-player" src="<?= htmlspecialchars($streamUrl) ?>" controls playsinline style="width:100%;height:100%;background:#000;"></video>
       <?php else: ?>
@@ -420,7 +420,7 @@ let claimReady  = false;
 let playerReady = false;
 let ytPlayer    = null;
 
-<?php if ($bookId && $ep): ?>
+<?php if ($bookId && $ep !== ''): ?>
 // ── HTML5 Video Player untuk Drachin ───────────────────────────────
 document.addEventListener('DOMContentLoaded', function() {
     const loader = document.getElementById('page-loader');

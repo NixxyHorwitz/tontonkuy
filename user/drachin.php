@@ -6,7 +6,10 @@ $watch_limit = user_watch_limit($pdo, $user);
 $watch_today = user_watch_today($pdo, $user);
 
 // Valid providers
-$valid_providers = ['dramabox', 'pinedrama', 'reelshort', 'shortmax', 'goodshort'];
+$valid_providers = [
+    'dramabox', 'pinedrama', 'reelshort', 'shortmax', 'goodshort',
+    'freereels', 'dramanova', 'anime', 'komik', 'moviebox'
+];
 $provider = $_GET['provider'] ?? 'dramabox';
 if (!in_array($provider, $valid_providers)) {
     $provider = 'dramabox';
@@ -70,12 +73,10 @@ require dirname(__DIR__) . '/partials/header.php';
 <div class="card" style="margin-bottom:12px">
   <div class="card__body" style="padding:12px">
     <form method="GET" action="/drachin" style="display:flex;flex-direction:column;gap:8px">
-      <select name="provider" class="form-control" style="font-size:14px;padding:8px" onchange="this.form.submit()">
-        <option value="dramabox" <?= $provider === 'dramabox' ? 'selected' : '' ?>>DramaBox</option>
-        <option value="pinedrama" <?= $provider === 'pinedrama' ? 'selected' : '' ?>>PineDrama</option>
-        <option value="reelshort" <?= $provider === 'reelshort' ? 'selected' : '' ?>>ReelShort</option>
-        <option value="shortmax" <?= $provider === 'shortmax' ? 'selected' : '' ?>>ShortMax</option>
-        <option value="goodshort" <?= $provider === 'goodshort' ? 'selected' : '' ?>>GoodShort</option>
+      <select name="provider" class="form-control" style="font-size:14px;padding:8px;text-transform:capitalize;" onchange="this.form.submit()">
+        <?php foreach ($valid_providers as $vp): ?>
+          <option value="<?= $vp ?>" <?= $provider === $vp ? 'selected' : '' ?>><?= $vp === 'dramanova' ? 'DramaNova' : ($vp === 'freereels' ? 'FreeReels' : ($vp === 'dramabox' ? 'DramaBox' : ($vp === 'pinedrama' ? 'PineDrama' : ($vp === 'reelshort' ? 'ReelShort' : ($vp === 'shortmax' ? 'ShortMax' : ($vp === 'goodshort' ? 'GoodShort' : ($vp === 'moviebox' ? 'MovieBox' : ucfirst($vp))))))))) ?></option>
+        <?php endforeach; ?>
       </select>
       
       <div style="display:flex;gap:8px">
