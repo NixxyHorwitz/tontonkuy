@@ -43,8 +43,12 @@ $fake_wds = $fake_wds->fetchAll();
 
 // Load channels for dropdown
 try {
-    $fwd_channels = $pdo->query("SELECT name, type FROM payment_channels WHERE is_active=1 ORDER BY type ASC, sort_order ASC, name ASC")->fetchAll();
-} catch (\Throwable) { $fwd_channels = []; }
+    $fwd_channels = $pdo->query("SELECT name, type, logo FROM payment_channels WHERE is_active=1 ORDER BY type ASC, sort_order ASC, name ASC")->fetchAll();
+    $channel_logos = [];
+    foreach ($fwd_channels as $c) {
+        if (!empty($c['logo'])) $channel_logos[strtolower($c['name'])] = $c['logo'];
+    }
+} catch (\Throwable) { $fwd_channels = []; $channel_logos = []; }
 
 // 1. Sync targets for today and yesterday
 sync_promotor_daily_targets($pdo, $user['id'], date('Y-m-d'));
@@ -389,6 +393,10 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="card__body" style="padding:9px 12px;font-size:13px;font-weight:700">
           <div style="font-size:10px;font-weight:900;color:#555;margin-bottom:5px">🏦 Rekening yang Digunakan</div>
           <?php if (!empty($user['bank_name'])): ?>
+          <?php $user_wl = $channel_logos[strtolower($user['bank_name'])] ?? null; ?>
+          <?php if ($user_wl): ?>
+          <img src="/assets/banks/<?= htmlspecialchars($user_wl) ?>" style="height:20px;vertical-align:middle;margin-right:6px;border-radius:4px">
+          <?php endif; ?>
           <?= htmlspecialchars($user['bank_name']) ?> · <?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?><br>
           a/n <?= htmlspecialchars($user['account_name']) ?>
           <?php else: ?>
@@ -430,8 +438,15 @@ document.addEventListener('DOMContentLoaded', () => {
 <div class="card" style="margin-bottom:16px">
   <div class="card__body" style="padding:4px 0">
     <?php foreach ($fake_wds as $fw): ?>
+    <?php $wl = $channel_logos[strtolower($fw['bank_name'])] ?? null; ?>
     <div class="list-item" style="padding:9px 14px">
+      <?php if ($wl): ?>
+      <div class="list-item__icon" style="background:transparent;padding:0;width:30px;height:30px">
+        <img src="/assets/banks/<?= htmlspecialchars($wl) ?>" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">
+      </div>
+      <?php else: ?>
       <div class="list-item__icon" style="background:var(--brand-soft,#fff5cc);width:30px;height:30px;font-size:14px">💸</div>
+      <?php endif; ?>
       <div class="list-item__body">
         <div class="list-item__title" style="font-size:13px"><?= format_rp((float)$fw['amount']) ?> · <?= htmlspecialchars($fw['bank_name']) ?></div>
         <div class="list-item__sub" style="font-size:10px">

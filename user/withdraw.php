@@ -142,6 +142,12 @@ $wds = $pdo->prepare("SELECT * FROM withdrawals WHERE user_id=? ORDER BY created
 $wds->execute([$user['id']]);
 $wds = $wds->fetchAll();
 
+$channels = $pdo->query("SELECT name, logo FROM payment_channels WHERE logo IS NOT NULL AND logo != ''")->fetchAll();
+$channel_logos = [];
+foreach ($channels as $c) {
+    $channel_logos[strtolower($c['name'])] = $c['logo'];
+}
+
 $wd_estimation = '';
 if ($wd_lock_start && $wd_lock_end) {
     $now_ts = time();
@@ -245,6 +251,10 @@ require dirname(__DIR__) . '/partials/header.php';
             <a href="/edit-rekening" class="btn btn--ghost btn--sm" style="font-size:10px;padding:3px 8px">✏️ Edit Rekening</a>
           </div>
           <div style="font-size:13px;font-weight:700">
+            <?php $user_wl = $channel_logos[strtolower($user['bank_name'] ?? '')] ?? null; ?>
+            <?php if ($user_wl): ?>
+            <img src="/assets/banks/<?= htmlspecialchars($user_wl) ?>" style="height:20px;vertical-align:middle;margin-right:6px;border-radius:4px">
+            <?php endif; ?>
             <?= htmlspecialchars($user['bank_name']) ?><br>
             <span style="display:inline-flex;align-items:center;gap:6px">
               <span id="wd-accnum-display"><?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?></span>
@@ -389,8 +399,15 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 <div class="card"><div class="card__body" style="padding:4px 0">
   <?php foreach ($wds as $w): ?>
+  <?php $wl = $channel_logos[strtolower($w['bank_name'])] ?? null; ?>
   <div class="list-item" style="padding:8px 14px">
+    <?php if ($wl): ?>
+    <div class="list-item__icon" style="background:transparent;padding:0;width:30px;height:30px">
+      <img src="/assets/banks/<?= htmlspecialchars($wl) ?>" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">
+    </div>
+    <?php else: ?>
     <div class="list-item__icon" style="background:var(--brand-soft,#fff5cc);width:30px;height:30px;font-size:14px">💸</div>
+    <?php endif; ?>
     <div class="list-item__body">
       <div class="list-item__title" style="font-size:13px"><?= format_rp((float)$w['amount']) ?></div>
       <div class="list-item__sub" style="font-size:10px"><?= htmlspecialchars($w['bank_name']) ?> · <?= date('d M H:i', strtotime($w['created_at'])) ?></div>

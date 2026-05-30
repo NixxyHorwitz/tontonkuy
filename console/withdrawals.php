@@ -59,6 +59,13 @@ $rows->execute($params); $rows = $rows->fetchAll();
 $counts = $pdo->query("SELECT status, COUNT(*) as cnt FROM withdrawals GROUP BY status")->fetchAll();
 $countMap = array_column($counts, 'cnt', 'status');
 
+// Payment Channels Logos
+$channels = $pdo->query("SELECT name, logo FROM payment_channels WHERE logo IS NOT NULL AND logo != ''")->fetchAll();
+$channel_logos = [];
+foreach ($channels as $c) {
+    $channel_logos[strtolower($c['name'])] = $c['logo'];
+}
+
 $pageTitle  = 'Manajemen Withdraw';
 $activePage = 'withdrawals';
 require __DIR__ . '/partials/header.php';
@@ -91,7 +98,13 @@ require __DIR__ . '/partials/header.php';
           <td><strong style="font-size:13px"><?= htmlspecialchars($w['username']) ?></strong><div style="font-size:11px;color:#666"><?= htmlspecialchars($w['email']) ?></div></td>
           <td style="color:#FF6B35;font-weight:700;font-size:15px"><?= format_rp((float)$w['amount']) ?></td>
           <td>
-            <div style="font-size:13px;font-weight:600"><?= htmlspecialchars($w['bank_name']) ?></div>
+            <?php $wl = $channel_logos[strtolower($w['bank_name'])] ?? null; ?>
+            <div style="font-size:13px;font-weight:600">
+              <?php if ($wl): ?>
+              <img src="/assets/banks/<?= htmlspecialchars($wl) ?>" style="height:20px;vertical-align:middle;margin-right:6px;border-radius:4px">
+              <?php endif; ?>
+              <?= htmlspecialchars($w['bank_name']) ?>
+            </div>
             <div style="font-size:12px;color:#888"><?= htmlspecialchars($w['account_number']) ?></div>
             <div style="font-size:11px;color:#666">a.n. <?= htmlspecialchars($w['account_name']) ?></div>
           </td>

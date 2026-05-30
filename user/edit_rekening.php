@@ -59,7 +59,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $has_bank = !empty($user['bank_name']) && !empty($user['account_number']) && !empty($user['account_name']);
 
 // Load available payment channels
-$channels = $pdo->query("SELECT name, type FROM payment_channels WHERE is_active=1 ORDER BY type ASC, sort_order ASC, name ASC")->fetchAll();
+$channels = $pdo->query("SELECT name, type, logo FROM payment_channels WHERE is_active=1 ORDER BY type ASC, sort_order ASC, name ASC")->fetchAll();
+$channel_logos = [];
+foreach ($channels as $c) {
+    if (!empty($c['logo'])) $channel_logos[strtolower($c['name'])] = $c['logo'];
+}
 $banks    = array_filter($channels, fn($c) => $c['type'] === 'bank');
 $ewallets = array_filter($channels, fn($c) => $c['type'] === 'ewallet');
 
@@ -137,7 +141,13 @@ require dirname(__DIR__) . '/partials/header.php';
     <div style="display:flex;flex-direction:column;gap:6px">
       <div style="display:flex;justify-content:space-between;font-size:13px">
         <span style="color:#888;font-weight:600">Bank</span>
-        <span style="font-weight:800"><?= htmlspecialchars($user['bank_name']) ?></span>
+        <span style="font-weight:800">
+          <?php $user_wl = $channel_logos[strtolower($user['bank_name'] ?? '')] ?? null; ?>
+          <?php if ($user_wl): ?>
+          <img src="/assets/banks/<?= htmlspecialchars($user_wl) ?>" style="height:20px;vertical-align:middle;margin-right:6px;border-radius:4px">
+          <?php endif; ?>
+          <?= htmlspecialchars($user['bank_name']) ?>
+        </span>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:13px">
         <span style="color:#888;font-weight:600">Nomor</span>

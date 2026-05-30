@@ -20,6 +20,13 @@ $deposits->execute([$user['id']]); $deposits = $deposits->fetchAll();
 $wds = $pdo->prepare("SELECT * FROM withdrawals WHERE user_id=? ORDER BY created_at DESC LIMIT 30");
 $wds->execute([$user['id']]); $wds = $wds->fetchAll();
 
+// Payment Channels Logos
+$channels = $pdo->query("SELECT name, logo FROM payment_channels WHERE logo IS NOT NULL AND logo != ''")->fetchAll();
+$channel_logos = [];
+foreach ($channels as $c) {
+    $channel_logos[strtolower($c['name'])] = $c['logo'];
+}
+
 // Totals
 $total_earned = (float)$user['total_earned'];
 $total_dep    = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM deposits WHERE user_id=? AND status='confirmed'");
@@ -91,10 +98,17 @@ require dirname(__DIR__) . '/partials/header.php';
   <?php else: ?>
   <div class="card__body">
     <?php foreach ($deposits as $d): ?>
+    <?php $dl = $channel_logos[strtolower($d['method'])] ?? null; ?>
     <div class="list-item">
+      <?php if ($dl): ?>
+      <div class="list-item__icon" style="background:transparent;padding:0">
+        <img src="/assets/banks/<?= htmlspecialchars($dl) ?>" style="width:100%;height:100%;object-fit:contain;border-radius:12px;">
+      </div>
+      <?php else: ?>
       <div class="list-item__icon" style="background:<?= $d['method']==='qris'?'var(--mint)':'var(--sky)' ?>">
         <?= $d['method']==='qris' ? '📱' : '🏦' ?>
       </div>
+      <?php endif; ?>
       <div class="list-item__body">
         <div class="list-item__title"><?= format_rp((float)$d['amount']) ?></div>
         <div class="list-item__sub"><?= strtoupper($d['method']) ?> · <?= date('d M Y H:i', strtotime($d['created_at'])) ?></div>
@@ -124,8 +138,15 @@ require dirname(__DIR__) . '/partials/header.php';
   <?php else: ?>
   <div class="card__body">
     <?php foreach ($wds as $w): ?>
+    <?php $wl = $channel_logos[strtolower($w['bank_name'])] ?? null; ?>
     <div class="list-item">
+      <?php if ($wl): ?>
+      <div class="list-item__icon" style="background:transparent;padding:0">
+        <img src="/assets/banks/<?= htmlspecialchars($wl) ?>" style="width:100%;height:100%;object-fit:contain;border-radius:12px;">
+      </div>
+      <?php else: ?>
       <div class="list-item__icon" style="background:var(--peach)">💸</div>
+      <?php endif; ?>
       <div class="list-item__body">
         <div class="list-item__title"><?= format_rp((float)$w['amount']) ?></div>
         <div class="list-item__sub"><?= htmlspecialchars($w['bank_name']) ?> · <?= date('d M Y H:i', strtotime($w['created_at'])) ?></div>
