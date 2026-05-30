@@ -81,42 +81,56 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <style>
 .ep-list {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: 8px;
 }
 .ep-item {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
   background: #fff;
-  padding: 12px 16px;
+  padding: 12px 4px;
   border-radius: 8px;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   text-decoration: none;
   color: var(--text1);
-  font-weight: 700;
+  font-weight: 800;
   font-size: 14px;
+  transition: transform 0.1s, background 0.2s;
+  position: relative;
 }
 .ep-item:active {
+  transform: scale(0.95);
   background: var(--bg);
 }
 .ep-item--done {
-  opacity: 0.6;
+  background: rgba(34,197,94,.08);
+  border-color: rgba(34,197,94,.4);
+  color: #16a34a;
 }
-.ep-play {
-  width: 32px;
-  height: 32px;
-  background: rgba(99,102,241,.1);
-  color: var(--brand);
+.ep-item--blocked {
+  opacity: 0.5;
+  pointer-events: none;
+}
+.ep-num {
+  font-size: 16px;
+  line-height: 1;
+}
+.ep-icon {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  background: #22c55e;
+  color: #fff;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-}
-.ep-item--done .ep-play {
-  background: rgba(34,197,94,.1);
-  color: #22c55e;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 </style>
 
@@ -125,25 +139,21 @@ require dirname(__DIR__) . '/partials/header.php';
 // Episodes might be an array of objects
 foreach ($episodes as $ep):
   $idx = $ep['chapterIndex'] ?? 0;
-  $name = $ep['chapterName'] ?? "EP {$idx}";
   $done = in_array((int)$idx, $watched_eps);
   $blocked = !$done && ($watch_today >= $watch_limit);
   $href = ($done || $blocked) ? 'javascript:void(0)' : '/watch?provider='.urlencode($provider).'&bookId='.urlencode($bookId).'&ep='.urlencode((string)$idx);
+  
+  $classes = ['ep-item'];
+  if ($done) $classes[] = 'ep-item--done';
+  if ($blocked) $classes[] = 'ep-item--blocked';
 ?>
-  <a href="<?= $href ?>" class="ep-item <?= $done ? 'ep-item--done' : '' ?>" <?= ($done || $blocked) ? 'style="pointer-events:none"' : '' ?>>
-    <div>
-      <?= htmlspecialchars($name) ?>
-      <?php if ($done): ?>
-        <span style="font-size:10px;color:#22c55e;margin-left:8px">✓ Ditonton</span>
-      <?php endif; ?>
-    </div>
-    <div class="ep-play">
-      <?php if ($done): ?>
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-      <?php else: ?>
-        <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-      <?php endif; ?>
-    </div>
+  <a href="<?= $href ?>" class="<?= implode(' ', $classes) ?>">
+    <div class="ep-num"><?= $idx ?></div>
+    <?php if ($done): ?>
+      <div class="ep-icon">
+        <svg width="10" height="10" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    <?php endif; ?>
   </a>
 <?php endforeach; ?>
 </div>
