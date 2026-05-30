@@ -94,6 +94,7 @@ require dirname(__DIR__) . '/partials/header.php';
   <div class="hero-card__actions" style="margin-top:10px;gap:6px;flex-wrap:wrap">
     <a href="/deposit"      class="hero-card__btn" style="flex:1;min-width:70px">⬆️ Topup</a>
     <a href="/withdraw"     class="hero-card__btn" style="flex:1;min-width:70px">⬇️ Tarik</a>
+    <a href="/history"      class="hero-card__btn" style="flex:1;min-width:70px">📄 Riwayat</a>
     <a href="/checkin"      class="hero-card__btn" style="flex:1;min-width:70px">📅 Absen</a>
     <a href="/redeem"       class="hero-card__btn" style="flex:1;min-width:70px">🎁 Redeem</a>
     <a href="/panduan"      class="hero-card__btn" style="flex:1;min-width:70px;background:var(--white);color:var(--brand);border-color:var(--brand)">📖 Panduan</a>

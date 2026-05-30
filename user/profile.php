@@ -254,6 +254,14 @@ $_psvg = [
 </div>
 
 <?php if (!empty($_contact_btns)): ?>
+<!-- Transaksi -->
+<div style="font-size:11px;font-weight:800;color:#888;margin-bottom:6px;margin-top:4px">TRANSAKSI</div>
+<a href="/history" class="contact-item">
+  <div class="contact-icon" style="background:var(--sky);color:#fff;font-size:16px;font-weight:normal">📄</div>
+  <div style="flex:1;font-weight:800;font-size:13px">Riwayat Transaksi</div>
+  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="opacity:.35"><polyline points="9 18 15 12 9 6"/></svg>
+</a>
+
 <!-- Community / Contact -->
 <div style="font-size:11px;font-weight:800;color:#888;margin-bottom:6px;margin-top:4px">BANTUAN & KOMUNITAS</div>
 <a href="/panduan" class="contact-item">
