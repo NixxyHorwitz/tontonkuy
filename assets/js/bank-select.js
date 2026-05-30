@@ -78,6 +78,20 @@ document.addEventListener('DOMContentLoaded', function() {
       document.querySelectorAll('.custom-select-options').forEach(el => el.classList.remove('open'));
       document.querySelectorAll('.custom-select-trigger').forEach(el => el.classList.remove('open'));
       if (!isOpen) {
+        const rect = trigger.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        
+        // Jika ruang di bawah kurang dari 290px dan ruang di atas lebih luas
+        if (spaceBelow < 290 && rect.top > spaceBelow) {
+          optionsContainer.style.top = 'auto';
+          optionsContainer.style.bottom = 'calc(100% + 8px)';
+          optionsContainer.style.transformOrigin = 'bottom center';
+        } else {
+          optionsContainer.style.top = 'calc(100% + 8px)';
+          optionsContainer.style.bottom = 'auto';
+          optionsContainer.style.transformOrigin = 'top center';
+        }
+
         optionsContainer.classList.add('open');
         trigger.classList.add('open');
       }
