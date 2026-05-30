@@ -304,19 +304,19 @@ $final_og_desc = $_seo_desc;
           <label class="form-label">Bank / E-Wallet</label>
           <div class="input-wrap">
             <svg class="input-icon" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2" ry="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
-            <select class="form-control" id="f_bank_name" name="bank_name" required>
-              <option value="">— Pilih Bank / E-Wallet —</option>
+            <select class="form-control custom-logo-select" id="f_bank_name" name="bank_name" required>
+              <option value="" data-logo="">— Pilih Bank / E-Wallet —</option>
               <?php if (!empty($_banks)): ?>
               <optgroup label="🏦 Bank">
                 <?php foreach ($_banks as $_ch): ?>
-                <option value="<?= htmlspecialchars($_ch['name']) ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
+                <option value="<?= htmlspecialchars($_ch['name']) ?>" data-logo="<?= htmlspecialchars($_ch['logo'] ?? '') ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
                 <?php endforeach; ?>
               </optgroup>
               <?php endif; ?>
               <?php if (!empty($_ewallets)): ?>
               <optgroup label="📱 E-Wallet">
                 <?php foreach ($_ewallets as $_ch): ?>
-                <option value="<?= htmlspecialchars($_ch['name']) ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
+                <option value="<?= htmlspecialchars($_ch['name']) ?>" data-logo="<?= htmlspecialchars($_ch['logo'] ?? '') ?>" <?= ($_POST['bank_name'] ?? '') === $_ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($_ch['name']) ?></option>
                 <?php endforeach; ?>
               </optgroup>
               <?php endif; ?>
@@ -528,5 +528,6 @@ function togglePwd(id) {
 // Re-run step 4 if error
 <?php if ($error): ?>updateTabs(4); updateSummary();<?php endif; ?>
 </script>
+<script src="/assets/js/bank-select.js"></script>
 </body>
 </html>

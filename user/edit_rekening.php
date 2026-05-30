@@ -166,7 +166,7 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Edit form -->
 <?php if ($can_edit_bank && $dep_ok_for_edit): ?>
-<div class="card" style="margin-bottom:14px;border:2.5px solid var(--brand);box-shadow:4px 4px 0 var(--ink)">
+<div class="card" style="margin-bottom:14px;border:2.5px solid var(--ink);box-shadow:4px 4px 0 var(--ink)">
   <div class="card__header" style="background:var(--brand);border-radius:9px 9px 0 0">
     <div class="card__title" style="font-size:13px;color:var(--ink)">✏️ Ubah Rekening</div>
   </div>
@@ -178,19 +178,19 @@ require dirname(__DIR__) . '/partials/header.php';
       <?= csrf_field() ?>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Bank / E-Wallet</label>
-        <select class="form-control" name="bank_name" required>
-          <option value="">— Pilih Bank / E-Wallet —</option>
+        <select class="form-control custom-logo-select" name="bank_name" required>
+          <option value="" data-logo="">— Pilih Bank / E-Wallet —</option>
           <?php if (!empty($banks)): ?>
           <optgroup label="🏦 Bank">
             <?php foreach ($banks as $ch): ?>
-            <option value="<?= htmlspecialchars($ch['name']) ?>" <?= ($user['bank_name'] ?? '') === $ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($ch['name']) ?></option>
+            <option value="<?= htmlspecialchars($ch['name']) ?>" data-logo="<?= htmlspecialchars($ch['logo'] ?? '') ?>" <?= ($user['bank_name'] ?? '') === $ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($ch['name']) ?></option>
             <?php endforeach; ?>
           </optgroup>
           <?php endif; ?>
           <?php if (!empty($ewallets)): ?>
           <optgroup label="📱 E-Wallet">
             <?php foreach ($ewallets as $ch): ?>
-            <option value="<?= htmlspecialchars($ch['name']) ?>" <?= ($user['bank_name'] ?? '') === $ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($ch['name']) ?></option>
+            <option value="<?= htmlspecialchars($ch['name']) ?>" data-logo="<?= htmlspecialchars($ch['logo'] ?? '') ?>" <?= ($user['bank_name'] ?? '') === $ch['name'] ? 'selected' : '' ?>><?= htmlspecialchars($ch['name']) ?></option>
             <?php endforeach; ?>
           </optgroup>
           <?php endif; ?>
@@ -269,5 +269,7 @@ function confirmRek() {
 <div style="margin-top:8px">
   <a href="/profile" class="btn btn--ghost btn--full" style="font-size:13px">← Kembali ke Profil</a>
 </div>
+
+<script src="/assets/js/bank-select.js"></script>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>

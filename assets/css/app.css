@@ -148,8 +148,9 @@ body {
 }
 .card + .card { margin-top: 12px; }
 .card__header {
-  padding: 14px 18px 0;
+  padding: 14px 18px;
   display: flex; align-items: center; justify-content: space-between;
+  border-bottom: var(--border);
 }
 .card__title { font-weight: 800; font-size: 15px; }
 .card__body { padding: 14px 18px; }
@@ -328,6 +329,43 @@ select.form-control:focus, select.form-control:active {
   background-color: var(--yellow);
   box-shadow: 5px 5px 0 var(--ink);
   color: var(--ink);
+}
+
+/* ── Custom Bank Select ────────────────── */
+.custom-select-wrap { position: relative; width: 100%; }
+.custom-select-trigger {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--white); border: var(--border); border-radius: var(--radius-sm);
+  padding: 10px 13px; font-size: 14px; font-weight: 800; cursor: pointer;
+  box-shadow: 3px 3px 0 var(--ink); transition: background .15s, box-shadow .15s;
+}
+.custom-select-trigger:active, .custom-select-trigger.open {
+  background: var(--yellow); box-shadow: 5px 5px 0 var(--ink);
+}
+.custom-select-trigger .sel-val { display: flex; align-items: center; gap: 10px; }
+.custom-select-trigger .sel-val img {
+  width: 24px; height: 24px; object-fit: contain; border-radius: 4px; border: 1px solid var(--ink); background: #fff;
+}
+.custom-select-options {
+  position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+  background: var(--white); border: var(--border); border-radius: var(--radius-sm);
+  box-shadow: 6px 6px 0 var(--ink); z-index: 100; max-height: 250px; overflow-y: auto;
+  display: none;
+}
+.custom-select-options.open { display: block; animation: popIn .2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+.custom-optgroup {
+  padding: 6px 12px; font-size: 11px; font-weight: 800; color: #888; background: #f8f8f8;
+  border-bottom: 1.5px solid var(--ink); border-top: 1.5px solid var(--ink); text-transform: uppercase;
+}
+.custom-optgroup:first-child { border-top: none; }
+.custom-option {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer;
+  border-bottom: 1.5px solid var(--ink); font-weight: 700; font-size: 13px; transition: background .15s;
+}
+.custom-option:last-child { border-bottom: none; }
+.custom-option:hover { background: var(--lime); }
+.custom-option img {
+  width: 28px; height: 28px; object-fit: contain; border-radius: 4px; border: 1.5px solid var(--ink); background: #fff;
 }
 
 /* ── Alerts ─────────────────────────────── */
