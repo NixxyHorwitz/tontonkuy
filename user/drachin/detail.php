@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once dirname(__DIR__) . '/auth/guard.php';
+require_once dirname(__DIR__, 2) . '/auth/guard.php';
 
 $bookId = $_GET['id'] ?? '';
 $provider = $_GET['provider'] ?? 'dramabox';
@@ -68,7 +68,7 @@ while ($row = $stmt->fetch()) {
 
 $pageTitle  = 'Pilih Episode — TontonKuy';
 $activePage = 'videos';
-require dirname(__DIR__) . '/partials/header.php';
+require dirname(__DIR__, 2) . '/partials/header.php';
 ?>
 
 <div class="page-title-bar" style="display:flex;align-items:center;gap:12px">
@@ -161,7 +161,7 @@ foreach ($episodes as $ep):
   $idx = $ep['chapterIndex'] ?? $ep['index'] ?? $ep['episode'] ?? 0;
   $done = in_array((int)$idx, $watched_eps);
   $blocked = !$done && ($watch_today >= $watch_limit);
-  $href = ($done || $blocked) ? 'javascript:void(0)' : '/watch?provider='.urlencode($provider).'&bookId='.urlencode($bookId).'&ep='.urlencode((string)$idx);
+  $href = ($done || $blocked) ? 'javascript:void(0)' : '/drachin/watch?provider='.urlencode($provider).'&bookId='.urlencode($bookId).'&ep='.urlencode((string)$idx);
   
   $classes = ['ep-item'];
   if ($done) $classes[] = 'ep-item--done';
@@ -180,4 +180,4 @@ foreach ($episodes as $ep):
 
 <?php endif; ?>
 
-<?php require dirname(__DIR__) . '/partials/footer.php'; ?>
+<?php require dirname(__DIR__, 2) . '/partials/footer.php'; ?>

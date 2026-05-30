@@ -1,15 +1,111 @@
 <?php
 declare(strict_types=1);
-require_once dirname(__DIR__) . '/bootstrap.php';
+require_once dirname(__DIR__, 2) . '/bootstrap.php';
 $user = require_auth($pdo);
 
-$vid_id = (int)($_GET['id'] ?? 0);
-if (!$vid_id) redirect('/videos');
+$bookId = $_GET['bookId'] ?? '';
+$ep = $_GET['ep'] ?? '';
+$provider = $_GET['provider'] ?? 'dramabox';
 
-$vs = $pdo->prepare("SELECT * FROM videos WHERE id=? AND is_active=1");
-$vs->execute([$vid_id]);
-$video = $vs->fetch();
-if (!$video) redirect('/videos');
+if ($bookId && $ep !== '') {
+    // Drachin Mode
+    $yt_id = "{$provider}:{$bookId}:{$ep}";
+    $vs = $pdo->prepare("SELECT * FROM videos WHERE youtube_id=? LIMIT 1");
+    $vs->execute([$yt_id]);
+    $video = $vs->fetch();
+    
+    if (!$video) {
+        $reward = 500; // Reward default drachin
+        $duration = 60; // Durasi default 60s
+        $title = "Drachin EP {$ep}";
+        $pdo->prepare("INSERT INTO videos (title, youtube_id, reward_amount, watch_duration) VALUES (?, ?, ?, ?)")->execute([$title, $yt_id, $reward, $duration]);
+        $vid_id = (int)$pdo->lastInsertId();
+        $vs->execute([$yt_id]);
+        $video = $vs->fetch();
+    } else {
+        $vid_id = (int)$video['id'];
+    }
+} else {
+    redirect('/drachin');
+}
+
+// Fetch Drachin URL
+$streamUrl = '';
+    $api_config = [
+        'dramabox'  => ['ep' => 'allepisode', 'param' => 'bookId'],
+        'pinedrama' => ['ep' => 'detail', 'param' => 'collection_id'],
+        'reelshort' => ['ep' => 'allepisode', 'param' => 'bookId'],
+        'shortmax'  => ['ep' => 'allepisode', 'param' => 'shortPlayId'], // or detail
+        'goodshort' => ['ep' => 'allepisode', 'param' => 'bookId'],
+        'freereels' => ['ep' => 'detailAndAllEpisode', 'param' => 'key'],
+        'dramanova' => ['ep' => 'detail', 'param' => 'dramaId'],
+        'anime'     => ['ep' => 'detail', 'param' => 'urlId'],
+        'komik'     => ['ep' => 'chapterlist', 'param' => 'manga_id'],
+        'moviebox'  => ['ep' => 'detail', 'param' => 'subjectId']
+    ];
+    $conf = $api_config[$provider] ?? ['ep' => 'allepisode', 'param' => 'bookId'];
+    
+    $api1 = "https://api.sansekai.my.id/api/{$provider}/{$conf['ep']}?{$conf['param']}=" . urlencode($bookId);
+    $ch = curl_init($api1);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $res1 = curl_exec($ch);
+    curl_close($ch);
+    if ($res1) {
+        $decoded = json_decode($res1, true);
+        $eps_array = [];
+        if (isset($decoded['data']) && is_array($decoded['data'])) {
+            if (isset($decoded['data']['items']) && is_array($decoded['data']['items'])) {
+                $eps_array = $decoded['data']['items'];
+            } else {
+                $eps_array = $decoded['data'];
+            }
+        } elseif (is_array($decoded) && !isset($decoded['error'])) {
+            $eps_array = $decoded;
+        }
+
+        foreach ($eps_array as $epData) {
+            $idx = $epData['chapterIndex'] ?? $epData['index'] ?? $epData['episode'] ?? '';
+            // Make sure types match or string cast works
+            if ((string)$idx === (string)$ep) {
+                // Video url might be video_url, stream, url, etc.
+                $encryptedUrl = '';
+                
+                // DramaBox specific
+                if (!empty($epData['cdnList'][0]['videoPathList'])) {
+                    foreach ($epData['cdnList'][0]['videoPathList'] as $vp) {
+                        if (empty($encryptedUrl)) $encryptedUrl = $vp['videoPath'];
+                        if (($vp['quality'] ?? 0) == 720) {
+                            $encryptedUrl = $vp['videoPath'];
+                            break;
+                        }
+                    }
+                }
+                
+                // Other providers might give video_url directly or in stream
+                if (empty($encryptedUrl)) {
+                    $streamUrl = $epData['video_url'] ?? $epData['videoUrl'] ?? $epData['url'] ?? $epData['m3u8_url'] ?? '';
+                }
+
+                if ($encryptedUrl) {
+                    $api2 = "https://api.sansekai.my.id/api/{$provider}/decrypt?url=" . urlencode($encryptedUrl);
+                    $ch2 = curl_init($api2);
+                    curl_setopt($ch2, CURLOPT_RETURNTRANSFER, true);
+                    curl_setopt($ch2, CURLOPT_SSL_VERIFYPEER, false);
+                    $res2 = curl_exec($ch2);
+                    curl_close($ch2);
+                    if ($res2) {
+                        $dec2 = json_decode($res2, true);
+                        if (!empty($dec2['streamUrl'])) {
+                            $streamUrl = $dec2['streamUrl'];
+                        }
+                    }
+                }
+                break;
+            }
+        }
+    }
+}
 
 $watch_limit = user_watch_limit($pdo, $user);
 $watch_today = user_watch_today($pdo, $user);
@@ -199,19 +295,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
 }
 @keyframes spin{to{transform:rotate(360deg)}}
 .loader-label{font-size:13px;font-weight:800;color:#555}
-</style>
-</head>
-<body>
-<!-- Page loader -->
-<div id="page-loader">
-  <div class="loader-spinner"></div>
-  <div class="loader-label">⏳ Memuat video...</div>
-</div>
-<div class="app-shell">
 
+<div class="watch-container">
   <!-- Topbar -->
   <div class="watch-topbar">
-    <a href="/videos" class="back-btn">
+    <?php
+       $backUrl = "/drachin/detail?provider=".urlencode($provider)."&id=".urlencode($bookId);
+    ?>
+    <a href="<?= $backUrl ?>" class="back-btn">
       <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
       Kembali
     </a>
@@ -219,8 +310,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
   </div>
 
   <!-- Player -->
-  <div class="yt-wrapper">
-    <div id="yt-player"></div>
+  <div class="yt-wrapper" style="aspect-ratio:9/16; max-height:80vh; max-width:100%; margin: 0 auto;">
+      <?php if ($streamUrl): ?>
+        <video id="drachin-player" src="<?= htmlspecialchars($streamUrl) ?>" controls playsinline style="width:100%;height:100%;background:#000;"></video>
+      <?php else: ?>
+        <div style="width:100%;height:100%;background:#000;color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;">
+          Video tidak tersedia atau gagal dimuat.<br>Cobalah episode lain.
+        </div>
+      <?php endif; ?>
   </div>
 
   <!-- Progress bar di bawah video -->
@@ -337,79 +434,41 @@ let timerLeft   = DURATION;
 let timerHandle = null;
 let watchStarted= false;
 let claimReady  = false;
-let playerReady = false;
-let ytPlayer    = null;
 
-// ── YouTube IFrame API ───────────────────────────────
-window.onYouTubeIframeAPIReady = function() {
-  console.log('[DEBUG] onYouTubeIframeAPIReady fired. Init player with videoId: <?= htmlspecialchars($video['youtube_id']) ?>');
-  ytPlayer = new YT.Player('yt-player', {
-    videoId: '<?= htmlspecialchars($video['youtube_id']) ?>',
-    playerVars: {
-      rel: 0,
-      modestbranding: 1,
-      playsinline: 1,
-      autoplay: 1,
-      origin: window.location.origin
-    },
-    events: {
-      onReady: function(e) {
-          console.log('[DEBUG] Player onReady');
-          onPlayerReady(e);
-      },
-      onStateChange: function(e) {
-          console.log('[DEBUG] Player onStateChange, state:', e.data);
-          onPlayerStateChange(e);
-      },
-      onError: function(e) {
-          console.log('[DEBUG] Player onError, error code:', e.data);
-          setStatus('⚠️ YouTube Error: ' + e.data, 'Video tidak dapat diputar. ID: <?= htmlspecialchars($video['youtube_id']) ?>');
-      }
+// ── HTML5 Video Player untuk Drachin ───────────────────────────────
+document.addEventListener('DOMContentLoaded', function() {
+    const loader = document.getElementById('page-loader');
+    if (loader) {
+        loader.classList.add('hidden');
+        setTimeout(() => loader.remove(), 400);
     }
-  });
-};
-
-// Load API script
-console.log('[DEBUG] Injecting YouTube iframe_api script');
-const tag = document.createElement('script');
-tag.src = 'https://www.youtube.com/iframe_api';
-document.head.appendChild(tag);
-
-function onPlayerReady(e) {
-  playerReady = true;
-  // Hide the page loader once the player is ready
-  const loader = document.getElementById('page-loader');
-  if (loader) {
-    loader.classList.add('hidden');
-    setTimeout(() => loader.remove(), 400);
-  }
-  console.log('[DEBUG] Player is actually ready now.');
-}
-
-function onPlayerStateChange(e) {
-  console.log('[DEBUG] onPlayerStateChange logic triggered. State=', e.data, 'CAN_WATCH=', CAN_WATCH);
-  if (!CAN_WATCH) {
-      console.log('[DEBUG] CAN_WATCH is false, ignoring state change.');
-      return;
-  }
-
-  if (e.data === YT.PlayerState.PLAYING) {
-    console.log('[DEBUG] Video is PLAYING.');
-    if (!watchStarted) {
-      console.log('[DEBUG] First time playing, calling startWatchSession().');
-      startWatchSession();
-    } else if (timerHandle === null && !claimReady) {
-      console.log('[DEBUG] Resuming countdown.');
-      resumeCountdown();
+    
+    const v = document.getElementById('drachin-player');
+    if (v) {
+        v.addEventListener('play', function() {
+            if (!CAN_WATCH) return;
+            if (!watchStarted) {
+                startWatchSession();
+            } else if (timerHandle === null && !claimReady) {
+                resumeCountdown();
+            }
+        });
+        v.addEventListener('pause', function() {
+            if (!CAN_WATCH) return;
+            pauseCountdown();
+        });
+        v.addEventListener('waiting', function() {
+            if (!CAN_WATCH) return;
+            pauseCountdown();
+        });
+        v.addEventListener('playing', function() {
+            if (!CAN_WATCH) return;
+            if (timerHandle === null && !claimReady && watchStarted) {
+                resumeCountdown();
+            }
+        });
     }
-  } else if (e.data === YT.PlayerState.PAUSED ||
-             e.data === YT.PlayerState.BUFFERING) {
-    console.log('[DEBUG] Video paused or buffering. Calling pauseCountdown().');
-    pauseCountdown();
-  } else if (e.data === YT.PlayerState.ENDED) {
-    console.log('[DEBUG] Video ended.');
-  }
-}
+});
 
 // ── Server: minta watch token ────────────────────────
 async function startWatchSession() {

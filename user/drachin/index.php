@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-require_once dirname(__DIR__) . '/auth/guard.php';
+require_once dirname(__DIR__, 2) . '/auth/guard.php';
 
 $watch_limit = user_watch_limit($pdo, $user);
 $watch_today = user_watch_today($pdo, $user);
@@ -47,7 +47,7 @@ if ($res) {
 
 $pageTitle  = 'Nonton Drachin — TontonKuy';
 $activePage = 'drachin';
-require dirname(__DIR__) . '/partials/header.php';
+require dirname(__DIR__, 2) . '/partials/header.php';
 ?>
 
 <div class="page-title-bar">
@@ -127,7 +127,7 @@ require dirname(__DIR__) . '/partials/header.php';
   $title = $v['bookName'] ?? $v['title'] ?? $v['name'] ?? '';
   $eps = $v['chapterCount'] ?? $v['episode_count'] ?? $v['episodes'] ?? 0;
   
-  $href = $blocked ? 'javascript:void(0)' : '/drachin_detail?provider='.urlencode($provider).'&id='.urlencode((string)$bId);
+  $href = $blocked ? 'javascript:void(0)' : '/drachin/detail?provider='.urlencode($provider).'&id='.urlencode((string)$bId);
 ?>
 <a href="<?= $href ?>" class="vcard" <?= $blocked ? 'style="pointer-events:none;opacity:.6"' : '' ?>>
   <div class="vcard__thumb">
@@ -151,4 +151,4 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 <?php endif; ?>
 
-<?php require dirname(__DIR__) . '/partials/footer.php'; ?>
+<?php require dirname(__DIR__, 2) . '/partials/footer.php'; ?>

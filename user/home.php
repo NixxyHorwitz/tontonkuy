@@ -167,7 +167,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px">
       <?php foreach ($drachin_fyp as $v):
         $bId = $v['bookId'] ?? $v['key'] ?? $v['id'] ?? '';
-        $href = '/drachin_detail?provider=dramabox&id=' . urlencode((string)$bId);
+        $href = '/drachin/detail?provider=dramabox&id=' . urlencode((string)$bId);
         $cover = $v['coverWap'] ?? $v['cover'] ?? $v['thumbnail'] ?? $v['image'] ?? '';
         $eps = $v['chapterCount'] ?? $v['episode_count'] ?? $v['episodes'] ?? 0;
         $title = $v['bookName'] ?? $v['title'] ?? $v['name'] ?? '';
