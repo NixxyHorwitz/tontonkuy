@@ -35,7 +35,11 @@ curl_close($ch);
 if ($res) {
     $decoded = json_decode($res, true);
     if (isset($decoded['data']) && is_array($decoded['data'])) {
-        $dramas = $decoded['data'];
+        if (isset($decoded['data']['items']) && is_array($decoded['data']['items'])) {
+            $dramas = $decoded['data']['items'];
+        } else {
+            $dramas = $decoded['data'];
+        }
     } elseif (is_array($decoded) && !isset($decoded['error'])) {
         $dramas = $decoded;
     }
@@ -117,9 +121,12 @@ require dirname(__DIR__) . '/partials/header.php';
 <div class="vgrid">
 <?php foreach ($dramas as $v):
   $blocked = ($watch_today >= $watch_limit);
-  $bId = $v['bookId'] ?? '';
+  $bId = $v['bookId'] ?? $v['key'] ?? $v['id'] ?? '';
   // cover is coverWap for foryou, or cover for search
-  $cover = $v['coverWap'] ?? $v['cover'] ?? '';
+  $cover = $v['coverWap'] ?? $v['cover'] ?? $v['thumbnail'] ?? $v['image'] ?? '';
+  $title = $v['bookName'] ?? $v['title'] ?? $v['name'] ?? '';
+  $eps = $v['chapterCount'] ?? $v['episode_count'] ?? $v['episodes'] ?? 0;
+  
   $href = $blocked ? 'javascript:void(0)' : '/drachin_detail?provider='.urlencode($provider).'&id='.urlencode((string)$bId);
 ?>
 <a href="<?= $href ?>" class="vcard" <?= $blocked ? 'style="pointer-events:none;opacity:.6"' : '' ?>>
@@ -130,14 +137,14 @@ require dirname(__DIR__) . '/partials/header.php';
         <svg width="12" height="12" fill="#fff" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
       </div>
     </div>
-    <?php if (isset($v['chapterCount'])): ?>
+    <?php if ($eps > 0): ?>
     <div class="vcard__badge">
-      <?= $v['chapterCount'] ?> EP
+      <?= $eps ?> EP
     </div>
     <?php endif; ?>
   </div>
   <div class="vcard__body">
-    <div class="vcard__title"><?= htmlspecialchars($v['bookName'] ?? '') ?></div>
+    <div class="vcard__title"><?= htmlspecialchars($title) ?></div>
   </div>
 </a>
 <?php endforeach; ?>

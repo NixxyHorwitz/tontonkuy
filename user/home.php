@@ -40,7 +40,11 @@ curl_close($ch);
 if ($res) {
     $decoded = json_decode($res, true);
     if (isset($decoded['data']) && is_array($decoded['data'])) {
-        $drachin_fyp = array_slice($decoded['data'], 0, 3);
+        if (isset($decoded['data']['items']) && is_array($decoded['data']['items'])) {
+            $drachin_fyp = array_slice($decoded['data']['items'], 0, 3);
+        } else {
+            $drachin_fyp = array_slice($decoded['data'], 0, 3);
+        }
     } elseif (is_array($decoded) && !isset($decoded['error'])) {
         $drachin_fyp = array_slice($decoded, 0, 3);
     }
@@ -162,18 +166,23 @@ require dirname(__DIR__) . '/partials/header.php';
   <div class="card__body" style="padding:10px 14px">
     <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px">
       <?php foreach ($drachin_fyp as $v):
-        $bId = $v['bookId'] ?? '';
+        $bId = $v['bookId'] ?? $v['key'] ?? $v['id'] ?? '';
         $href = '/drachin_detail?provider=dramabox&id=' . urlencode((string)$bId);
+        $cover = $v['coverWap'] ?? $v['cover'] ?? $v['thumbnail'] ?? $v['image'] ?? '';
+        $eps = $v['chapterCount'] ?? $v['episode_count'] ?? $v['episodes'] ?? 0;
+        $title = $v['bookName'] ?? $v['title'] ?? $v['name'] ?? '';
       ?>
       <a href="<?= $href ?>" style="border-radius:8px;overflow:hidden;background:var(--card);text-decoration:none;display:block;border:1px solid var(--border);">
         <div style="position:relative;aspect-ratio:3/4;overflow:hidden">
-          <img src="<?= htmlspecialchars($v['coverWap'] ?? '') ?>" alt="" style="width:100%;height:100%;object-fit:cover;object-position:top">
+          <img src="<?= htmlspecialchars($cover) ?>" alt="" style="width:100%;height:100%;object-fit:cover;object-position:top">
+          <?php if ($eps > 0): ?>
           <div style="position:absolute;bottom:4px;right:4px;font-size:9px;font-weight:800;padding:2px 4px;border-radius:4px;background:var(--brand);color:#fff;">
-            <?= $v['chapterCount'] ?? 0 ?> EP
+            <?= $eps ?> EP
           </div>
+          <?php endif; ?>
         </div>
         <div style="padding:6px;font-size:10px;font-weight:800;line-height:1.2;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;color:var(--text1);height:30px">
-          <?= htmlspecialchars($v['bookName'] ?? '') ?>
+          <?= htmlspecialchars($title) ?>
         </div>
       </a>
       <?php endforeach; ?>

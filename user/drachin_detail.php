@@ -23,8 +23,12 @@ curl_close($ch);
 if ($res) {
     $decoded = json_decode($res, true);
     if (isset($decoded['data']) && is_array($decoded['data'])) {
-        $episodes = $decoded['data'];
-    } elseif (is_array($decoded)) {
+        if (isset($decoded['data']['items']) && is_array($decoded['data']['items'])) {
+            $episodes = $decoded['data']['items'];
+        } else {
+            $episodes = $decoded['data'];
+        }
+    } elseif (is_array($decoded) && !isset($decoded['error'])) {
         $episodes = $decoded;
     }
 }
@@ -138,7 +142,7 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php 
 // Episodes might be an array of objects
 foreach ($episodes as $ep):
-  $idx = $ep['chapterIndex'] ?? 0;
+  $idx = $ep['chapterIndex'] ?? $ep['index'] ?? $ep['episode'] ?? 0;
   $done = in_array((int)$idx, $watched_eps);
   $blocked = !$done && ($watch_today >= $watch_limit);
   $href = ($done || $blocked) ? 'javascript:void(0)' : '/watch?provider='.urlencode($provider).'&bookId='.urlencode($bookId).'&ep='.urlencode((string)$idx);
