@@ -45,18 +45,18 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 
 <!-- Summary stats -->
-<div class="stat-row" style="margin-bottom:20px;display:flex;gap:12px;background:var(--blue);padding:14px;border-radius:12px;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);color:#fff">
-  <div style="flex:1;text-align:center;border-right:2px solid rgba(255,255,255,0.2)">
-    <div style="font-size:11px;font-weight:700;color:#cbd5e1;margin-bottom:4px;text-transform:uppercase"><i class="ph-bold ph-gift"></i> Reward</div>
-    <div style="font-size:14px;font-weight:900"><?= format_rp($total_earned) ?></div>
+<div class="stat-row" style="margin-bottom:20px;display:flex;gap:12px">
+  <div style="flex:1;background:var(--yellow);border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:var(--ink);text-align:center">
+    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase;opacity:0.8"><i class="ph-bold ph-gift" style="font-size:14px;vertical-align:middle"></i> Reward</div>
+    <div style="font-size:15px;font-weight:900;letter-spacing:-0.5px"><?= format_rp($total_earned) ?></div>
   </div>
-  <div style="flex:1;text-align:center;border-right:2px solid rgba(255,255,255,0.2)">
-    <div style="font-size:11px;font-weight:700;color:#cbd5e1;margin-bottom:4px;text-transform:uppercase"><i class="ph-bold ph-wallet"></i> Top Up</div>
-    <div style="font-size:14px;font-weight:900"><?= format_rp($total_dep) ?></div>
+  <div style="flex:1;background:var(--green);border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:#fff;text-align:center">
+    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase;opacity:0.9;color:#d1fae5"><i class="ph-bold ph-wallet" style="font-size:14px;vertical-align:middle"></i> Top Up</div>
+    <div style="font-size:15px;font-weight:900;letter-spacing:-0.5px"><?= format_rp($total_dep) ?></div>
   </div>
-  <div style="flex:1;text-align:center">
-    <div style="font-size:11px;font-weight:700;color:#cbd5e1;margin-bottom:4px;text-transform:uppercase"><i class="ph-bold ph-paper-plane-right"></i> Tarik</div>
-    <div style="font-size:14px;font-weight:900"><?= format_rp($total_wd) ?></div>
+  <div style="flex:1;background:var(--blue);border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:#fff;text-align:center">
+    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase;opacity:0.9;color:#cbd5e1"><i class="ph-bold ph-paper-plane-right" style="font-size:14px;vertical-align:middle"></i> Tarik</div>
+    <div style="font-size:15px;font-weight:900;letter-spacing:-0.5px"><?= format_rp($total_wd) ?></div>
   </div>
 </div>
 
@@ -64,7 +64,7 @@ require dirname(__DIR__) . '/partials/header.php';
 <div class="history-tabs">
   <a href="?tab=reward" class="history-tab <?= $tab==='reward'?'history-tab--active':'' ?>"><i class="ph-bold ph-gift" style="font-size:14px;vertical-align:middle"></i> Reward</a>
   <a href="?tab=deposit" class="history-tab <?= $tab==='deposit'?'history-tab--active':'' ?>"><i class="ph-bold ph-wallet" style="font-size:14px;vertical-align:middle"></i> Top Up</a>
-  <a href="?tab=withdraw" class="history-tab <?= $tab==='withdraw'?'history-tab--active':'' ?>"><i class="ph-bold ph-paper-plane-right" style="font-size:14px;vertical-align:middle"></i> WD</a>
+  <a href="?tab=withdraw" class="history-tab <?= $tab==='withdraw'?'history-tab--active':'' ?>"><i class="ph-bold ph-paper-plane-right" style="font-size:14px;vertical-align:middle"></i> Penarikan</a>
 </div>
 
 <!-- Reward Tab -->
