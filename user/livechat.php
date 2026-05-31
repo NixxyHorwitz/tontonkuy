@@ -69,10 +69,10 @@ body { margin: 0; padding: 0; overflow: hidden; background: var(--bg); }
 <!-- Live Chat Disabled -->
 <div style="min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg);padding:24px;">
   <div style="text-align:center;max-width:320px;">
-    <div style="font-size:52px;margin-bottom:12px;">🛠️</div>
-    <h2 style="font-weight:900;font-size:20px;margin-bottom:8px;">Live Chat Tidak Tersedia</h2>
-    <p style="color:#888;font-size:13px;margin-bottom:20px;">Layanan live chat sedang offline. Silakan coba lagi nanti.</p>
-    <a href="/home" style="background:var(--brand);border:var(--border);box-shadow:var(--shadow);border-radius:10px;font-weight:800;padding:10px 24px;font-size:13px;text-decoration:none;color:var(--ink);display:inline-block;">← Kembali ke Beranda</a>
+    <div style="font-size:52px;color:var(--ink);margin-bottom:12px;"><i class="ph-fill ph-clock"></i></div>
+    <h2 style="font-weight:900;font-size:20px;margin-bottom:8px;color:var(--ink);">Live Chat Sedang Ditutup</h2>
+    <p style="color:#64748b;font-size:13px;font-weight:700;margin-bottom:20px;">Layanan live chat saat ini tidak tersedia. Silakan coba lagi nanti pada jam operasional.</p>
+    <a href="/home" style="background:var(--yellow);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);border-radius:12px;font-weight:900;padding:12px 24px;font-size:13px;text-decoration:none;color:var(--ink);display:inline-flex;align-items:center;gap:6px;"><i class="ph-bold ph-arrow-left"></i> Kembali ke Beranda</a>
   </div>
 </div>
 <?php else: ?>
