@@ -46,25 +46,25 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Summary stats -->
 <div class="stat-row" style="margin-bottom:20px;display:flex;gap:12px">
-  <div style="flex:1;background:var(--yellow);border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:var(--ink);text-align:center">
-    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase;opacity:0.8"><i class="ph-bold ph-gift" style="font-size:14px;vertical-align:middle"></i> Reward</div>
-    <div style="font-size:15px;font-weight:900;letter-spacing:-0.5px"><?= format_rp($total_earned) ?></div>
+  <div style="flex:1;background:#fde047;border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:var(--ink);text-align:center">
+    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase"><i class="ph-bold ph-gift" style="font-size:14px;vertical-align:middle;color:#d97706"></i> Reward</div>
+    <div style="font-size:16px;font-weight:900;letter-spacing:-0.5px"><?= format_rp($total_earned) ?></div>
   </div>
-  <div style="flex:1;background:var(--green);border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:#fff;text-align:center">
-    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase;opacity:0.9;color:#d1fae5"><i class="ph-bold ph-wallet" style="font-size:14px;vertical-align:middle"></i> Top Up</div>
-    <div style="font-size:15px;font-weight:900;letter-spacing:-0.5px"><?= format_rp($total_dep) ?></div>
+  <div style="flex:1;background:#86efac;border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:var(--ink);text-align:center">
+    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase"><i class="ph-bold ph-wallet" style="font-size:14px;vertical-align:middle;color:#059669"></i> Top Up</div>
+    <div style="font-size:16px;font-weight:900;letter-spacing:-0.5px"><?= format_rp($total_dep) ?></div>
   </div>
-  <div style="flex:1;background:var(--blue);border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:#fff;text-align:center">
-    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase;opacity:0.9;color:#cbd5e1"><i class="ph-bold ph-paper-plane-right" style="font-size:14px;vertical-align:middle"></i> Tarik</div>
-    <div style="font-size:15px;font-weight:900;letter-spacing:-0.5px"><?= format_rp($total_wd) ?></div>
+  <div style="flex:1;background:#93c5fd;border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:var(--ink);text-align:center">
+    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase"><i class="ph-bold ph-paper-plane-right" style="font-size:14px;vertical-align:middle;color:#2563eb"></i> Tarik</div>
+    <div style="font-size:16px;font-weight:900;letter-spacing:-0.5px"><?= format_rp($total_wd) ?></div>
   </div>
 </div>
 
 <!-- Tabs -->
 <div class="history-tabs">
-  <a href="?tab=reward" class="history-tab <?= $tab==='reward'?'history-tab--active':'' ?>"><i class="ph-bold ph-gift" style="font-size:14px;vertical-align:middle"></i> Reward</a>
-  <a href="?tab=deposit" class="history-tab <?= $tab==='deposit'?'history-tab--active':'' ?>"><i class="ph-bold ph-wallet" style="font-size:14px;vertical-align:middle"></i> Top Up</a>
-  <a href="?tab=withdraw" class="history-tab <?= $tab==='withdraw'?'history-tab--active':'' ?>"><i class="ph-bold ph-paper-plane-right" style="font-size:14px;vertical-align:middle"></i> Penarikan</a>
+  <a href="?tab=reward" class="history-tab <?= $tab==='reward'?'history-tab--active-reward':'' ?>"><i class="ph-bold ph-gift" style="font-size:14px;vertical-align:middle"></i> Reward</a>
+  <a href="?tab=deposit" class="history-tab <?= $tab==='deposit'?'history-tab--active-deposit':'' ?>"><i class="ph-bold ph-wallet" style="font-size:14px;vertical-align:middle"></i> Top Up</a>
+  <a href="?tab=withdraw" class="history-tab <?= $tab==='withdraw'?'history-tab--active-withdraw':'' ?>"><i class="ph-bold ph-paper-plane-right" style="font-size:14px;vertical-align:middle"></i> Penarikan</a>
 </div>
 
 <!-- Reward Tab -->
@@ -181,15 +181,17 @@ require dirname(__DIR__) . '/partials/header.php';
   padding: 10px 6px;
   font-size: 12px; font-weight: 800;
   text-decoration: none;
-  color: #64748b; background: #fff;
-  border: 2.5px solid var(--ink);
+  color: var(--ink); background: #f8fafc;
+  border: 3px solid var(--ink);
   border-radius: 12px;
   box-shadow: 2px 2px 0 var(--ink);
   transition: transform .12s, box-shadow .12s;
   display: flex; align-items: center; justify-content: center; gap: 4px;
 }
 .history-tab:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--ink); }
-.history-tab--active { background: var(--yellow); color: var(--ink); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+.history-tab--active-reward { background: #fde047; border-width:3px; box-shadow: 3px 3px 0 var(--ink); }
+.history-tab--active-deposit { background: #86efac; border-width:3px; box-shadow: 3px 3px 0 var(--ink); }
+.history-tab--active-withdraw { background: #93c5fd; border-width:3px; box-shadow: 3px 3px 0 var(--ink); }
 
 .card-trusted { background: #fff; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); overflow: hidden; margin-bottom: 16px; }
 .card-trusted .list-item:last-child { border-bottom: none !important; }
