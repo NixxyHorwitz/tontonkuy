@@ -205,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
 <!-- Page loader -->
 <div id="page-loader">
   <div class="loader-spinner"></div>
-  <div class="loader-label">⏳ Memuat video...</div>
+  <div class="loader-label"><i class="ph-bold ph-hourglass-high" style="color:var(--brand);font-size:16px;vertical-align:middle"></i> Memuat video...</div>
 </div>
 <div class="app-shell">
 
@@ -238,9 +238,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
       </div>
       <div>
         <div id="status-text">
-          <?php if ($already_watched): ?>✅ Sudah ditonton hari ini
-          <?php elseif ($watch_today >= $watch_limit): ?>⚠️ Limit tonton habis
-          <?php else: ?>▶️ Putar video untuk mulai hitung waktu<?php endif; ?>
+          <?php if ($already_watched): ?><i class="ph-bold ph-check-circle" style="color:var(--green)"></i> Sudah ditonton hari ini
+          <?php elseif ($watch_today >= $watch_limit): ?><i class="ph-bold ph-warning-circle" style="color:var(--orange)"></i> Limit tonton habis
+          <?php else: ?><i class="ph-bold ph-play-circle" style="color:var(--blue)"></i> Putar video untuk mulai hitung waktu<?php endif; ?>
         </div>
         <div class="watch-status__hint" id="status-hint">
           <?php if ($canWatch): ?>Reward: <?= format_rp((float)$video['reward_amount']) ?> setelah <?= $video['watch_duration'] ?>s<?php endif; ?>
@@ -249,12 +249,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
     </div>
     <?php if (!$already_watched && $watch_today < $watch_limit): ?>
     <div id="claim-wrap" style="display:none">
-      <button id="claim-btn" class="btn btn--green btn--sm" onclick="claimReward()">
-        🎁 Klaim
+      <button id="claim-btn" class="btn btn--green btn--sm" onclick="claimReward()" style="display:flex;align-items:center;gap:4px">
+        <i class="ph-bold ph-gift" style="color:var(--yellow);font-size:16px"></i> Klaim
       </button>
     </div>
     <?php elseif ($watch_today >= $watch_limit): ?>
-    <a href="/upgrade" class="btn btn--primary btn--sm">👑 Upgrade</a>
+    <a href="/upgrade" class="btn btn--primary btn--sm" style="display:flex;align-items:center;gap:4px"><i class="ph-bold ph-crown" style="color:var(--yellow);font-size:16px"></i> Upgrade</a>
     <?php endif; ?>
   </div>
 
@@ -262,12 +262,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
   <div style="padding:16px">
     <h1 style="font-size:16px;font-weight:800;line-height:1.45;margin-bottom:10px"><?= htmlspecialchars($video['title']) ?></h1>
     <div style="display:flex;flex-wrap:wrap;gap:8px">
-      <span class="badge badge--brand">🎁 <?= format_rp((float)$video['reward_amount']) ?></span>
-      <span class="badge badge--neutral">⏱ <?= $video['watch_duration'] ?>s minimum</span>
-      <span class="badge badge--neutral">👁 <?= number_format((int)$video['total_watches']) ?>× ditonton</span>
+      <span class="badge badge--brand"><i class="ph-bold ph-gift" style="color:var(--yellow)"></i> <?= format_rp((float)$video['reward_amount']) ?></span>
+      <span class="badge badge--neutral"><i class="ph-bold ph-clock" style="color:var(--sky)"></i> <?= $video['watch_duration'] ?>s minimum</span>
+      <span class="badge badge--neutral"><i class="ph-bold ph-eye" style="color:var(--brand)"></i> <?= number_format((int)$video['total_watches']) ?>× ditonton</span>
     </div>
     <?php if ($already_watched): ?>
-    <div class="alert alert--success" style="margin-top:12px">✅ Kamu sudah menonton dan menerima reward hari ini!</div>
+    <div class="alert alert--success" style="margin-top:12px;display:flex;align-items:center;gap:4px"><i class="ph-bold ph-check-circle" style="font-size:16px"></i> Kamu sudah menonton dan menerima reward hari ini!</div>
     <a href="/videos" class="btn btn--ghost btn--full" style="margin-top:8px">← Lihat Video Lain</a>
     <?php endif; ?>
   </div>
@@ -287,7 +287,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
   <?php if (!empty($other_videos)): ?>
   <div style="padding:0 16px 16px">
     <div style="font-size:14px;font-weight:900;margin-bottom:10px;padding-top:4px;border-top:2px solid #1A1A1A">
-      🎬 Video Lainnya
+      <i class="ph-fill ph-film-strip" style="color:var(--brand);font-size:16px;vertical-align:middle"></i> Video Lainnya
     </div>
     <?php foreach ($other_videos as $ov):
       $ov_done    = (bool)$ov['watched_today'];
@@ -311,7 +311,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'claim
       <div style="flex:1;min-width:0">
         <div style="font-size:12px;font-weight:800;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical"><?= htmlspecialchars($ov['title']) ?></div>
         <div style="font-size:11px;color:#666;margin-top:3px;font-weight:700">
-          <?= $ov_done ? '✅ Selesai' : '🎁 ' . format_rp((float)$ov['reward_amount']) ?>
+          <?= $ov_done ? '<i class="ph-bold ph-check-circle" style="color:var(--green)"></i> Selesai' : '<i class="ph-bold ph-gift" style="color:var(--yellow)"></i> ' . format_rp((float)$ov['reward_amount']) ?>
         </div>
       </div>
     </a>

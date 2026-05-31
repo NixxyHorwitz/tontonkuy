@@ -76,12 +76,34 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php unset($_SESSION['flash_home_err']); endif; ?>
 
 <!-- Header Profile & Balance -->
+<style>
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+  100% { transform: translateY(0); }
+}
+@keyframes pulse-glow {
+  0% { box-shadow: 0 0 0 0 rgba(0,229,255, 0.4); }
+  70% { box-shadow: 0 0 0 8px rgba(0,229,255, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0,229,255, 0); }
+}
+.upgrade-btn {
+  background:var(--blue);color:var(--white);text-decoration:none;padding:6px 12px;border-radius:8px;font-weight:900;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);font-size:11px;display:flex;align-items:center;gap:4px;
+  animation: pulse-glow 2s infinite;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.upgrade-btn:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.upgrade-btn i { animation: float 2s ease-in-out infinite; }
+</style>
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
   <div>
     <h2 style="font-size:18px;font-weight:900;margin:0;line-height:1.2;color:var(--ink)">Halo, <?= htmlspecialchars($user['username']) ?>!</h2>
-    <span class="badge badge--neutral" style="font-size:10px;margin-top:4px"><i class="ph-fill ph-star"></i> <?= $membership_name ?></span>
+    <span class="badge badge--neutral" style="font-size:10px;margin-top:4px;background:var(--peach);color:#fff;border-color:var(--ink)"><i class="ph-fill ph-star"></i> <?= $membership_name ?></span>
   </div>
-  <a href="/upgrade" style="background:var(--blue);color:var(--white);text-decoration:none;padding:6px 12px;border-radius:8px;font-weight:900;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);font-size:11px;display:flex;align-items:center;gap:4px">
+  <a href="/upgrade" class="upgrade-btn">
     <i class="ph-bold ph-rocket-launch"></i> UPGRADE
   </a>
 </div>
@@ -89,27 +111,38 @@ require dirname(__DIR__) . '/partials/header.php';
 <!-- Dual Balance Cards -->
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
   <!-- Saldo Penarikan -->
-  <a href="/withdraw" style="background:var(--lavender);border:2.5px solid var(--ink);border-radius:12px;padding:12px;box-shadow:3px 3px 0 var(--ink);text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:6px">
-    <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;opacity:0.9">
-      <i class="ph-bold ph-wallet" style="font-size:16px"></i> Saldo WD
+  <a href="/withdraw" style="background:linear-gradient(135deg, var(--lavender), #e0d4ff);border:2.5px solid var(--ink);border-radius:12px;padding:12px;box-shadow:3px 3px 0 var(--ink);text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:6px;transition:transform 0.2s;position:relative;overflow:hidden">
+    <div style="position:absolute;right:-15px;bottom:-15px;opacity:0.1;transform:rotate(-15deg)"><i class="ph-fill ph-wallet" style="font-size:60px"></i></div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;opacity:0.9;position:relative">
+      <i class="ph-bold ph-wallet" style="font-size:16px"></i> Saldo Penarikan
     </div>
-    <div style="font-size:16px;font-weight:900;word-break:break-word"><?= format_rp((float)$user['balance_wd']) ?></div>
+    <div style="font-size:16px;font-weight:900;word-break:break-word;position:relative"><?= format_rp((float)$user['balance_wd']) ?></div>
   </a>
   <!-- Saldo Deposit -->
-  <a href="/deposit" style="background:var(--mint);border:2.5px solid var(--ink);border-radius:12px;padding:12px;box-shadow:3px 3px 0 var(--ink);text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:6px">
-    <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;opacity:0.9">
-      <i class="ph-bold ph-bank" style="font-size:16px"></i> Deposit
+  <a href="/deposit" style="background:linear-gradient(135deg, var(--mint), #baffdb);border:2.5px solid var(--ink);border-radius:12px;padding:12px;box-shadow:3px 3px 0 var(--ink);text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:6px;transition:transform 0.2s;position:relative;overflow:hidden">
+    <div style="position:absolute;right:-10px;bottom:-10px;opacity:0.1;transform:rotate(10deg)"><i class="ph-fill ph-bank" style="font-size:60px"></i></div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;opacity:0.9;position:relative">
+      <i class="ph-bold ph-bank" style="font-size:16px"></i> Saldo Beli
     </div>
-    <div style="font-size:16px;font-weight:900;word-break:break-word"><?= format_rp((float)$user['balance_dep']) ?></div>
+    <div style="font-size:16px;font-weight:900;word-break:break-word;position:relative"><?= format_rp((float)$user['balance_dep']) ?></div>
   </a>
 </div>
 
 <!-- Action Grid -->
 <style>
+@keyframes wiggle {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(-5deg); }
+  50% { transform: rotate(0deg); }
+  75% { transform: rotate(5deg); }
+  100% { transform: rotate(0deg); }
+}
 .action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-.action-btn { background: var(--white); border: 2.5px solid var(--ink); border-radius: 12px; padding: 12px 6px; box-shadow: 3px 3px 0 var(--ink); text-decoration: none; color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: transform 0.1s, box-shadow 0.1s; }
+.action-btn { background: var(--white); border: 2.5px solid var(--ink); border-radius: 12px; padding: 12px 6px; box-shadow: 3px 3px 0 var(--ink); text-decoration: none; color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.action-btn:hover { transform: translateY(-4px) scale(1.02); box-shadow: 5px 5px 0 var(--ink); background: #fafafa; }
 .action-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
-.action-btn__icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 2px solid var(--ink); background: var(--yellow); }
+.action-btn__icon { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; border: 2px solid var(--ink); background: var(--yellow); transition: transform 0.3s; }
+.action-btn:hover .action-btn__icon { animation: wiggle 0.5s ease; }
 .action-btn__label { font-size: 11px; font-weight: 800; text-align: center; }
 </style>
 <div class="action-grid">
@@ -140,7 +173,7 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 
 <!-- Dashboard Stats -->
-<div style="background:var(--white);border:2.5px solid var(--ink);border-radius:14px;box-shadow:4px 4px 0 var(--ink);padding:14px;margin-bottom:16px">
+<div style="background:var(--white);border:2.5px solid var(--ink);border-radius:14px;box-shadow:4px 4px 0 var(--ink);padding:14px;margin-bottom:16px;transition:transform 0.2s">
   <div style="font-size:14px;font-weight:900;margin-bottom:12px;display:flex;align-items:center;gap:6px">
     <i class="ph-fill ph-chart-pie-slice" style="font-size:18px;color:var(--brand)"></i> Statistik Anda
   </div>
@@ -168,8 +201,8 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <?php if (setting($pdo, 'investment_enabled', '1') === '1'): ?>
 <!-- Invest Banner -->
-<div style="background:var(--ink);border-radius:14px;padding:16px;color:var(--white);position:relative;overflow:hidden;margin-bottom:16px;box-shadow:4px 4px 0 var(--peach)">
-  <i class="ph-fill ph-trend-up" style="position:absolute;right:-10px;bottom:-10px;font-size:100px;opacity:0.1"></i>
+<div style="background:var(--ink);border-radius:14px;padding:16px;color:var(--white);position:relative;overflow:hidden;margin-bottom:16px;box-shadow:4px 4px 0 var(--peach);transition:transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+  <i class="ph-fill ph-trend-up" style="position:absolute;right:-10px;bottom:-10px;font-size:100px;opacity:0.1;animation:float 4s ease-in-out infinite"></i>
   <div style="display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2">
     <div>
       <div style="font-size:10px;font-weight:900;color:var(--lime);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Profit Pasif</div>
@@ -184,8 +217,8 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>
 <!-- Plinko Banner -->
-<div style="background:var(--yellow);border:2.5px solid var(--ink);border-radius:14px;padding:16px;color:var(--ink);position:relative;overflow:hidden;margin-bottom:16px;box-shadow:4px 4px 0 var(--ink)">
-  <i class="ph-fill ph-game-controller" style="position:absolute;right:-10px;bottom:-10px;font-size:90px;opacity:0.15"></i>
+<div style="background:var(--yellow);border:2.5px solid var(--ink);border-radius:14px;padding:16px;color:var(--ink);position:relative;overflow:hidden;margin-bottom:16px;box-shadow:4px 4px 0 var(--ink);transition:transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)" onmouseover="this.style.transform='scale(1.02)'" onmouseout="this.style.transform='scale(1)'">
+  <i class="ph-fill ph-game-controller" style="position:absolute;right:-10px;bottom:-10px;font-size:90px;opacity:0.15;animation:float 3s ease-in-out infinite reverse"></i>
   <div style="display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2">
     <div>
       <div style="font-size:10px;font-weight:900;background:var(--brand);color:var(--white);padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:6px;border:1px solid var(--ink)">EVENT</div>
@@ -235,7 +268,7 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php endif; ?>
 
 <?php if ($watch_today >= $watch_limit): ?>
-<div class="alert alert--warn" style="margin-bottom:16px;font-size:12px;padding:10px;border-radius:10px">
+<div class="alert alert--warn" style="margin-bottom:16px;font-size:12px;padding:10px;border-radius:10px;animation:pulse-glow 2s infinite">
   <i class="ph-bold ph-warning-circle" style="font-size:16px"></i> Limit tonton hari ini habis (<?= $watch_limit ?>). <a href="/upgrade" style="color:inherit;font-weight:800;text-decoration:underline">Upgrade sekarang</a>
 </div>
 <?php endif; ?>

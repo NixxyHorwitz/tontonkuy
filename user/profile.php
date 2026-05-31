@@ -114,7 +114,7 @@ $_psvg = [
     <div class="prof-name"><?= htmlspecialchars($user['username']) ?></div>
     <div class="prof-email"><?= htmlspecialchars($user['email']) ?></div>
     <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">
-      <span class="badge badge--brand" style="font-size:10px">⭐ <?= $membership_name ?></span>
+      <span class="badge badge--brand" style="font-size:10px"><i class="ph-fill ph-star" style="color:var(--yellow)"></i> <?= $membership_name ?></span>
       <?php if ($user['membership_expires_at'] && strtotime($user['membership_expires_at']) > time()): ?>
       <span class="badge badge--neutral" style="font-size:10px">s/d <?= date('d M Y', strtotime($user['membership_expires_at'])) ?></span>
       <?php endif; ?>
@@ -140,16 +140,16 @@ $_psvg = [
 
 <!-- Referral code -->
 <div class="ref-row">
-  <div style="font-size:10px;font-weight:700;color:#888;flex-shrink:0">🔗 Referral</div>
+  <div style="font-size:10px;font-weight:700;color:#888;flex-shrink:0"><i class="ph-bold ph-link" style="color:var(--sky);font-size:14px"></i> Referral</div>
   <div class="ref-code" id="ref-code"><?= $user['referral_code'] ?></div>
   <button onclick="copyRef()" class="btn btn--secondary btn--sm" style="flex-shrink:0;font-size:11px;padding:4px 10px">Salin</button>
 </div>
 
 <!-- Tabs: Profil | Edit Profil | Ganti Password -->
 <div class="prof-tabs" role="tablist">
-  <button class="prof-tab <?= $active_tab === 'profil' ? 'active' : '' ?>" onclick="switchTab('profil')" id="tab-profil">👤 Profil</button>
-  <button class="prof-tab <?= $active_tab === 'edit' ? 'active' : '' ?>" onclick="switchTab('edit')" id="tab-edit">✏️ Edit</button>
-  <button class="prof-tab <?= $active_tab === 'password' ? 'active' : '' ?>" onclick="switchTab('password')" id="tab-password">🔐 Password</button>
+  <button class="prof-tab <?= $active_tab === 'profil' ? 'active' : '' ?>" onclick="switchTab('profil')" id="tab-profil"><i class="ph-bold ph-user-circle" style="color:var(--blue);font-size:14px;vertical-align:middle"></i> Profil</button>
+  <button class="prof-tab <?= $active_tab === 'edit' ? 'active' : '' ?>" onclick="switchTab('edit')" id="tab-edit"><i class="ph-bold ph-pencil-simple" style="color:var(--orange);font-size:14px;vertical-align:middle"></i> Edit</button>
+  <button class="prof-tab <?= $active_tab === 'password' ? 'active' : '' ?>" onclick="switchTab('password')" id="tab-password"><i class="ph-bold ph-lock-key" style="color:var(--green);font-size:14px;vertical-align:middle"></i> Password</button>
 </div>
 
 <!-- Tab: Profil (default) -->
@@ -158,15 +158,15 @@ $_psvg = [
     <div class="card__body">
       <div style="display:flex;flex-direction:column;gap:8px">
         <div style="display:flex;justify-content:space-between;font-size:13px">
-          <span style="color:#888;font-weight:600">📝 Username</span>
+          <span style="color:#888;font-weight:600;display:flex;align-items:center;gap:4px"><i class="ph-bold ph-identification-card" style="color:var(--brand)"></i> Username</span>
           <span style="font-weight:800"><?= htmlspecialchars($user['username']) ?></span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:13px">
-          <span style="color:#888;font-weight:600">📧 Email</span>
+          <span style="color:#888;font-weight:600;display:flex;align-items:center;gap:4px"><i class="ph-bold ph-envelope-simple" style="color:var(--sky)"></i> Email</span>
           <span style="font-weight:700;font-size:12px"><?= htmlspecialchars($user['email']) ?></span>
         </div>
         <div style="display:flex;justify-content:space-between;font-size:13px">
-          <span style="color:#888;font-weight:600">📱 WhatsApp</span>
+          <span style="color:#888;font-weight:600;display:flex;align-items:center;gap:4px"><i class="ph-bold ph-whatsapp-logo" style="color:var(--green)"></i> WhatsApp</span>
           <span style="font-weight:700"><?= htmlspecialchars(mask_account($user['whatsapp'] ?? '')) ?></span>
         </div>
       </div>
@@ -175,7 +175,7 @@ $_psvg = [
   <!-- Bank info -->
   <div class="card" style="margin-bottom:12px">
     <div class="card__header">
-      <div class="card__title" style="font-size:13px">🏦 Rekening Bank</div>
+      <div class="card__title" style="font-size:13px"><i class="ph-bold ph-bank" style="color:var(--blue);font-size:16px;vertical-align:middle"></i> Rekening Bank</div>
     </div>
     <div class="card__body">
       <?php if (!empty($user['bank_name'])): ?>
@@ -195,10 +195,10 @@ $_psvg = [
       <?php endif; ?>
       <?php if ($show_edit_rek_btn): ?>
       <div style="margin-top:12px;padding-top:10px;border-top:1px dashed #ddd">
-        <a href="/edit-rekening" class="btn btn--ghost btn--full" style="font-size:12px">
-          ✏️ Edit Rekening Bank
+        <a href="/edit-rekening" class="btn btn--ghost btn--full" style="font-size:12px;display:flex;align-items:center;justify-content:center;gap:4px">
+          <i class="ph-bold ph-pencil-simple" style="color:var(--orange)"></i> Edit Rekening Bank
           <?php if (!$dep_ok_for_edit): ?>
-          <span style="font-size:10px;color:#f59e0b;margin-left:4px">🔒 Butuh deposit Rp <?= number_format($edit_bank_min_dep,0,'','') ?></span>
+          <span style="font-size:10px;color:#f59e0b;margin-left:4px"><i class="ph-bold ph-lock-key"></i> Butuh deposit Rp <?= number_format($edit_bank_min_dep,0,'','') ?></span>
           <?php endif; ?>
         </a>
       </div>
@@ -222,11 +222,11 @@ $_psvg = [
           <div class="form-hint">3–30 karakter · huruf, angka, underscore</div>
         </div>
         <div class="form-group" style="margin-bottom:10px">
-          <label class="form-label" style="font-size:12px">WhatsApp <span style="font-weight:600;color:#aaa;font-size:10px">🔒 tidak dapat diubah</span></label>
+          <label class="form-label" style="font-size:12px">WhatsApp <span style="font-weight:600;color:#aaa;font-size:10px"><i class="ph-bold ph-lock-key"></i> tidak dapat diubah</span></label>
           <input class="form-control" type="tel" value="<?= htmlspecialchars($user['whatsapp']) ?>"
                  disabled readonly style="background:var(--bg);color:#aaa;cursor:not-allowed">
         </div>
-        <button type="submit" class="btn btn--primary btn--full" style="font-size:13px">💾 Simpan Username</button>
+        <button type="submit" class="btn btn--primary btn--full" style="font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px"><i class="ph-bold ph-floppy-disk"></i> Simpan Username</button>
       </form>
     </div>
   </div>
@@ -247,7 +247,7 @@ $_psvg = [
           <label class="form-label" style="font-size:12px">Password Baru <span style="color:#aaa;font-size:10px">min. 6 karakter</span></label>
           <input class="form-control" type="password" name="new_password" required>
         </div>
-        <button type="submit" class="btn btn--ghost btn--full" style="font-size:13px">🔐 Ganti Password</button>
+        <button type="submit" class="btn btn--ghost btn--full" style="font-size:13px;display:flex;align-items:center;justify-content:center;gap:6px"><i class="ph-bold ph-lock-key"></i> Ganti Password</button>
       </form>
     </div>
   </div>
@@ -257,7 +257,7 @@ $_psvg = [
 <!-- Transaksi -->
 <div style="font-size:11px;font-weight:800;color:#888;margin-bottom:6px;margin-top:4px">TRANSAKSI</div>
 <a href="/history" class="contact-item">
-  <div class="contact-icon" style="background:var(--sky);color:#fff;font-size:16px;font-weight:normal">📄</div>
+  <div class="contact-icon" style="background:var(--sky);color:#fff;font-size:18px"><i class="ph-fill ph-receipt"></i></div>
   <div style="flex:1;font-weight:800;font-size:13px">Riwayat Transaksi</div>
   <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="opacity:.35"><polyline points="9 18 15 12 9 6"/></svg>
 </a>
@@ -265,13 +265,13 @@ $_psvg = [
 <!-- Community / Contact -->
 <div style="font-size:11px;font-weight:800;color:#888;margin-bottom:6px;margin-top:4px">BANTUAN & KOMUNITAS</div>
 <a href="/panduan" class="contact-item">
-  <div class="contact-icon" style="background:var(--brand);color:#fff;font-size:16px;font-weight:normal">📖</div>
+  <div class="contact-icon" style="background:var(--brand);color:#fff;font-size:18px"><i class="ph-fill ph-book-open"></i></div>
   <div style="flex:1;font-weight:800;font-size:13px">Buku Panduan</div>
   <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="opacity:.35"><polyline points="9 18 15 12 9 6"/></svg>
 </a>
 <?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>
 <a href="/events" class="contact-item">
-  <div class="contact-icon" style="background:var(--yellow);color:#1A1A1A;font-size:16px;font-weight:normal">🏆</div>
+  <div class="contact-icon" style="background:var(--yellow);color:var(--ink);font-size:18px"><i class="ph-fill ph-trophy"></i></div>
   <div style="flex:1;font-weight:800;font-size:13px">Event Plinko & Lapak</div>
   <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" style="opacity:.35"><polyline points="9 18 15 12 9 6"/></svg>
 </a>
@@ -296,7 +296,7 @@ $_psvg = [
 <!-- Logout -->
 <div style="margin-bottom:8px">
   <a href="/logout" id="logout-btn" class="logout-btn">
-    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+    <i class="ph-bold ph-sign-out" style="font-size:18px"></i>
     Keluar dari Akun
   </a>
 </div>
