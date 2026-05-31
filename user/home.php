@@ -75,293 +75,247 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 <?php unset($_SESSION['flash_home_err']); endif; ?>
 
-<!-- Hero balance (compact) -->
-<div class="hero-card" style="padding:14px 16px">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-    <div class="hero-card__label" style="font-size:13px">👋 <?= htmlspecialchars($user['username']) ?></div>
-    <span class="badge badge--neutral" style="font-size:11px">⭐ <?= $membership_name ?></span>
+<!-- Header Profile & Balance -->
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+  <div>
+    <h2 style="font-size:18px;font-weight:900;margin:0;line-height:1.2;color:var(--ink)">Halo, <?= htmlspecialchars($user['username']) ?>!</h2>
+    <span class="badge badge--neutral" style="font-size:10px;margin-top:4px"><i class="ph-fill ph-star"></i> <?= $membership_name ?></span>
   </div>
-  <div class="dual-balance" style="gap:8px">
-    <div class="dual-balance__item dual-balance__item--wd">
-      <div class="dual-balance__label" style="font-size:10px">💸 WD</div>
-      <div class="dual-balance__val" style="font-size:18px"><?= format_rp((float)$user['balance_wd']) ?></div>
-    </div>
-    <div class="dual-balance__item dual-balance__item--dep">
-      <div class="dual-balance__label" style="font-size:10px">💳 Deposit</div>
-      <div class="dual-balance__val" style="font-size:18px"><?= format_rp((float)$user['balance_dep']) ?></div>
-    </div>
-  </div>
-  <div class="hero-card__actions" style="margin-top:10px;gap:6px;flex-wrap:wrap">
-    <a href="/deposit"      class="hero-card__btn" style="flex:1;min-width:70px">⬆️ Topup</a>
-    <a href="/withdraw"     class="hero-card__btn" style="flex:1;min-width:70px">⬇️ Tarik</a>
-    <a href="/history"      class="hero-card__btn" style="flex:1;min-width:70px">📄 Riwayat</a>
-    <a href="/checkin"      class="hero-card__btn" style="flex:1;min-width:70px">📅 Absen</a>
-    <a href="/redeem"       class="hero-card__btn" style="flex:1;min-width:70px">🎁 Redeem</a>
-    <a href="/panduan"      class="hero-card__btn" style="flex:1;min-width:70px;background:var(--white);color:var(--brand);border-color:var(--brand)">📖 Panduan</a>
-  </div>
-  <a href="/upgrade" style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px;background:var(--blue);color:var(--white);text-decoration:none;padding:12px;border-radius:10px;font-weight:900;border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink);font-size:15px;">
-    🚀 UPGRADE LEVEL SEKARANG
+  <a href="/upgrade" style="background:var(--blue);color:var(--white);text-decoration:none;padding:6px 12px;border-radius:8px;font-weight:900;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);font-size:11px;display:flex;align-items:center;gap:4px">
+    <i class="ph-bold ph-rocket-launch"></i> UPGRADE
   </a>
 </div>
 
-<!-- Stats row -->
-<div class="stat-row" style="margin-top:10px">
-  <!-- Video tonton hari ini -->
-  <a href="/videos" class="stat-mini" style="text-decoration:none;cursor:pointer" title="Klik untuk tonton video">
-    <div style="display:flex;align-items:center;justify-content:center;gap:2px;margin-bottom:2px">
-      <div class="stat-mini__val"><?= $watch_today ?></div>
-      <div style="font-size:11px;color:var(--ink);opacity:0.8;font-weight:800;align-self:flex-end;padding-bottom:1px">/<?= $watch_limit ?></div>
+<!-- Dual Balance Cards -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+  <!-- Saldo Penarikan -->
+  <a href="/withdraw" style="background:var(--lavender);border:2.5px solid var(--ink);border-radius:12px;padding:12px;box-shadow:3px 3px 0 var(--ink);text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;opacity:0.9">
+      <i class="ph-bold ph-wallet" style="font-size:16px"></i> Saldo WD
     </div>
-    <?php $pct = $watch_limit > 0 ? min(100, round(($watch_today / $watch_limit) * 100)) : 0; ?>
-    <div style="width:100%;height:4px;background:#ddd;border-radius:3px;margin:3px 0;border:1px solid var(--ink);overflow:hidden">
-      <div style="width:<?= $pct ?>%;height:100%;background:<?= $pct >= 100 ? 'var(--salmon)' : 'var(--green)' ?>;border-radius:3px;transition:width .3s"></div>
+    <div style="font-size:16px;font-weight:900;word-break:break-word"><?= format_rp((float)$user['balance_wd']) ?></div>
+  </a>
+  <!-- Saldo Deposit -->
+  <a href="/deposit" style="background:var(--mint);border:2.5px solid var(--ink);border-radius:12px;padding:12px;box-shadow:3px 3px 0 var(--ink);text-decoration:none;color:var(--ink);display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:center;gap:6px;font-size:11px;font-weight:800;opacity:0.9">
+      <i class="ph-bold ph-bank" style="font-size:16px"></i> Deposit
     </div>
-    <div class="stat-mini__lbl">🎬 Video Tonton</div>
+    <div style="font-size:16px;font-weight:900;word-break:break-word"><?= format_rp((float)$user['balance_dep']) ?></div>
   </a>
-  <!-- Video tersedia -->
-  <a href="/videos" class="stat-mini" style="text-decoration:none;cursor:pointer">
-    <div class="stat-mini__val" style="font-size:16px"><?= count($videos) ?></div>
-    <div style="font-size:10px;color:var(--ink);opacity:0.7;font-weight:800;margin-top:1px">video tersisa</div>
-    <div class="stat-mini__lbl">📺 Tersedia</div>
+</div>
+
+<!-- Action Grid -->
+<style>
+.action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.action-btn { background: var(--white); border: 2.5px solid var(--ink); border-radius: 12px; padding: 12px 6px; box-shadow: 3px 3px 0 var(--ink); text-decoration: none; color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: transform 0.1s, box-shadow 0.1s; }
+.action-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.action-btn__icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; border: 2px solid var(--ink); background: var(--yellow); }
+.action-btn__label { font-size: 11px; font-weight: 800; text-align: center; }
+</style>
+<div class="action-grid">
+  <a href="/deposit" class="action-btn">
+    <div class="action-btn__icon" style="background:var(--sky)"><i class="ph-bold ph-upload-simple"></i></div>
+    <span class="action-btn__label">Topup</span>
   </a>
-  <!-- Referral code -->
-  <div class="stat-mini" style="cursor:pointer" onclick="copyRef('<?= htmlspecialchars($user['referral_code']) ?>')" title="Tap untuk salin kode">
-    <div class="stat-mini__val" style="font-size:11px;letter-spacing:2px;font-family:monospace"><?= $user['referral_code'] ?></div>
-    <div style="font-size:9px;color:var(--ink);opacity:0.7;font-weight:800;margin-top:1px">tap untuk salin</div>
-    <div class="stat-mini__lbl">🔗 Referral</div>
+  <a href="/withdraw" class="action-btn">
+    <div class="action-btn__icon" style="background:var(--peach)"><i class="ph-bold ph-download-simple"></i></div>
+    <span class="action-btn__label">Tarik</span>
+  </a>
+  <a href="/history" class="action-btn">
+    <div class="action-btn__icon" style="background:var(--lavender)"><i class="ph-bold ph-receipt"></i></div>
+    <span class="action-btn__label">Riwayat</span>
+  </a>
+  <a href="/checkin" class="action-btn">
+    <div class="action-btn__icon" style="background:var(--mint)"><i class="ph-bold ph-calendar-check"></i></div>
+    <span class="action-btn__label">Absen</span>
+  </a>
+  <a href="/redeem" class="action-btn">
+    <div class="action-btn__icon" style="background:var(--salmon);color:#fff"><i class="ph-bold ph-gift"></i></div>
+    <span class="action-btn__label">Redeem</span>
+  </a>
+  <a href="/panduan" class="action-btn">
+    <div class="action-btn__icon" style="background:var(--yellow)"><i class="ph-bold ph-book-open"></i></div>
+    <span class="action-btn__label">Panduan</span>
+  </a>
+</div>
+
+<!-- Dashboard Stats -->
+<div style="background:var(--white);border:2.5px solid var(--ink);border-radius:14px;box-shadow:4px 4px 0 var(--ink);padding:14px;margin-bottom:16px">
+  <div style="font-size:14px;font-weight:900;margin-bottom:12px;display:flex;align-items:center;gap:6px">
+    <i class="ph-fill ph-chart-pie-slice" style="font-size:18px;color:var(--brand)"></i> Statistik Anda
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="font-size:10px;font-weight:800;color:#666">Tontonan Hari Ini</div>
+      <div style="font-size:14px;font-weight:900"><?= $watch_today ?> <span style="font-size:11px;color:#888">/ <?= $watch_limit ?></span></div>
+      <?php $pct = $watch_limit > 0 ? min(100, round(($watch_today / $watch_limit) * 100)) : 0; ?>
+      <div style="width:100%;height:6px;background:#eee;border-radius:4px;border:1.5px solid var(--ink);overflow:hidden;margin-top:2px">
+        <div style="width:<?= $pct ?>%;height:100%;background:<?= $pct >= 100 ? 'var(--salmon)' : 'var(--green)' ?>;transition:width .3s"></div>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="font-size:10px;font-weight:800;color:#666">Kode Referral</div>
+      <div style="display:flex;align-items:center;gap:6px">
+        <div style="font-size:12px;font-weight:900;letter-spacing:1px;background:#f4f4f4;padding:4px 8px;border-radius:6px;border:1.5px solid #ccc;flex:1;text-align:center"><?= $user['referral_code'] ?></div>
+        <button type="button" onclick="copyRef('<?= htmlspecialchars($user['referral_code']) ?>')" style="background:var(--ink);color:var(--white);border:none;border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer">
+          <i class="ph-bold ph-copy"></i>
+        </button>
+      </div>
+    </div>
   </div>
 </div>
-<div id="ref-toast" style="display:none;text-align:center;font-size:11px;font-weight:800;color:var(--green);margin-top:4px">✓ Kode disalin!</div>
+<div id="ref-toast" style="display:none;text-align:center;font-size:11px;font-weight:800;color:var(--green);margin-bottom:12px">✓ Kode disalin!</div>
 
 <?php if (setting($pdo, 'investment_enabled', '1') === '1'): ?>
-<!-- CTA Investasi Banner -->
-<div style="
-  margin-top: 10px;
-  background: var(--lavender);
-  border: 2.5px solid var(--ink);
-  border-radius: 12px;
-  box-shadow: 3px 3px 0 var(--ink);
-  padding: 14px 16px;
-  position: relative;
-  overflow: hidden;
-">
-  <!-- Small badge -->
-  <div style="
-    display: inline-block;
-    background: var(--yellow);
-    color: var(--ink);
-    border: 1.5px solid var(--ink);
-    border-radius: 6px;
-    font-size: 9px;
-    font-weight: 800;
-    padding: 2px 6px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-    box-shadow: 1px 1px 0 var(--ink);
-  ">
-    🔥 Profit Pasif Menanti
-  </div>
-  
-  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-    <div style="flex: 1;">
-      <h4 style="font-size: 14px; font-weight: 900; color: var(--ink); margin: 0 0 2px 0;">📈 Portal Investasi Ponzi</h4>
-      <p style="font-size: 11px; color: #444; font-weight: 700; margin: 0; line-height: 1.4;">
-        Lipatgandakan saldo Anda secara pasif hingga <strong style="color:var(--brand)">ROI 120%+</strong>. Dapatkan profit harian otomatis!
-      </p>
+<!-- Invest Banner -->
+<div style="background:var(--ink);border-radius:14px;padding:16px;color:var(--white);position:relative;overflow:hidden;margin-bottom:16px;box-shadow:4px 4px 0 var(--peach)">
+  <i class="ph-fill ph-trend-up" style="position:absolute;right:-10px;bottom:-10px;font-size:100px;opacity:0.1"></i>
+  <div style="display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2">
+    <div>
+      <div style="font-size:10px;font-weight:900;color:var(--lime);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Profit Pasif</div>
+      <h3 style="font-size:16px;font-weight:900;margin:0">Portal Investasi</h3>
     </div>
-    <a href="/invest" class="btn btn--primary btn--sm" style="
-      flex-shrink: 0;
-      font-size: 11px;
-      font-weight: 900;
-      background: var(--brand);
-      color: #fff;
-      border: 2px solid var(--ink);
-      box-shadow: 2px 2px 0 var(--ink);
-      text-decoration: none;
-      padding: 6px 12px;
-      height: fit-content;
-      white-space: nowrap;
-    ">
-      🚀 Mulai Invest
+    <a href="/invest" class="btn btn--sm" style="background:var(--lime);color:var(--ink);border:2px solid var(--white);font-size:11px;font-weight:900">
+      <i class="ph-bold ph-rocket"></i> Mulai
     </a>
   </div>
 </div>
 <?php endif; ?>
 
 <?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>
-<!-- CTA Plinko Event Banner -->
-<div style="
-  margin-top: 10px;
-  background: var(--mint);
-  border: 2.5px solid var(--ink);
-  border-radius: 12px;
-  box-shadow: 3px 3px 0 var(--ink);
-  padding: 14px 16px;
-  position: relative;
-  overflow: hidden;
-">
-  <!-- Small badge -->
-  <div style="
-    display: inline-block;
-    background: var(--yellow);
-    color: var(--ink);
-    border: 1.5px solid var(--ink);
-    border-radius: 6px;
-    font-size: 9px;
-    font-weight: 800;
-    padding: 2px 6px;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-    box-shadow: 1px 1px 0 var(--ink);
-  ">
-    🎮 EVENT SERU AKTIF
-  </div>
-  
-  <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-    <div style="flex: 1;">
-      <h4 style="font-size: 14px; font-weight: 900; color: var(--ink); margin: 0 0 2px 0;">🎯 Event Plinko Arcade</h4>
-      <p style="font-size: 11px; color: #333; font-weight: 700; margin: 0; line-height: 1.4;">
-        Jatuhkan bola neon, klaim koin harian gratis, atau jual kembali koin kemenanganmu langsung menjadi <strong style="color:var(--brand)">Saldo Penarikan</strong>!
-      </p>
+<!-- Plinko Banner -->
+<div style="background:var(--yellow);border:2.5px solid var(--ink);border-radius:14px;padding:16px;color:var(--ink);position:relative;overflow:hidden;margin-bottom:16px;box-shadow:4px 4px 0 var(--ink)">
+  <i class="ph-fill ph-game-controller" style="position:absolute;right:-10px;bottom:-10px;font-size:90px;opacity:0.15"></i>
+  <div style="display:flex;justify-content:space-between;align-items:center;position:relative;z-index:2">
+    <div>
+      <div style="font-size:10px;font-weight:900;background:var(--brand);color:var(--white);padding:2px 6px;border-radius:4px;display:inline-block;margin-bottom:6px;border:1px solid var(--ink)">EVENT</div>
+      <h3 style="font-size:16px;font-weight:900;margin:0">Plinko Arcade</h3>
     </div>
-    <a href="/events" class="btn btn--primary btn--sm" style="
-      flex-shrink: 0;
-      font-size: 11px;
-      font-weight: 900;
-      background: var(--brand);
-      color: #fff;
-      border: 2px solid var(--ink);
-      box-shadow: 2px 2px 0 var(--ink);
-      text-decoration: none;
-      padding: 6px 12px;
-      height: fit-content;
-      white-space: nowrap;
-    ">
-      🏆 Buka Event
+    <a href="/events" class="btn btn--sm" style="background:var(--brand);color:var(--white);border:2px solid var(--ink);font-size:11px;font-weight:900">
+      <i class="ph-bold ph-play"></i> Main
     </a>
   </div>
 </div>
 <?php endif; ?>
 
 <?php if (!empty($notif_preview)): ?>
-<!-- Notification Preview -->
-<div style="margin-top:10px">
-  <div class="section-header" style="margin-bottom:6px">
-    <div class="section-title" style="font-size:14px">
-      🔔 Notifikasi
+<!-- Notifications -->
+<div style="margin-bottom:16px">
+  <div class="section-header" style="margin-bottom:8px">
+    <div class="section-title" style="font-size:14px;display:flex;align-items:center;gap:6px">
+      <i class="ph-fill ph-bell-ringing" style="color:var(--brand)"></i> Notifikasi
       <?php if ($notif_unread > 0): ?>
-      <span style="display:inline-flex;align-items:center;justify-content:center;
-             width:18px;height:18px;background:var(--brand);color:#fff;
-             font-size:10px;font-weight:900;border-radius:50%;
-             border:1.5px solid var(--ink);margin-left:2px">
-        <?= $notif_unread > 9 ? '9+' : $notif_unread ?>
-      </span>
+      <span style="background:var(--brand);color:#fff;font-size:10px;font-weight:900;border-radius:10px;padding:2px 6px;border:1px solid var(--ink)"><?= $notif_unread > 9 ? '9+' : $notif_unread ?></span>
       <?php endif; ?>
     </div>
-    <a href="/notifications" class="section-link">Lihat semua →</a>
+    <a href="/notifications" class="section-link">Lihat Semua →</a>
   </div>
   <?php
   $notif_colors = [
-    'info'     => ['bg' => 'var(--sky)',     'icon' => 'ℹ️'],
-    'success'  => ['bg' => 'var(--lime)',    'icon' => '✅'],
-    'warning'  => ['bg' => 'var(--peach)',   'icon' => '⚠️'],
-    'alert'    => ['bg' => 'var(--salmon)',  'icon' => '🚨'],
-    'congrats' => ['bg' => 'var(--yellow)', 'icon' => '🎉'],
+    'info'     => ['bg' => 'var(--sky)',     'icon' => 'ph-info'],
+    'success'  => ['bg' => 'var(--lime)',    'icon' => 'ph-check-circle'],
+    'warning'  => ['bg' => 'var(--peach)',   'icon' => 'ph-warning'],
+    'alert'    => ['bg' => 'var(--salmon)',  'icon' => 'ph-warning-octagon'],
+    'congrats' => ['bg' => 'var(--yellow)',  'icon' => 'ph-confetti'],
   ];
   foreach ($notif_preview as $nf):
     $nc = $notif_colors[$nf['type']] ?? $notif_colors['info'];
-    $ni = $nf['icon'] ?: $nc['icon'];
+    // Extract icon if it exists, else default. The original DB might have emojis, let's just use the neo icon if DB has an emoji.
+    $ni = $nc['icon'];
   ?>
-  <div style="
-    display:flex;align-items:flex-start;gap:10px;
-    background:<?= $nc['bg'] ?>;
-    border:2.5px solid var(--ink);
-    border-radius:12px;
-    box-shadow:3px 3px 0 var(--ink);
-    padding:10px 12px;
-    margin-bottom:6px;
-  ">
-    <span style="font-size:20px;flex-shrink:0;line-height:1.2"><?= $ni ?></span>
+  <div style="display:flex;align-items:center;gap:10px;background:<?= $nc['bg'] ?>;border:2px solid var(--ink);border-radius:12px;padding:10px;margin-bottom:6px">
+    <i class="ph-fill <?= $ni ?>" style="font-size:24px"></i>
     <div style="flex:1;min-width:0">
-      <div style="font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
-        <?= htmlspecialchars($nf['title']) ?>
-      </div>
-      <div style="font-size:11px;color:#555;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-        <?= htmlspecialchars($nf['message']) ?>
-      </div>
+      <div style="font-weight:900;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= htmlspecialchars($nf['title']) ?></div>
+      <div style="font-size:10px;color:#444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= htmlspecialchars($nf['message']) ?></div>
     </div>
-    <span style="width:8px;height:8px;background:var(--brand);border-radius:50%;flex-shrink:0;border:1.5px solid var(--ink);margin-top:4px"></span>
   </div>
   <?php endforeach; ?>
-  <?php if ($notif_unread > 3): ?>
-  <a href="/notifications" style="display:block;text-align:center;font-size:12px;font-weight:800;color:var(--brand);padding:4px 0">
-    +<?= $notif_unread - 3 ?> notifikasi lainnya
-  </a>
-  <?php endif; ?>
 </div>
 <?php endif; ?>
 
 <?php if ($watch_today >= $watch_limit): ?>
-<div class="alert alert--warn" style="margin-top:10px;font-size:12px;padding:8px 12px">
-  ⚠️ Limit hari ini habis (<?= $watch_limit ?>×). <a href="/upgrade" style="color:inherit;font-weight:800">Upgrade →</a>
+<div class="alert alert--warn" style="margin-bottom:16px;font-size:12px;padding:10px;border-radius:10px">
+  <i class="ph-bold ph-warning-circle" style="font-size:16px"></i> Limit tonton hari ini habis (<?= $watch_limit ?>). <a href="/upgrade" style="color:inherit;font-weight:800;text-decoration:underline">Upgrade sekarang</a>
 </div>
 <?php endif; ?>
 
-<!-- Available videos -->
-<div class="section-header" style="margin-top:16px">
-  <div class="section-title">🎬 Video Tersedia</div>
-  <a href="/videos" class="section-link">Lihat semua →</a>
+<!-- Horizontal Video Scroll -->
+<style>
+.video-scroll { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 8px; margin: 0 -14px; padding-left: 14px; padding-right: 14px; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.video-scroll::-webkit-scrollbar { display: none; }
+.v-card { flex: 0 0 220px; scroll-snap-align: center; text-decoration: none; display: flex; flex-direction: column; background: var(--white); border: 2.5px solid var(--ink); border-radius: 12px; overflow: hidden; box-shadow: 3px 3px 0 var(--ink); }
+.v-card__thumb { position: relative; aspect-ratio: 16/9; background: #000; border-bottom: 2px solid var(--ink); }
+.v-card__thumb img { width: 100%; height: 100%; object-fit: cover; opacity: 0.9; transition: opacity 0.2s; }
+.v-card:hover .v-card__thumb img { opacity: 1; }
+.v-card__badge { position: absolute; top: 6px; right: 6px; background: var(--brand); color: #fff; font-size: 10px; font-weight: 900; padding: 2px 6px; border-radius: 6px; border: 1.5px solid var(--ink); }
+.v-card__play { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; }
+.v-card__play i { font-size: 36px; color: #fff; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5)); transition: transform 0.2s; }
+.v-card:hover .v-card__play i { transform: scale(1.1); }
+.v-card__info { padding: 10px; display: flex; flex-direction: column; gap: 4px; }
+.v-card__title { font-size: 12px; font-weight: 800; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.3; height: 31px; }
+.v-card__meta { display: flex; align-items: center; justify-content: space-between; font-size: 10px; font-weight: 800; color: #555; }
+</style>
+
+<div class="section-header" style="margin-bottom:12px">
+  <div class="section-title" style="display:flex;align-items:center;gap:6px">
+    <i class="ph-fill ph-video-camera" style="color:var(--brand)"></i> Video Tersedia
+  </div>
+  <a href="/videos" class="section-link">Lihat Semua →</a>
 </div>
 
 <?php if (empty($videos)): ?>
-<div class="card">
+<div class="card" style="margin-bottom:16px">
   <div class="empty-state">
-    <svg width="40" height="40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-    <p style="font-size:13px">Semua video sudah ditonton hari ini! 🎉</p>
+    <i class="ph-fill ph-check-circle" style="font-size:36px;color:var(--green)"></i>
+    <p style="font-size:13px;font-weight:800;margin-top:6px;color:var(--ink)">Mantap! Semua video sudah ditonton hari ini.</p>
   </div>
 </div>
 <?php else: ?>
-<?php foreach ($videos as $v): ?>
-<a href="/watch?id=<?= $v['id'] ?>" class="video-card" style="margin-bottom:8px">
-  <div class="video-card__thumb-wrap">
-    <img src="<?= yt_thumb($v['youtube_id']) ?>" alt="<?= htmlspecialchars($v['title']) ?>"
-         loading="lazy" onerror="this.src='https://img.youtube.com/vi/<?= $v['youtube_id'] ?>/hqdefault.jpg'">
-    <div class="video-card__play"><div class="video-card__play-btn">
-      <svg width="16" height="16" fill="#fff" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-    </div></div>
-    <div class="video-card__badge">+<?= format_rp((float)$v['reward_amount']) ?></div>
-  </div>
-  <div class="video-card__body">
-    <div class="video-card__title" style="font-size:13px"><?= htmlspecialchars($v['title']) ?></div>
-    <div class="video-card__meta">
-      <div class="video-card__reward">
-        <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-        <?= format_rp((float)$v['reward_amount']) ?>
-      </div>
-      <div class="video-card__duration">⏱ <?= $v['watch_duration'] ?>s</div>
+<div class="video-scroll" style="margin-bottom:16px">
+  <?php foreach ($videos as $v): ?>
+  <a href="/watch?id=<?= $v['id'] ?>" class="v-card">
+    <div class="v-card__thumb">
+      <img src="<?= yt_thumb($v['youtube_id']) ?>" alt="<?= htmlspecialchars($v['title']) ?>" loading="lazy" onerror="this.src='https://img.youtube.com/vi/<?= $v['youtube_id'] ?>/hqdefault.jpg'">
+      <div class="v-card__play"><i class="ph-fill ph-play-circle"></i></div>
+      <div class="v-card__badge">+<?= format_rp((float)$v['reward_amount']) ?></div>
     </div>
-  </div>
-</a>
-<?php endforeach; ?>
+    <div class="v-card__info">
+      <div class="v-card__title"><?= htmlspecialchars($v['title']) ?></div>
+      <div class="v-card__meta">
+        <span style="color:var(--green);display:flex;align-items:center;gap:2px"><i class="ph-bold ph-coins"></i> <?= format_rp((float)$v['reward_amount']) ?></span>
+        <span style="display:flex;align-items:center;gap:2px"><i class="ph-bold ph-clock"></i> <?= $v['watch_duration'] ?>s</span>
+      </div>
+    </div>
+  </a>
+  <?php endforeach; ?>
+</div>
 <?php endif; ?>
 
-<!-- Recent activity -->
+<!-- Recent Activity -->
 <?php if (!empty($history)): ?>
-<div class="section-header" style="margin-top:14px">
-  <div class="section-title">📋 Aktivitas Terbaru</div>
-  <a href="/history" class="section-link">Lihat semua →</a>
+<div class="section-header" style="margin-bottom:10px">
+  <div class="section-title" style="display:flex;align-items:center;gap:6px">
+    <i class="ph-fill ph-clock-counter-clockwise" style="color:var(--blue)"></i> Aktivitas Terbaru
+  </div>
 </div>
-<div class="card">
+<div class="card" style="margin-bottom:16px">
   <div class="card__body" style="padding:4px 0">
     <?php foreach ($history as $h): ?>
-    <div class="list-item" style="padding:8px 14px">
-      <div class="list-item__icon" style="background:var(--lime);width:30px;height:30px;font-size:14px">🎬</div>
+    <div class="list-item" style="padding:8px 14px;border-bottom:1px solid #eee">
+      <div class="list-item__icon" style="background:var(--lime);width:32px;height:32px;font-size:16px;border:2px solid var(--ink);border-radius:8px">
+        <i class="ph-bold ph-monitor-play" style="color:var(--ink)"></i>
+      </div>
       <div class="list-item__body">
         <div class="list-item__title" style="font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px"><?= htmlspecialchars($h['title']) ?></div>
-        <div class="list-item__sub" style="font-size:10px"><?= date('d M H:i', strtotime($h['watched_at'])) ?></div>
+        <div class="list-item__sub" style="font-size:10px;display:flex;align-items:center;gap:4px">
+          <i class="ph-bold ph-calendar-blank"></i> <?= date('d M H:i', strtotime($h['watched_at'])) ?>
+        </div>
       </div>
       <div class="list-item__right">
-        <div class="list-item__amount list-item__amount--green" style="font-size:12px">+<?= format_rp((float)$h['reward_given']) ?></div>
+        <div class="list-item__amount" style="font-size:12px;color:var(--green);font-weight:900;display:flex;align-items:center;gap:2px">
+          +<?= format_rp((float)$h['reward_given']) ?>
+        </div>
       </div>
     </div>
     <?php endforeach; ?>
@@ -372,93 +326,88 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php
 // Popup settings from DB
 $popup_enabled      = setting($pdo, 'popup_enabled', '1') === '1';
-$popup_title        = setting($pdo, 'popup_title',   '📖 Hei, sudah baca panduan?');
+$popup_title        = setting($pdo, 'popup_title',   'Hei, sudah baca panduan?');
 $popup_body         = setting($pdo, 'popup_body',    'Biar makin lancar dapat reward, yuk baca dulu cara kerja TontonKuy! Dari cara tonton, jenis saldo, sampai tips withdraw.');
-$popup_cta_text     = setting($pdo, 'popup_cta_text', '📖 Baca Panduan →');
+$popup_cta_text     = setting($pdo, 'popup_cta_text', 'Baca Panduan');
 $popup_cta_url      = setting($pdo, 'popup_cta_url',  '/panduan');
 $popup_delay        = max(0, (int) setting($pdo, 'popup_delay', '1500'));
 $popup_reset_hours  = max(0, (int) setting($pdo, 'popup_reset_hours', '0'));
 ?>
 <?php if ($popup_enabled): ?>
 <!-- Popup Panduan -->
-<div id="guide-popup" style="
-  display:none;
-  position:fixed;inset:0;
-  background:rgba(0,0,0,.55);
-  z-index:9999;
-  align-items:flex-end;
-  justify-content:center;
-  padding-bottom:0;
-">
-  <div style="
-    background:var(--white);
-    border:2.5px solid var(--ink);
-    border-bottom:none;
-    border-radius:20px 20px 0 0;
-    box-shadow:0 -6px 0 var(--ink);
-    padding:20px 20px 28px;
-    max-width:480px;
-    width:100%;
-    animation:slideUp .3s cubic-bezier(.22,.68,0,1.2);
-  ">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-      <div style="font-weight:900;font-size:16px"><?= htmlspecialchars($popup_title) ?></div>
-      <button onclick="closeGuidePopup()" style="background:none;border:none;font-size:20px;cursor:pointer;line-height:1;color:#999">✕</button>
+<div id="guide-popup" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:flex-end;justify-content:center;padding-bottom:0">
+  <div style="background:var(--white);border:2.5px solid var(--ink);border-bottom:none;border-radius:24px 24px 0 0;box-shadow:0 -6px 0 var(--ink);padding:24px 20px 28px;max-width:480px;width:100%;transform:translateY(100%);transition:transform .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);position:relative">
+    <button onclick="closePopup()" style="position:absolute;top:16px;right:16px;background:var(--ink);color:#fff;border:none;width:30px;height:30px;border-radius:50%;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer"><i class="ph-bold ph-x"></i></button>
+    
+    <div style="width:60px;height:60px;background:var(--yellow);border:2.5px solid var(--ink);border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 16px;box-shadow:3px 3px 0 var(--ink);transform:rotate(-5deg)">
+      <i class="ph-fill ph-book-open" style="color:var(--ink)"></i>
     </div>
-    <div style="font-size:13px;color:#555;margin-bottom:16px;line-height:1.6">
+    
+    <h3 style="font-size:18px;font-weight:900;text-align:center;margin:0 0 10px"><?= htmlspecialchars($popup_title) ?></h3>
+    <p style="font-size:13px;line-height:1.5;color:#444;text-align:center;margin:0 0 20px;font-weight:700">
       <?= nl2br(htmlspecialchars($popup_body)) ?>
-    </div>
-    <div style="display:flex;gap:8px">
-      <a href="<?= htmlspecialchars($popup_cta_url) ?>" class="btn btn--primary btn--full" style="font-weight:900;font-size:13px"><?= htmlspecialchars($popup_cta_text) ?></a>
-      <button onclick="closeGuidePopup()" class="btn btn--secondary" style="flex-shrink:0;font-size:12px;padding:0 14px">Nanti</button>
+    </p>
+    
+    <div style="display:flex;flex-direction:column;gap:10px">
+      <a href="<?= htmlspecialchars($popup_cta_url) ?>" class="btn btn--primary" style="font-size:14px;padding:14px;border-radius:12px;display:flex;align-items:center;justify-content:center;gap:6px">
+        <i class="ph-bold ph-book-bookmark"></i> <?= htmlspecialchars($popup_cta_text) ?>
+      </a>
+      <button type="button" onclick="closePopup()" class="btn btn--ghost" style="font-size:13px;font-weight:800;color:#666">Nanti Saja</button>
     </div>
   </div>
 </div>
 
-<style>
-@keyframes slideUp {
-  from { transform: translateY(100%); opacity:0; }
-  to   { transform: translateY(0);    opacity:1; }
-}
-</style>
-
 <script>
-(function(){
-  const KEY   = 'tk_guide_seen';
-  const RESET = <?= $popup_reset_hours ?>;
-  const DELAY = <?= $popup_delay ?>;
-  const stored = localStorage.getItem(KEY);
-  let show = !stored;
-  if (stored && RESET > 0) {
-    const seenAt = parseInt(stored, 10);
-    if (Date.now() - seenAt > RESET * 3600 * 1000) show = true;
-  }
-  if (show) {
-    setTimeout(function(){
-      const el = document.getElementById('guide-popup');
-      if (el) el.style.display = 'flex';
-    }, DELAY);
-  }
-})();
-function closeGuidePopup() {
-  const el = document.getElementById('guide-popup');
-  if (el) el.style.display = 'none';
-  localStorage.setItem('tk_guide_seen', Date.now().toString());
+function closePopup() {
+  const p = document.getElementById('guide-popup');
+  const c = p.querySelector('div');
+  c.style.transform = 'translateY(100%)';
+  setTimeout(() => p.style.display = 'none', 300);
+  // Simpan state
+  try {
+    const data = { ts: Date.now() };
+    localStorage.setItem('tonton_popup_seen', JSON.stringify(data));
+  } catch(e){}
 }
-const popup = document.getElementById('guide-popup');
-if (popup) popup.addEventListener('click', function(e){ if (e.target===this) closeGuidePopup(); });
+
+document.addEventListener('DOMContentLoaded', () => {
+  const p = document.getElementById('guide-popup');
+  if(!p) return;
+  const c = p.querySelector('div');
+  const resetMs = <?= $popup_reset_hours ?> * 3600000;
+  
+  try {
+    const raw = localStorage.getItem('tonton_popup_seen');
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (resetMs > 0 && (Date.now() - data.ts) > resetMs) {
+        // expired, tunjukkan lagi
+      } else {
+        return; // jangan tampilkan
+      }
+    }
+  } catch(e){}
+
+  setTimeout(() => {
+    p.style.display = 'flex';
+    // Flush layout
+    p.offsetHeight;
+    c.style.transform = 'translateY(0)';
+  }, <?= $popup_delay ?>);
+});
 </script>
 <?php endif; ?>
 
-<?php require dirname(__DIR__) . '/partials/footer.php'; ?>
-
 <script>
 function copyRef(code) {
-  navigator.clipboard.writeText(code).then(function() {
-    const t = document.getElementById('ref-toast');
-    if (!t) return;
-    t.style.display = 'block';
-    setTimeout(function(){ t.style.display = 'none'; }, 2000);
+  navigator.clipboard.writeText(code).then(()=>{
+    const toast = document.getElementById('ref-toast');
+    toast.style.display = 'block';
+    setTimeout(() => toast.style.display = 'none', 2000);
+  }).catch(()=>{
+    alert("Gagal menyalin: " + code);
   });
 }
 </script>
+
+<?php require dirname(__DIR__) . '/partials/footer.php'; ?>

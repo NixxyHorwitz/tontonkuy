@@ -46,7 +46,17 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
 <link rel="icon" href="<?= htmlspecialchars($fav_url) ?>?v=<?= @filemtime(dirname(__DIR__) . '/' . ltrim($_favicon, '/')) ?: time() ?>">
 <link rel="apple-touch-icon" href="<?= htmlspecialchars($fav_url) ?>?v=<?= @filemtime(dirname(__DIR__) . '/' . ltrim($_favicon, '/')) ?: time() ?>">
 <?php endif; ?>
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= filemtime(dirname(__DIR__) . '/assets/css/app.css') ?>">
+<style>
+/* Base Neo-brutalism icon alignment helper */
+i[class^="ph-"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+</style>
 </head>
 <body>
 <div class="app-shell">
@@ -55,7 +65,7 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
       <?php if ($_favicon): ?>
         <img src="<?= htmlspecialchars($_favicon) ?>" alt="" style="width:28px;height:28px;object-fit:contain;border-radius:6px;border:1.5px solid #1A1A1A;flex-shrink:0">
       <?php else: ?>
-        <span style="font-size:20px;line-height:1">🎬</span>
+        <i class="ph-fill ph-film-strip" style="font-size:24px;color:var(--brand)"></i>
       <?php endif; ?>
       <span style="white-space:nowrap">Tonton<strong>Kuy</strong></span>
     </a>
@@ -72,22 +82,22 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
       <!-- Balance Dropdown -->
       <div class="bal-dropdown" id="bal-dropdown">
         <button type="button" class="bal-dropdown__trigger" onclick="toggleBalDropdown(event)" aria-label="Lihat saldo">
-          <span class="bal-dropdown__icon">💰</span>
+          <i class="ph-bold ph-wallet bal-dropdown__icon" style="font-size:16px;"></i>
           <span class="bal-dropdown__text"><?= fmt_short((float)$user['balance_wd']) ?></span>
-          <span class="bal-dropdown__caret">▾</span>
+          <i class="ph-bold ph-caret-down bal-dropdown__caret" style="font-size:12px;"></i>
         </button>
         <div class="bal-dropdown__panel" id="bal-panel">
           <div class="bal-dropdown__row bal-dropdown__row--wd">
-            <span class="bal-dropdown__lbl">💸 Saldo Penarikan</span>
+            <span class="bal-dropdown__lbl" style="display:flex;align-items:center;gap:4px;"><i class="ph-bold ph-money" style="font-size:16px;color:var(--green)"></i> Saldo Penarikan</span>
             <span class="bal-dropdown__val"><?= format_rp((float)$user['balance_wd']) ?></span>
           </div>
           <div class="bal-dropdown__row bal-dropdown__row--dep">
-            <span class="bal-dropdown__lbl">🏦 Saldo Beli</span>
+            <span class="bal-dropdown__lbl" style="display:flex;align-items:center;gap:4px;"><i class="ph-bold ph-bank" style="font-size:16px;color:var(--blue)"></i> Saldo Beli</span>
             <span class="bal-dropdown__val"><?= format_rp((float)$user['balance_dep']) ?></span>
           </div>
           <?php if (setting($pdo, 'plinko_enabled', '1') === '1'): ?>
           <div class="bal-dropdown__row bal-dropdown__row--coin">
-            <span class="bal-dropdown__lbl">🪙 Koin Plinko</span>
+            <span class="bal-dropdown__lbl" style="display:flex;align-items:center;gap:4px;"><i class="ph-bold ph-coin" style="font-size:16px;color:#d97706"></i> Koin Plinko</span>
             <span class="bal-dropdown__val" id="user-coins"><?= number_format((int)$user['plinko_coins']) ?></span>
           </div>
           <?php endif; ?>
@@ -156,8 +166,8 @@ $final_og_desc = $_seo_og_desc ?: $_seo_desc;
 
       <a href="/notifications" class="topbar__avatar" title="Notifikasi"
          id="notif-bell-btn"
-         style="background:var(--lavender);font-size:16px;text-decoration:none;position:relative">
-        🔔
+         style="background:var(--lavender);text-decoration:none;position:relative">
+        <i class="ph-bold ph-bell" style="font-size:18px;"></i>
         <span id="notif-badge" style="
           display:none;position:absolute;top:-4px;right:-4px;
           background:var(--brand);color:#fff;
