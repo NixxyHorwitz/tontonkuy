@@ -28,7 +28,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setting_set($pdo, 'depo_unique_code_enabled', isset($_POST['depo_unique_code_enabled']) ? '1' : '0');
         setting_set($pdo, 'investment_enabled', isset($_POST['investment_enabled']) ? '1' : '0');
         setting_set($pdo, 'plinko_enabled', isset($_POST['plinko_enabled']) ? '1' : '0');
-        setting_set($pdo, 'drachin_enabled', isset($_POST['drachin_enabled']) ? '1' : '0');
         $flash = 'Pengaturan umum berhasil disimpan!';
     }
 
@@ -244,17 +243,6 @@ $tabs = [
                 </label>
               </div>
               <small style="color:#888;font-size:11px">Jika dimatikan, seluruh menu dan halaman Plinko tidak akan dapat diakses oleh user.</small>
-            </div>
-
-            <div class="c-form-group">
-              <label class="c-label">Fitur Drachin (Nonton Drama/Anime)</label>
-              <div class="form-check ms-1">
-                <input class="form-check-input" type="checkbox" name="drachin_enabled" id="drachin_enabled_chk" value="1" <?= $s('drachin_enabled','1')==='1'?'checked':'' ?>>
-                <label class="form-check-label text-secondary" for="drachin_enabled_chk" style="font-size:13px;font-weight:700">
-                  Aktifkan Fitur Drachin (Nonton Drama &amp; Anime) untuk Pengguna
-                </label>
-              </div>
-              <small style="color:#888;font-size:11px">Jika dimatikan, seluruh menu dan halaman Drachin (index, detail, watch) tidak bisa diakses user. Berguna jika API sedang bermasalah.</small>
             </div>
 
             <div class="row g-2 mb-3">
