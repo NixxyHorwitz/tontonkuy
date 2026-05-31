@@ -87,17 +87,19 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   margin-bottom: 24px;
   text-align: center;
 }
-.neo-card--yellow { background: #FFE873; }
+.neo-card--trusted { background: var(--blue, #1e3a8a); color: #fff; }
+.neo-card--trusted .neo-card__subtitle { color: #cbd5e1; }
+.neo-card--trusted .neo-card__amount { color: #fff; }
 
 .neo-btn {
-  background: var(--brand, #FF6B35);
+  background: var(--yellow, #eab308);
   border: 3px solid var(--ink, #000);
   box-shadow: 4px 4px 0px var(--ink, #000);
   border-radius: 8px;
   padding: 14px 20px;
   font-weight: 900;
   font-size: 15px;
-  color: #fff;
+  color: var(--ink);
   cursor: pointer;
   width: 100%;
   text-transform: uppercase;
@@ -161,13 +163,13 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   transition: all 0.2s ease;
 }
 .step-item.done .step-node {
-  background: #4ECDC4; /* Mint */
-  color: var(--ink, #000);
+  background: var(--green, #10b981); /* Emerald */
+  color: #fff;
   box-shadow: 2px 2px 0 var(--ink, #000);
 }
 .step-item.active .step-node {
-  background: #FF6B6B; /* Neo Red */
-  color: #fff;
+  background: var(--yellow, #eab308); /* Gold */
+  color: var(--ink);
   transform: scale(1.15);
   box-shadow: 3px 3px 0 var(--ink, #000);
 }
@@ -188,9 +190,9 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   margin-bottom: 20px;
   box-shadow: 3px 3px 0 var(--ink, #000);
 }
-.neo-alert--success { background: #A8E6CF; color: var(--ink, #000); }
-.neo-alert--warn { background: #FFD3B6; color: var(--ink, #000); }
-.neo-alert--error { background: #FF8B94; color: var(--ink, #000); }
+.neo-alert--success { background: #d1fae5; color: var(--ink, #000); border-color: var(--green); }
+.neo-alert--warn { background: #fef08a; color: var(--ink, #000); border-color: var(--orange); }
+.neo-alert--error { background: #fee2e2; color: var(--ink, #000); border-color: var(--red); }
 
 .stat-grid {
   display: grid;
@@ -234,10 +236,10 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   </div>
   <?php endif; ?>
 
-  <div class="neo-card neo-card--yellow">
-    <div style="font-size: 48px; margin-bottom: 10px; animation: float 3s ease-in-out infinite;">🎁</div>
-    <div style="font-size: 14px; font-weight: 800; color: #444; text-transform: uppercase;">Reward Hari Ini</div>
-    <div style="font-size: 32px; font-weight: 900; color: var(--ink, #000); margin-bottom: 24px; letter-spacing: -1px;">
+  <div class="neo-card neo-card--trusted">
+    <div style="font-size: 48px; margin-bottom: 10px; animation: float 3s ease-in-out infinite; color: var(--yellow)"><i class="ph-fill ph-gift"></i></div>
+    <div class="neo-card__subtitle" style="font-size: 14px; font-weight: 800; text-transform: uppercase;">Reward Hari Ini</div>
+    <div class="neo-card__amount" style="font-size: 32px; font-weight: 900; margin-bottom: 24px; letter-spacing: -1px;">
       <?= format_rp($checkin_reward) ?>
     </div>
 
@@ -246,12 +248,12 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="checkin">
       <button type="submit" class="neo-btn">
-        <span>🎯</span> Klaim Sekarang
+        <i class="ph-bold ph-target"></i> Klaim Saldo Harian
       </button>
     </form>
     <?php else: ?>
     <button class="neo-btn" disabled>
-      <span>✅</span> Sudah Diklaim
+      <i class="ph-bold ph-check-circle"></i> Sudah Diklaim
     </button>
     <?php endif; ?>
   </div>
@@ -266,7 +268,7 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
       $class = $is_done ? 'done' : ($is_active ? 'active' : '');
     ?>
     <div class="step-item <?= $class ?>">
-      <div class="step-node"><?= $is_done ? '✓' : $i ?></div>
+      <div class="step-node"><?= $is_done ? '<i class="ph-bold ph-check"></i>' : $i ?></div>
       <div class="step-lbl">Hari <?= $i ?></div>
     </div>
     <?php endfor; ?>
@@ -274,8 +276,8 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
 
   <div class="stat-grid" style="margin-top: 36px;">
     <div class="neo-stat">
-      <div class="neo-stat__val"><?= $streak ?></div>
-      <div class="neo-stat__lbl">🔥 Hari Aktif</div>
+      <div class="neo-stat__val" style="color:var(--orange)"><?= $streak ?></div>
+      <div class="neo-stat__lbl"><i class="ph-fill ph-fire" style="color:var(--orange)"></i> Hari Aktif</div>
     </div>
     <div class="neo-stat">
       <div class="neo-stat__val" style="font-size: 16px; margin-top: 8px;"><?= format_rp((float)$user['balance_dep']) ?></div>

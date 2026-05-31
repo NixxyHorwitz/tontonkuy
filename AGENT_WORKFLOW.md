@@ -24,6 +24,12 @@ The entire user interface is built on the **Neo-brutalism** design system. You m
 - **Typography**: The font family is `'Nunito', sans-serif`. Use heavy font weights (`800`, `900`) for headings and important text.
 - **Compact & Minimalist**: The layout should prioritize horizontal swiping (CSS scroll-snap) and grid layouts over long vertical scrolling lists.
 
+### Trusted Neo-Brutalism (Transactional Pages)
+For pages dealing with finances and balances (e.g., `deposit.php`, `withdraw.php`, `history.php`, `checkin.php`), use the **Trusted Neo-Brutalism** variant:
+- **Palette**: Deep Blue/Navy (`var(--blue)` / `#1e3a8a`), Emerald Green (`var(--green)` / `#059669`), and Gold/Yellow (`var(--yellow)`). Avoid overly playful colors like Pink or Mint here.
+- **Copywriting**: Use formal, banking-like terminology (e.g., "Saldo Beli" instead of "Saldo Deposit", "Top Up Saldo Beli" instead of "Deposit").
+- **Layout**: Use card styles resembling credit cards/bank cards for balances. Use compact grids for nominal selections.
+
 ## 3. Icons: Phosphor Icons
 
 **CRITICAL RULE:** Do NOT use native emojis (e.g., 💰, 🎬, 💸) for the UI anymore.

@@ -116,50 +116,57 @@ end_dep:
 $deps = $pdo->prepare("SELECT * FROM deposits WHERE user_id=? ORDER BY created_at DESC LIMIT 6");
 $deps->execute([$user['id']]); $deps = $deps->fetchAll();
 
-$pageTitle  = 'Deposit — TontonKuy';
+$pageTitle  = 'Isi Saldo — TontonKuy';
 $activePage = 'deposit';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
 
 <style>
-.dep-bal-strip{display:flex;gap:8px;margin-bottom:12px}
-.dep-bal-strip__item{flex:1;border:2px solid var(--ink);border-radius:10px;padding:10px 12px;background:var(--white);box-shadow:3px 3px 0 var(--ink)}
-.dep-bal-strip__lbl{font-size:10px;font-weight:700;color:#666;margin-bottom:2px}
-.dep-bal-strip__val{font-size:15px;font-weight:900}
+/* Trusted Neo-Brutalism */
+.dep-bal-strip { display: flex; gap: 12px; margin-bottom: 16px; }
+.dep-bal-strip__item { flex: 1; border: 3px solid var(--ink); border-radius: 12px; padding: 12px 16px; background: #fff; box-shadow: 4px 4px 0 var(--ink); position: relative; overflow: hidden; }
+.dep-bal-strip__item:first-child { background: var(--green, #059669); color: #fff; }
+.dep-bal-strip__item:first-child .dep-bal-strip__lbl { color: #d1fae5; }
+.dep-bal-strip__lbl { font-size: 11px; font-weight: 800; color: #64748b; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+.dep-bal-strip__val { font-size: 18px; font-weight: 900; letter-spacing: -0.5px; }
 
-.dep-method{border:2.5px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink);background:var(--white);overflow:hidden;margin-bottom:8px}
-.dep-method__hd{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;user-select:none}
-.dep-method__hd:active{background:#f5f5f5}
-.dep-method__ico{width:38px;height:38px;flex-shrink:0;border-radius:10px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;font-size:18px}
-.dep-method__info{flex:1;min-width:0}
-.dep-method__name{font-weight:900;font-size:14px}
-.dep-method__sub{font-size:10px;color:#666;font-weight:600;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.dep-method__chev{font-size:11px;color:#aaa;transition:transform .2s;flex-shrink:0}
-.dep-method__bd{padding:0 14px 14px;border-top:2px solid var(--ink);display:none}
+.dep-method { border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); background: #fff; overflow: hidden; margin-bottom: 12px; transition: transform 0.1s; }
+.dep-method:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
+.dep-method__hd { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; }
+.dep-method__ico { width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; font-size: 20px; background: #f8fafc; color: var(--blue); }
+.dep-method__info { flex: 1; min-width: 0; }
+.dep-method__name { font-weight: 900; font-size: 15px; color: var(--ink); }
+.dep-method__sub { font-size: 11px; color: #64748b; font-weight: 700; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dep-method__chev { font-size: 14px; color: #94a3b8; transition: transform 0.2s; flex-shrink: 0; }
+.dep-method.open .dep-method__chev { transform: rotate(180deg); color: var(--ink); }
+.dep-method__bd { padding: 0 16px 16px; border-top: 3px solid var(--ink); display: none; background: #f8fafc; }
 
-.dep-rek{background:var(--bg);border:2px solid var(--ink);border-radius:10px;padding:12px;margin:12px 0;text-align:center}
-.dep-rek__lbl{font-size:10px;color:#888;font-weight:700;margin-bottom:4px}
-.dep-rek__bank{font-size:13px;font-weight:800}
-.dep-rek__num{font-size:20px;font-weight:900;letter-spacing:3px;margin:3px 0}
-.dep-rek__name{font-size:11px;color:#666}
+.dep-rek { background: #fff; border: 2.5px dashed var(--ink); border-radius: 12px; padding: 16px; margin: 16px 0; text-align: center; }
+.dep-rek__lbl { font-size: 11px; color: #64748b; font-weight: 800; margin-bottom: 6px; text-transform: uppercase; }
+.dep-rek__bank { font-size: 14px; font-weight: 900; color: var(--ink); }
+.dep-rek__num { font-size: 24px; font-weight: 900; letter-spacing: 2px; margin: 6px 0; color: var(--blue); }
+.dep-rek__name { font-size: 12px; color: #475569; font-weight: 700; }
 
-.qty-pills{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px}
-.qty-pills button{font-size:11px;padding:4px 10px}
+.qty-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
+.qty-btn { font-size: 12px; font-weight: 800; padding: 10px 4px; text-align: center; background: #fff; border: 2px solid var(--ink); border-radius: 8px; box-shadow: 2px 2px 0 var(--ink); cursor: pointer; transition: transform 0.1s; }
+.qty-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0 var(--ink); }
 </style>
 
 <!-- Balance strip -->
 <div class="dep-bal-strip">
   <div class="dep-bal-strip__item">
-    <div class="dep-bal-strip__lbl">💳 Saldo Beli</div>
+    <div class="dep-bal-strip__lbl"><i class="ph-bold ph-wallet"></i> Saldo Beli</div>
     <div class="dep-bal-strip__val"><?= format_rp((float)$user['balance_dep']) ?></div>
   </div>
   <div class="dep-bal-strip__item">
-    <div class="dep-bal-strip__lbl">💸 Saldo Penarikan</div>
+    <div class="dep-bal-strip__lbl"><i class="ph-bold ph-paper-plane-right"></i> Saldo Penarikan</div>
     <div class="dep-bal-strip__val"><?= format_rp((float)$user['balance_wd']) ?></div>
   </div>
 </div>
 
-<div style="font-size:11px;color:#888;margin-bottom:10px">Min. deposit <strong><?= format_rp($min_deposit) ?></strong> · Masuk ke Saldo Beli</div>
+<div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:16px;background:rgba(15,23,42,0.05);padding:10px 14px;border-radius:8px;border:1.5px solid rgba(15,23,42,0.1)">
+  <i class="ph-fill ph-info" style="color:var(--blue)"></i> Min. top up <strong><?= format_rp($min_deposit) ?></strong> · Masuk ke Saldo Beli
+</div>
 
 <?php if ($flash): ?>
 <div class="alert alert--<?= $flashType === 'error' ? 'error' : 'success' ?>" style="margin-bottom:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
@@ -169,12 +176,12 @@ require dirname(__DIR__) . '/partials/header.php';
 <!-- Bank Transfer -->
 <div class="dep-method" id="card-bank">
   <div class="dep-method__hd" onclick="toggleCard('bank')">
-    <div class="dep-method__ico" style="background:var(--sky)">🏦</div>
+    <div class="dep-method__ico"><i class="ph-bold ph-bank"></i></div>
     <div class="dep-method__info">
       <div class="dep-method__name">Transfer Bank</div>
       <div class="dep-method__sub">BCA · Mandiri · BNI · BRI dll</div>
     </div>
-    <div class="dep-method__chev" id="chev-bank">▼</div>
+    <div class="dep-method__chev" id="chev-bank"><i class="ph-bold ph-caret-down"></i></div>
   </div>
   <div class="dep-method__bd" id="body-bank">
     <div class="dep-rek">
@@ -188,31 +195,36 @@ require dirname(__DIR__) . '/partials/header.php';
       <?= csrf_field() ?>
       <input type="hidden" name="form_token" value="<?= htmlspecialchars($_form_token) ?>">
       <input type="hidden" name="action" value="submit_bank">
-      <div class="form-group" style="margin-bottom:8px">
-        <label class="form-label" style="font-size:12px">Jumlah Transfer (Rp)</label>
-        <input class="form-control" id="bank-amount" type="number" name="amount" min="<?= $min_deposit ?>"
-               step="any" placeholder="Min. <?= number_format($min_deposit,0,'','') ?>" required>
+      <div class="form-group" style="margin-top:16px;margin-bottom:12px">
+        <label class="form-label" style="font-size:12px;font-weight:800;color:#475569">Nominal Top Up (Rp)</label>
+        <div style="position:relative">
+          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-weight:900;color:var(--ink);font-size:16px">Rp</span>
+          <input class="form-control" id="bank-amount" type="number" name="amount" min="<?= $min_deposit ?>" step="any" placeholder="Min. <?= number_format($min_deposit,0,'','') ?>" required style="padding-left:42px;font-size:18px;font-weight:900;height:48px;letter-spacing:1px">
+        </div>
       </div>
-      <div class="qty-pills">
+      <div class="qty-grid">
         <?php foreach ([10000,25000,50000,100000,200000,500000] as $q): ?>
-        <button type="button" class="btn btn--secondary btn--sm" onclick="setAmt('bank',<?= $q ?>)"><?= format_rp($q) ?></button>
+        <div class="qty-btn" onclick="setAmt('bank',<?= $q ?>)"><?= format_rp($q) ?></div>
         <?php endforeach; ?>
       </div>
       
       <?php if ($u_enabled): ?>
       <input type="hidden" name="unique_code" value="<?= $unique_code ?>">
-      <div class="alert" style="margin-bottom:10px;font-size:12px;background:#f8fafc;border:2.5px dashed var(--brand);color:var(--ink);font-weight:700">
-        <div style="font-size:11px;color:#666;margin-bottom:4px">Total yang harus ditransfer:</div>
-        <div id="bank-total-transfer" style="font-size:22px;font-weight:900;color:var(--brand);letter-spacing:-0.5px">Rp 0</div>
-        <div style="font-size:11px;font-weight:700;color:#eab308;margin-top:6px;background:#fff5cc;padding:4px 6px;border-radius:4px;border:1px solid #fef08a">⚠️ Wajib transfer nominal persis hingga 3 digit terakhir agar deposit cepat diproses!</div>
+      <div class="alert" style="margin-bottom:16px;font-size:12px;background:#fff;border:3px dashed var(--orange);color:var(--ink);font-weight:700">
+        <div style="font-size:11px;color:#64748b;margin-bottom:4px;text-transform:uppercase">Total yang harus ditransfer:</div>
+        <div id="bank-total-transfer" style="font-size:26px;font-weight:900;color:var(--blue);letter-spacing:-0.5px">Rp 0</div>
+        <div style="font-size:11px;font-weight:800;color:var(--orange);margin-top:8px;background:rgba(251,146,60,0.1);padding:8px;border-radius:6px;border:1px solid rgba(251,146,60,0.3);display:flex;align-items:flex-start;gap:6px">
+          <i class="ph-fill ph-warning-circle" style="font-size:16px;margin-top:1px"></i> 
+          <div>Wajib transfer nominal persis hingga 3 digit terakhir agar deposit cepat diproses otomatis!</div>
+        </div>
       </div>
       <?php endif; ?>
 
-      <div class="form-group" style="margin-bottom:10px">
-        <label class="form-label" style="font-size:12px">Bukti Transfer <span style="font-weight:400;color:#888">(JPG/PNG)</span></label>
-        <input class="form-control" type="file" name="proof" accept="image/*" style="padding:8px;font-size:12px">
+      <div class="form-group" style="margin-bottom:16px">
+        <label class="form-label" style="font-size:12px;font-weight:800;color:#475569">Bukti Transfer <span style="font-weight:600;color:#94a3b8;font-size:10px">(JPG/PNG)</span></label>
+        <input class="form-control" type="file" name="proof" accept="image/*" style="padding:10px;font-size:12px;background:#fff">
       </div>
-      <button type="submit" class="btn btn--primary btn--full no-dbl-submit" style="font-size:13px">📤 Kirim Bukti Transfer</button>
+      <button type="submit" class="btn btn--primary btn--full no-dbl-submit" style="font-size:14px;height:48px;background:var(--blue);color:#fff"><i class="ph-bold ph-upload-simple"></i> Kirim Bukti Transfer</button>
     </form>
   </div>
 </div>
@@ -222,30 +234,30 @@ require dirname(__DIR__) . '/partials/header.php';
 <!-- QRIS -->
 <div class="dep-method" id="card-qris">
   <div class="dep-method__hd" onclick="toggleCard('qris')">
-    <div class="dep-method__ico" style="background:transparent;padding:0;border:1.5px solid var(--ink);border-radius:8px;overflow:hidden">
+    <div class="dep-method__ico" style="background:transparent;padding:0;border:none">
       <img src="/assets/banks/qris.jpg" style="width:100%;height:100%;object-fit:contain;background:#fff">
     </div>
     <div class="dep-method__info">
-      <div class="dep-method__name">QRIS</div>
+      <div class="dep-method__name">QRIS <span class="badge badge--success" style="font-size:9px;vertical-align:middle;margin-left:4px">Otomatis</span></div>
       <div class="dep-method__sub">GoPay · OVO · Dana · ShopeePay</div>
     </div>
-    <span class="badge badge--success" style="font-size:10px;flex-shrink:0">Instan</span>
-    <div class="dep-method__chev" id="chev-qris" style="margin-left:4px">▼</div>
+    <div class="dep-method__chev" id="chev-qris"><i class="ph-bold ph-caret-down"></i></div>
   </div>
   <div class="dep-method__bd" id="body-qris">
     <form method="POST" id="qris-form">
       <?= csrf_field() ?>
       <input type="hidden" name="form_token" value="<?= htmlspecialchars($_form_token) ?>">
       <input type="hidden" name="action" value="submit_qris">
-      <div class="form-group" style="margin-bottom:8px">
-        <label class="form-label" style="font-size:12px">Jumlah Deposit (Rp)</label>
-        <input class="form-control" id="qris-amount" type="number" name="amount"
-               min="<?= $min_deposit ?>" step="any"
-               placeholder="Min. <?= number_format($min_deposit,0,'','') ?>" required>
+      <div class="form-group" style="margin-top:16px;margin-bottom:12px">
+        <label class="form-label" style="font-size:12px;font-weight:800;color:#475569">Nominal Top Up (Rp)</label>
+        <div style="position:relative">
+          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-weight:900;color:var(--ink);font-size:16px">Rp</span>
+          <input class="form-control" id="qris-amount" type="number" name="amount" min="<?= $min_deposit ?>" step="any" placeholder="Min. <?= number_format($min_deposit,0,'','') ?>" required style="padding-left:42px;font-size:18px;font-weight:900;height:48px;letter-spacing:1px">
+        </div>
       </div>
-      <div class="qty-pills">
+      <div class="qty-grid">
         <?php foreach ([10000,25000,50000,100000,200000,500000] as $q): ?>
-        <button type="button" class="btn btn--secondary btn--sm" onclick="setAmt('qris',<?= $q ?>)"><?= format_rp($q) ?></button>
+        <div class="qty-btn" onclick="setAmt('qris',<?= $q ?>)"><?= format_rp($q) ?></div>
         <?php endforeach; ?>
       </div>
       
@@ -257,10 +269,11 @@ require dirname(__DIR__) . '/partials/header.php';
       </div>
       <?php endif; ?>
 
-      <div class="alert alert--info" style="margin-bottom:10px;font-size:11px;padding:8px 10px">
-        📲 Kamu akan diarahkan ke halaman scan QR setelah klik Bayar.
+      <div class="alert alert--info" style="margin-bottom:16px;font-size:12px;padding:12px;display:flex;align-items:flex-start;gap:8px;border:2px solid var(--blue);border-radius:8px">
+        <i class="ph-fill ph-lightning" style="color:var(--blue);font-size:18px;margin-top:2px"></i>
+        <div>Klik Lanjut untuk menampilkan kode QRIS. Saldo otomatis masuk setelah sukses dibayar.</div>
       </div>
-      <button type="submit" class="btn btn--primary btn--full no-dbl-submit" style="font-size:13px">📲 Bayar via QRIS →</button>
+      <button type="submit" class="btn btn--primary btn--full no-dbl-submit" style="font-size:14px;height:48px;background:var(--blue);color:#fff"><i class="ph-bold ph-qr-code"></i> Lanjut Bayar dengan QRIS</button>
     </form>
   </div>
 </div>
@@ -272,15 +285,15 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Riwayat -->
 <?php if (!empty($deps)): ?>
-<div class="section-header" style="margin-top:14px">
-  <div class="section-title" style="font-size:13px">📜 Riwayat Deposit</div>
-  <a href="/history" class="section-link">Lihat semua →</a>
+<div class="section-header" style="margin-top:20px;margin-bottom:12px">
+  <div class="section-title" style="font-size:14px;display:flex;align-items:center;gap:6px"><i class="ph-fill ph-clock-counter-clockwise" style="color:var(--ink)"></i> Riwayat Top Up</div>
+  <a href="/history" class="section-link" style="font-weight:800;color:var(--blue)">Lihat semua →</a>
 </div>
-<div class="card"><div class="card__body" style="padding:4px 0">
+<div class="card-trusted" style="border:none;box-shadow:none;background:transparent"><div class="card__body" style="padding:0">
   <?php foreach ($deps as $d): ?>
-  <div class="list-item" style="padding:8px 14px">
-    <div class="list-item__icon" style="background:<?= $d['method']==='qris'?'var(--mint)':'var(--sky)' ?>;width:30px;height:30px;font-size:14px">
-      <?= $d['method']==='qris' ? '📱' : '🏦' ?>
+  <div class="list-item" style="padding:12px 14px;background:#fff;border:2.5px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink);margin-bottom:10px">
+    <div class="list-item__icon" style="background:<?= $d['method']==='qris'?'#d1fae5':'#e0e7ff' ?>;color:<?= $d['method']==='qris'?'var(--green)':'var(--blue)' ?>;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:8px">
+      <i class="<?= $d['method']==='qris' ? 'ph-bold ph-qr-code' : 'ph-bold ph-bank' ?>"></i>
     </div>
     <div class="list-item__body">
       <div class="list-item__title" style="font-size:13px"><?= format_rp((float)$d['amount']) ?></div>
@@ -291,7 +304,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <?= ucfirst($d['status']) ?>
       </span>
       <?php if ($d['status']==='pending' && $d['method']==='qris'): ?>
-      <a href="/pay?id=<?= $d['id'] ?>" class="btn btn--yellow btn--sm" style="padding:3px 8px;font-size:10px">▶ Bayar</a>
+      <a href="/pay?id=<?= $d['id'] ?>" class="btn btn--yellow btn--sm" style="padding:4px 8px;font-size:10px;display:flex;align-items:center;gap:4px"><i class="ph-bold ph-arrow-right"></i> Bayar</a>
       <?php endif; ?>
     </div>
   </div>
@@ -302,16 +315,16 @@ require dirname(__DIR__) . '/partials/header.php';
 <script>
 function toggleCard(id) {
   ['bank','qris'].forEach(k => {
+    const el = document.getElementById('card-' + k);
     const b = document.getElementById('body-' + k);
-    const c = document.getElementById('chev-' + k);
     if (b) b.style.display = 'none';
-    if (c) c.style.transform = '';
+    if (el) el.classList.remove('open');
   });
+  const card = document.getElementById('card-' + id);
   const body = document.getElementById('body-' + id);
-  const chev = document.getElementById('chev-' + id);
   if (body && body.style.display === 'none') {
     body.style.display = 'block';
-    if (chev) chev.style.transform = 'rotate(180deg)';
+    if (card) card.classList.add('open');
   }
 }
 function setAmt(type, v) {

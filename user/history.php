@@ -39,50 +39,52 @@ $activePage = 'history';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
 
-<div class="page-title-bar">
-  <h1>📊 Riwayat Transaksi</h1>
+<div class="page-title-bar" style="margin-bottom:16px">
+  <h1 style="display:flex;align-items:center;gap:6px"><i class="ph-bold ph-list-dashes" style="color:var(--brand)"></i> Riwayat Transaksi</h1>
   <p>Semua aktivitas akun kamu</p>
 </div>
 
 <!-- Summary stats -->
-<div class="stat-row" style="margin-bottom:16px">
-  <div class="stat-mini">
-    <div class="stat-mini__val" style="font-size:12px"><?= format_rp($total_earned) ?></div>
-    <div class="stat-mini__lbl">🎁 Total Reward</div>
+<div class="stat-row" style="margin-bottom:20px;display:flex;gap:12px;background:var(--blue);padding:14px;border-radius:12px;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);color:#fff">
+  <div style="flex:1;text-align:center;border-right:2px solid rgba(255,255,255,0.2)">
+    <div style="font-size:11px;font-weight:700;color:#cbd5e1;margin-bottom:4px;text-transform:uppercase"><i class="ph-bold ph-gift"></i> Reward</div>
+    <div style="font-size:14px;font-weight:900"><?= format_rp($total_earned) ?></div>
   </div>
-  <div class="stat-mini">
-    <div class="stat-mini__val" style="font-size:12px"><?= format_rp($total_dep) ?></div>
-    <div class="stat-mini__lbl">⬆️ Total Deposit</div>
+  <div style="flex:1;text-align:center;border-right:2px solid rgba(255,255,255,0.2)">
+    <div style="font-size:11px;font-weight:700;color:#cbd5e1;margin-bottom:4px;text-transform:uppercase"><i class="ph-bold ph-wallet"></i> Top Up</div>
+    <div style="font-size:14px;font-weight:900"><?= format_rp($total_dep) ?></div>
   </div>
-  <div class="stat-mini">
-    <div class="stat-mini__val" style="font-size:12px"><?= format_rp($total_wd) ?></div>
-    <div class="stat-mini__lbl">💸 Total WD</div>
+  <div style="flex:1;text-align:center">
+    <div style="font-size:11px;font-weight:700;color:#cbd5e1;margin-bottom:4px;text-transform:uppercase"><i class="ph-bold ph-paper-plane-right"></i> Tarik</div>
+    <div style="font-size:14px;font-weight:900"><?= format_rp($total_wd) ?></div>
   </div>
 </div>
 
 <!-- Tabs -->
 <div class="history-tabs">
-  <a href="?tab=reward" class="history-tab <?= $tab==='reward'?'history-tab--active':'' ?>">🎁 Reward</a>
-  <a href="?tab=deposit" class="history-tab <?= $tab==='deposit'?'history-tab--active':'' ?>">⬆️ Deposit</a>
-  <a href="?tab=withdraw" class="history-tab <?= $tab==='withdraw'?'history-tab--active':'' ?>">💸 WD</a>
+  <a href="?tab=reward" class="history-tab <?= $tab==='reward'?'history-tab--active':'' ?>"><i class="ph-bold ph-gift" style="font-size:14px;vertical-align:middle"></i> Reward</a>
+  <a href="?tab=deposit" class="history-tab <?= $tab==='deposit'?'history-tab--active':'' ?>"><i class="ph-bold ph-wallet" style="font-size:14px;vertical-align:middle"></i> Top Up</a>
+  <a href="?tab=withdraw" class="history-tab <?= $tab==='withdraw'?'history-tab--active':'' ?>"><i class="ph-bold ph-paper-plane-right" style="font-size:14px;vertical-align:middle"></i> WD</a>
 </div>
 
 <!-- Reward Tab -->
 <?php if ($tab === 'reward'): ?>
-<div class="card">
+<div class="card-trusted">
   <?php if (empty($rewards)): ?>
   <div class="empty-state"><p>Belum ada riwayat nonton.</p></div>
   <?php else: ?>
-  <div class="card__body">
+  <div class="card__body" style="padding:0">
     <?php foreach ($rewards as $r): ?>
-    <div class="list-item">
-      <div class="list-item__icon" style="background:var(--lime)">▶️</div>
+    <div class="list-item" style="padding:14px 16px;border-bottom:2px solid var(--ink)">
+      <div class="list-item__icon" style="background:#ecfdf5;color:var(--green);border:2px solid var(--ink);width:36px;height:36px;font-size:18px;display:flex;align-items:center;justify-content:center;border-radius:8px">
+        <i class="ph-fill ph-play-circle"></i>
+      </div>
       <div class="list-item__body">
-        <div class="list-item__title"><?= htmlspecialchars($r['video_title'] ?? 'Video #'.$r['video_id']) ?></div>
-        <div class="list-item__sub"><?= date('d M Y H:i', strtotime($r['watched_at'])) ?></div>
+        <div class="list-item__title" style="font-weight:900;color:var(--ink)"><?= htmlspecialchars($r['video_title'] ?? 'Video #'.$r['video_id']) ?></div>
+        <div class="list-item__sub" style="font-weight:700"><?= date('d M Y H:i', strtotime($r['watched_at'])) ?></div>
       </div>
       <div class="list-item__right">
-        <div class="list-item__amount list-item__amount--green">+<?= format_rp((float)$r['reward_given']) ?></div>
+        <div class="list-item__amount" style="color:var(--green);font-weight:900;font-size:14px">+<?= format_rp((float)$r['reward_given']) ?></div>
       </div>
     </div>
     <?php endforeach; ?>
@@ -92,42 +94,36 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Deposit Tab -->
 <?php elseif ($tab === 'deposit'): ?>
-<div class="card">
+<div class="card-trusted">
   <?php if (empty($deposits)): ?>
-  <div class="empty-state"><p>Belum ada riwayat deposit.</p></div>
+  <div class="empty-state"><p>Belum ada riwayat top up.</p></div>
   <?php else: ?>
-  <div class="card__body">
+  <div class="card__body" style="padding:0">
     <?php foreach ($deposits as $d): ?>
     <?php $dl = $channel_logos[strtolower($d['method'])] ?? null; ?>
-    <div class="list-item">
+    <div class="list-item" style="padding:14px 16px;border-bottom:2px solid var(--ink)">
       <?php if ($dl): ?>
-      <div class="list-item__icon" style="background:transparent;padding:0">
-        <img src="/assets/banks/<?= htmlspecialchars($dl) ?>" style="width:100%;height:100%;object-fit:contain;border-radius:12px;">
+      <div class="list-item__icon" style="background:transparent;padding:0;border:2px solid var(--ink);border-radius:8px;width:36px;height:36px;overflow:hidden">
+        <img src="/assets/banks/<?= htmlspecialchars($dl) ?>" style="width:100%;height:100%;object-fit:contain;background:#fff">
       </div>
       <?php else: ?>
-        <?php if ($d['method'] === 'qris'): ?>
-        <div class="list-item__icon" style="background:transparent;padding:0;border:1.5px solid var(--ink);border-radius:12px;overflow:hidden">
-          <img src="/assets/banks/qris.jpg" style="width:100%;height:100%;object-fit:contain;background:#fff">
+        <div class="list-item__icon" style="background:<?= $d['method']==='qris'?'#d1fae5':'#e0e7ff' ?>;color:<?= $d['method']==='qris'?'var(--green)':'var(--blue)' ?>;border:2px solid var(--ink);width:36px;height:36px;font-size:18px;display:flex;align-items:center;justify-content:center;border-radius:8px">
+          <i class="<?= $d['method']==='qris' ? 'ph-bold ph-qr-code' : 'ph-bold ph-bank' ?>"></i>
         </div>
-        <?php else: ?>
-        <div class="list-item__icon" style="background:var(--sky)">
-          🏦
-        </div>
-        <?php endif; ?>
       <?php endif; ?>
       <div class="list-item__body">
-        <div class="list-item__title"><?= format_rp((float)$d['amount']) ?></div>
-        <div class="list-item__sub"><?= strtoupper($d['method']) ?> · <?= date('d M Y H:i', strtotime($d['created_at'])) ?></div>
+        <div class="list-item__title" style="font-weight:900;color:var(--ink)"><?= format_rp((float)$d['amount']) ?></div>
+        <div class="list-item__sub" style="font-weight:700"><?= strtoupper($d['method']) ?> · <?= date('d M Y H:i', strtotime($d['created_at'])) ?></div>
         <?php if ($d['admin_note']): ?>
-        <div class="list-item__sub" style="color:var(--red)">📝 <?= htmlspecialchars($d['admin_note']) ?></div>
+        <div class="list-item__sub" style="color:var(--red);font-weight:800;display:flex;align-items:center;gap:2px"><i class="ph-bold ph-note"></i> <?= htmlspecialchars($d['admin_note']) ?></div>
         <?php endif; ?>
       </div>
       <div class="list-item__right" style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
-        <span class="badge badge--<?= match($d['status']){'confirmed'=>'success','pending'=>'warn','rejected'=>'error',default=>'error'} ?>">
+        <span class="badge badge--<?= match($d['status']){'confirmed'=>'success','pending'=>'warn','rejected'=>'error',default=>'error'} ?>" style="font-size:10px;font-weight:800">
           <?= ucfirst($d['status']) ?>
         </span>
         <?php if ($d['status']==='pending' && $d['method']==='qris'): ?>
-        <a href="/pay?id=<?= $d['id'] ?>" class="btn btn--yellow btn--sm" style="padding:5px 12px;font-size:11px">▶ Lanjut Bayar</a>
+        <a href="/pay?id=<?= $d['id'] ?>" class="btn btn--yellow btn--sm" style="padding:4px 10px;font-size:10px;display:flex;align-items:center;gap:4px"><i class="ph-bold ph-arrow-right"></i> Bayar</a>
         <?php endif; ?>
       </div>
     </div>
@@ -138,33 +134,35 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Withdraw Tab -->
 <?php elseif ($tab === 'withdraw'): ?>
-<div class="card">
+<div class="card-trusted">
   <?php if (empty($wds)): ?>
   <div class="empty-state"><p>Belum ada riwayat penarikan.</p></div>
   <?php else: ?>
-  <div class="card__body">
+  <div class="card__body" style="padding:0">
     <?php foreach ($wds as $w): ?>
     <?php $wl = $channel_logos[strtolower($w['bank_name'])] ?? null; ?>
-    <div class="list-item">
+    <div class="list-item" style="padding:14px 16px;border-bottom:2px solid var(--ink)">
       <?php if ($wl): ?>
-      <div class="list-item__icon" style="background:transparent;padding:0">
-        <img src="/assets/banks/<?= htmlspecialchars($wl) ?>" style="width:100%;height:100%;object-fit:contain;border-radius:12px;">
+      <div class="list-item__icon" style="background:transparent;padding:0;border:2px solid var(--ink);border-radius:8px;width:36px;height:36px;overflow:hidden">
+        <img src="/assets/banks/<?= htmlspecialchars($wl) ?>" style="width:100%;height:100%;object-fit:contain;background:#fff">
       </div>
       <?php else: ?>
-      <div class="list-item__icon" style="background:var(--peach)">💸</div>
+      <div class="list-item__icon" style="background:#e0e7ff;color:var(--blue);border:2px solid var(--ink);width:36px;height:36px;font-size:18px;display:flex;align-items:center;justify-content:center;border-radius:8px">
+        <i class="ph-bold ph-bank"></i>
+      </div>
       <?php endif; ?>
       <div class="list-item__body">
-        <div class="list-item__title"><?= format_rp((float)$w['amount']) ?></div>
-        <div class="list-item__sub"><?= htmlspecialchars($w['bank_name']) ?> · <?= date('d M Y H:i', strtotime($w['created_at'])) ?></div>
+        <div class="list-item__title" style="font-weight:900;color:var(--ink)"><?= format_rp((float)$w['amount']) ?></div>
+        <div class="list-item__sub" style="font-weight:700"><?= htmlspecialchars($w['bank_name']) ?> · <?= date('d M Y H:i', strtotime($w['created_at'])) ?></div>
         <?php if ($w['admin_note']): ?>
-        <div class="list-item__sub" style="color:var(--red)">📝 <?= htmlspecialchars($w['admin_note']) ?></div>
+        <div class="list-item__sub" style="color:var(--red);font-weight:800;display:flex;align-items:center;gap:2px"><i class="ph-bold ph-note"></i> <?= htmlspecialchars($w['admin_note']) ?></div>
         <?php endif; ?>
       </div>
       <div class="list-item__right">
-        <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','rejected'=>'error','refunded'=>'info',default=>'error'} ?>">
+        <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','rejected'=>'error','refunded'=>'info',default=>'error'} ?>" style="font-size:10px;font-weight:800">
           <?= ucfirst($w['status']) ?>
         </span>
-        <div class="list-item__amount list-item__amount--red" style="margin-top:4px">-<?= format_rp((float)$w['amount']) ?></div>
+        <div class="list-item__amount" style="margin-top:6px;color:var(--red);font-weight:900;font-size:13px;text-align:right">-<?= format_rp((float)$w['amount']) ?></div>
       </div>
     </div>
     <?php endforeach; ?>
@@ -175,25 +173,26 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <style>
 .history-tabs {
-  display: flex; gap: 0;
-  border: 2.5px solid var(--ink);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  box-shadow: 3px 3px 0 var(--ink);
-  margin-bottom: 14px;
+  display: flex; gap: 8px;
+  margin-bottom: 20px;
 }
 .history-tab {
   flex: 1; text-align: center;
-  padding: 11px 6px;
-  font-size: 13px; font-weight: 800;
+  padding: 10px 6px;
+  font-size: 12px; font-weight: 800;
   text-decoration: none;
-  color: #888; background: var(--white);
-  border-right: 2px solid var(--ink);
-  transition: background .12s;
+  color: #64748b; background: #fff;
+  border: 2.5px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 2px 2px 0 var(--ink);
+  transition: transform .12s, box-shadow .12s;
+  display: flex; align-items: center; justify-content: center; gap: 4px;
 }
-.history-tab:last-child { border-right: none; }
-.history-tab--active { background: var(--yellow); color: var(--ink); }
-.history-tab:hover:not(.history-tab--active) { background: #f5f5f5; }
+.history-tab:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--ink); }
+.history-tab--active { background: var(--yellow); color: var(--ink); border: 3px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); }
+
+.card-trusted { background: #fff; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); overflow: hidden; margin-bottom: 16px; }
+.card-trusted .list-item:last-child { border-bottom: none !important; }
 </style>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
