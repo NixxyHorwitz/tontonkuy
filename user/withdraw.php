@@ -176,9 +176,9 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <style>
 /* Trusted Neo-Brutalism Theme */
-.wd-bal { background: var(--blue, #1e3a8a); color: #fff; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); padding: 16px; margin-bottom: 16px; position: relative; overflow: hidden; }
-.wd-bal::after { content:''; position:absolute; top:-20px; right:-20px; width:80px; height:80px; background: rgba(255,255,255,0.1); border-radius: 50%; }
-.wd-bal__lbl { font-size: 12px; font-weight: 800; color: #cbd5e1; margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
+.wd-bal { background: var(--yellow, #eab308); color: var(--ink); border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); padding: 16px; margin-bottom: 16px; position: relative; overflow: hidden; }
+.wd-bal::after { content:''; position:absolute; top:-20px; right:-20px; width:80px; height:80px; background: rgba(0,0,0,0.05); border-radius: 50%; }
+.wd-bal__lbl { font-size: 12px; font-weight: 800; color: rgba(0,0,0,0.6); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
 .wd-bal__val { font-size: 28px; font-weight: 900; letter-spacing: -0.5px; }
 
 .qty-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
@@ -198,8 +198,8 @@ require dirname(__DIR__) . '/partials/header.php';
   <div class="wd-bal__val"><?= format_rp((float)$user['balance_wd']) ?></div>
 </div>
 
-<div class="alert" style="margin-bottom:16px;font-size:12px;background:rgba(30,58,138,0.1);border:2px solid rgba(30,58,138,0.3);color:var(--ink);border-radius:8px;display:flex;align-items:flex-start;gap:6px">
-  <i class="ph-fill ph-info" style="color:var(--blue);font-size:16px;margin-top:2px"></i>
+<div class="alert" style="margin-bottom:16px;font-size:12px;background:#fef08a;border:3px solid var(--ink);color:var(--ink);border-radius:8px;display:flex;align-items:flex-start;gap:6px;box-shadow:3px 3px 0 var(--ink)">
+  <i class="ph-fill ph-info" style="color:#d97706;font-size:16px;margin-top:2px"></i>
   <div><strong>Batas Penarikan:</strong> Minimal <?= format_rp($min_withdraw) ?><?= $max_withdraw > 0 ? ' & Maksimal ' . format_rp($max_withdraw) : '' ?></div>
 </div>
 
@@ -240,7 +240,7 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 <?php else: ?>
 <div class="card-trusted">
-  <div class="card-trusted__header"><i class="ph-fill ph-bank" style="color:var(--blue);font-size:18px"></i> Form Penarikan</div>
+  <div class="card-trusted__header"><i class="ph-fill ph-bank" style="color:var(--yellow);font-size:18px"></i> Form Penarikan</div>
   <div class="card-trusted__body">
     <form method="POST" id="wd-form">
       <?= csrf_field() ?>
@@ -317,7 +317,7 @@ require dirname(__DIR__) . '/partials/header.php';
       <?php elseif ($wd_locked): ?>
         <button type="button" class="btn btn--primary btn--full" disabled style="font-size:14px;height:48px"><i class="ph-bold ph-clock"></i> Sedang Ditutup</button>
       <?php else: ?>
-        <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full no-dbl-submit" style="font-size:14px;height:48px;background:var(--blue);color:#fff"><i class="ph-bold ph-paper-plane-right"></i> Ajukan Penarikan</button>
+        <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full no-dbl-submit" style="font-size:14px;height:48px;background:var(--yellow);color:var(--ink);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink)"><i class="ph-bold ph-paper-plane-right"></i> Ajukan Penarikan</button>
       <?php endif; ?>
     </form>
   </div>
@@ -411,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
 <?php if (!empty($wds)): ?>
 <div class="section-header" style="margin-top:20px;margin-bottom:12px">
   <div class="section-title" style="font-size:14px;display:flex;align-items:center;gap:6px"><i class="ph-fill ph-clock-counter-clockwise" style="color:var(--ink)"></i> Riwayat Penarikan</div>
-  <a href="/history" class="section-link" style="font-weight:800;color:var(--blue)">Lihat semua →</a>
+  <a href="/history" class="section-link" style="font-weight:800;color:var(--yellow)">Lihat semua →</a>
 </div>
 <div class="card-trusted" style="border:none;box-shadow:none;background:transparent"><div class="card__body" style="padding:0">
   <?php foreach ($wds as $w): ?>
@@ -422,7 +422,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <img src="/assets/banks/<?= htmlspecialchars($wl) ?>" style="width:100%;height:100%;object-fit:contain;border-radius:6px;">
       </div>
       <?php else: ?>
-      <div class="list-item__icon" style="background:#e0e7ff;color:var(--blue);width:34px;height:34px;font-size:16px"><i class="ph-bold ph-bank"></i></div>
+      <div class="list-item__icon" style="background:#fef08a;color:#d97706;width:34px;height:34px;font-size:16px"><i class="ph-bold ph-bank"></i></div>
       <?php endif; ?>
     <div class="list-item__body">
       <div class="list-item__title" style="font-size:13px"><?= format_rp((float)$w['amount']) ?></div>
@@ -444,16 +444,16 @@ document.addEventListener('DOMContentLoaded', () => {
 <!-- Neobrutalism Modal Confirm -->
 <div id="brutal-confirm" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,23,42,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);">
   <div class="card card--mint" style="width:100%;max-width:340px;box-shadow:6px 6px 0 var(--ink);border:3px solid var(--ink);border-radius:12px;animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);">
-    <div class="card__header" style="background:var(--blue);border-bottom:3px solid var(--ink);border-radius:9px 9px 0 0;padding:14px 16px;">
-      <div class="card__title" style="color:#fff;font-weight:900;font-size:16px;display:flex;align-items:center;gap:6px"><i class="ph-bold ph-paper-plane-right"></i> Konfirmasi Penarikan</div>
+    <div class="card__header" style="background:var(--yellow);border-bottom:3px solid var(--ink);border-radius:9px 9px 0 0;padding:14px 16px;">
+      <div class="card__title" style="color:var(--ink);font-weight:900;font-size:16px;display:flex;align-items:center;gap:6px"><i class="ph-bold ph-paper-plane-right"></i> Konfirmasi Penarikan</div>
     </div>
     <div class="card__body" style="padding:16px;background:#fff;border-radius:0 0 9px 9px;">
       <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#333;text-align:center;">Kamu akan melakukan penarikan sebesar:</div>
       <div id="brutal-confirm-amt" style="font-size:26px;font-weight:900;color:var(--brand);margin-bottom:12px;text-align:center;letter-spacing:-0.5px;"></div>
       <div style="font-size:12px;color:#666;margin-bottom:20px;font-weight:600;text-align:center;">Pastikan data rekening bank tujuan sudah benar.<br>Apakah kamu ingin melanjutkan?</div>
       <div style="display:flex;gap:12px;">
-        <button type="button" onclick="document.getElementById('brutal-confirm').style.display='none'" class="btn" style="flex:1;background:#eee;color:var(--ink);border:2.5px solid var(--ink);font-weight:800;border-radius:8px;">Batal</button>
-        <button type="button" onclick="confirmBrutalWd()" class="btn btn--primary" style="flex:1.5;background:var(--brand);color:var(--ink);border:2.5px solid var(--ink);font-weight:900;border-radius:8px;box-shadow:2px 2px 0 var(--ink);">Ya, Tarik Dana</button>
+        <button type="button" onclick="document.getElementById('brutal-confirm').style.display='none'" class="btn" style="flex:1;background:#eee;color:var(--ink);border:3px solid var(--ink);font-weight:800;border-radius:8px;">Batal</button>
+        <button type="button" onclick="confirmBrutalWd()" class="btn btn--primary" style="flex:1.5;background:var(--yellow);color:var(--ink);border:3px solid var(--ink);font-weight:900;border-radius:8px;box-shadow:3px 3px 0 var(--ink);">Ya, Tarik Dana</button>
       </div>
     </div>
   </div>

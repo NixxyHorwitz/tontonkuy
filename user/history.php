@@ -47,24 +47,24 @@ require dirname(__DIR__) . '/partials/header.php';
 <!-- Summary stats -->
 <div class="stat-row" style="margin-bottom:20px;display:flex;gap:12px">
   <div style="flex:1;background:#fde047;border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:var(--ink);text-align:center">
-    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase"><i class="ph-bold ph-gift" style="font-size:14px;vertical-align:middle;color:#d97706"></i> Reward</div>
+    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase"><i class="ph-bold ph-gift" style="font-size:14px;vertical-align:middle;color:#b45309"></i> Reward</div>
     <div style="font-size:16px;font-weight:900;letter-spacing:-0.5px"><?= format_rp($total_earned) ?></div>
   </div>
-  <div style="flex:1;background:#86efac;border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:var(--ink);text-align:center">
-    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase"><i class="ph-bold ph-wallet" style="font-size:14px;vertical-align:middle;color:#059669"></i> Top Up</div>
+  <div style="flex:1;background:#facc15;border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:var(--ink);text-align:center">
+    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase"><i class="ph-bold ph-wallet" style="font-size:14px;vertical-align:middle;color:#a16207"></i> Top Up</div>
     <div style="font-size:16px;font-weight:900;letter-spacing:-0.5px"><?= format_rp($total_dep) ?></div>
   </div>
-  <div style="flex:1;background:#93c5fd;border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:var(--ink);text-align:center">
-    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase"><i class="ph-bold ph-paper-plane-right" style="font-size:14px;vertical-align:middle;color:#2563eb"></i> Tarik</div>
+  <div style="flex:1;background:#eab308;border:3px solid var(--ink);border-radius:12px;padding:12px;box-shadow:4px 4px 0 var(--ink);color:var(--ink);text-align:center">
+    <div style="font-size:10px;font-weight:900;margin-bottom:6px;text-transform:uppercase"><i class="ph-bold ph-paper-plane-right" style="font-size:14px;vertical-align:middle;color:#854d0e"></i> Tarik</div>
     <div style="font-size:16px;font-weight:900;letter-spacing:-0.5px"><?= format_rp($total_wd) ?></div>
   </div>
 </div>
 
 <!-- Tabs -->
 <div class="history-tabs">
-  <a href="?tab=reward" class="history-tab <?= $tab==='reward'?'history-tab--active-reward':'' ?>"><i class="ph-bold ph-gift" style="font-size:14px;vertical-align:middle"></i> Reward</a>
-  <a href="?tab=deposit" class="history-tab <?= $tab==='deposit'?'history-tab--active-deposit':'' ?>"><i class="ph-bold ph-wallet" style="font-size:14px;vertical-align:middle"></i> Top Up</a>
-  <a href="?tab=withdraw" class="history-tab <?= $tab==='withdraw'?'history-tab--active-withdraw':'' ?>"><i class="ph-bold ph-paper-plane-right" style="font-size:14px;vertical-align:middle"></i> Penarikan</a>
+  <a href="?tab=reward" class="history-tab <?= $tab==='reward'?'history-tab--active':'' ?>"><i class="ph-bold ph-gift" style="font-size:14px;vertical-align:middle"></i> Reward</a>
+  <a href="?tab=deposit" class="history-tab <?= $tab==='deposit'?'history-tab--active':'' ?>"><i class="ph-bold ph-wallet" style="font-size:14px;vertical-align:middle"></i> Top Up</a>
+  <a href="?tab=withdraw" class="history-tab <?= $tab==='withdraw'?'history-tab--active':'' ?>"><i class="ph-bold ph-paper-plane-right" style="font-size:14px;vertical-align:middle"></i> Penarikan</a>
 </div>
 
 <!-- Reward Tab -->
@@ -107,7 +107,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <img src="/assets/banks/<?= htmlspecialchars($dl) ?>" style="width:100%;height:100%;object-fit:contain;background:#fff">
       </div>
       <?php else: ?>
-        <div class="list-item__icon" style="background:<?= $d['method']==='qris'?'#d1fae5':'#e0e7ff' ?>;color:<?= $d['method']==='qris'?'var(--green)':'var(--blue)' ?>;border:2px solid var(--ink);width:36px;height:36px;font-size:18px;display:flex;align-items:center;justify-content:center;border-radius:8px">
+        <div class="list-item__icon" style="background:#fef08a;color:#d97706;border:2px solid var(--ink);width:36px;height:36px;font-size:18px;display:flex;align-items:center;justify-content:center;border-radius:8px">
           <i class="<?= $d['method']==='qris' ? 'ph-bold ph-qr-code' : 'ph-bold ph-bank' ?>"></i>
         </div>
       <?php endif; ?>
@@ -147,7 +147,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <img src="/assets/banks/<?= htmlspecialchars($wl) ?>" style="width:100%;height:100%;object-fit:contain;background:#fff">
       </div>
       <?php else: ?>
-      <div class="list-item__icon" style="background:#e0e7ff;color:var(--blue);border:2px solid var(--ink);width:36px;height:36px;font-size:18px;display:flex;align-items:center;justify-content:center;border-radius:8px">
+      <div class="list-item__icon" style="background:#fef08a;color:#d97706;border:2px solid var(--ink);width:36px;height:36px;font-size:18px;display:flex;align-items:center;justify-content:center;border-radius:8px">
         <i class="ph-bold ph-bank"></i>
       </div>
       <?php endif; ?>
@@ -189,9 +189,7 @@ require dirname(__DIR__) . '/partials/header.php';
   display: flex; align-items: center; justify-content: center; gap: 4px;
 }
 .history-tab:active { transform: translate(2px, 2px); box-shadow: 0 0 0 var(--ink); }
-.history-tab--active-reward { background: #fde047; border-width:3px; box-shadow: 3px 3px 0 var(--ink); }
-.history-tab--active-deposit { background: #86efac; border-width:3px; box-shadow: 3px 3px 0 var(--ink); }
-.history-tab--active-withdraw { background: #93c5fd; border-width:3px; box-shadow: 3px 3px 0 var(--ink); }
+.history-tab--active { background: #fde047; border-width:3px; box-shadow: 3px 3px 0 var(--ink); }
 
 .card-trusted { background: #fff; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); overflow: hidden; margin-bottom: 16px; }
 .card-trusted .list-item:last-child { border-bottom: none !important; }

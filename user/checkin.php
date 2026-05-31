@@ -87,9 +87,9 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   margin-bottom: 24px;
   text-align: center;
 }
-.neo-card--trusted { background: var(--blue, #1e3a8a); color: #fff; }
-.neo-card--trusted .neo-card__subtitle { color: #cbd5e1; }
-.neo-card--trusted .neo-card__amount { color: #fff; }
+.neo-card--trusted { background: var(--yellow, #eab308); color: var(--ink); }
+.neo-card--trusted .neo-card__subtitle { color: rgba(0,0,0,0.6); }
+.neo-card--trusted .neo-card__amount { color: var(--ink); }
 
 .neo-btn {
   background: var(--yellow, #eab308);

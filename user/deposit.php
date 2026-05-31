@@ -133,7 +133,7 @@ require dirname(__DIR__) . '/partials/header.php';
 .dep-method { border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); background: #fff; overflow: hidden; margin-bottom: 12px; transition: transform 0.1s; }
 .dep-method:active { transform: translate(2px, 2px); box-shadow: 2px 2px 0 var(--ink); }
 .dep-method__hd { display: flex; align-items: center; gap: 12px; padding: 14px 16px; cursor: pointer; user-select: none; }
-.dep-method__ico { width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; font-size: 20px; background: #f8fafc; color: var(--blue); }
+.dep-method__ico { width: 42px; height: 42px; flex-shrink: 0; border-radius: 10px; border: 2px solid var(--ink); display: flex; align-items: center; justify-content: center; font-size: 20px; background: #fef08a; color: #d97706; }
 .dep-method__info { flex: 1; min-width: 0; }
 .dep-method__name { font-weight: 900; font-size: 15px; color: var(--ink); }
 .dep-method__sub { font-size: 11px; color: #64748b; font-weight: 700; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -144,7 +144,7 @@ require dirname(__DIR__) . '/partials/header.php';
 .dep-rek { background: #fff; border: 2.5px dashed var(--ink); border-radius: 12px; padding: 16px; margin: 16px 0; text-align: center; }
 .dep-rek__lbl { font-size: 11px; color: #64748b; font-weight: 800; margin-bottom: 6px; text-transform: uppercase; }
 .dep-rek__bank { font-size: 14px; font-weight: 900; color: var(--ink); }
-.dep-rek__num { font-size: 24px; font-weight: 900; letter-spacing: 2px; margin: 6px 0; color: var(--blue); }
+.dep-rek__num { font-size: 24px; font-weight: 900; letter-spacing: 2px; margin: 6px 0; color: var(--ink); }
 .dep-rek__name { font-size: 12px; color: #475569; font-weight: 700; }
 
 .qty-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; }
@@ -164,8 +164,8 @@ require dirname(__DIR__) . '/partials/header.php';
   </div>
 </div>
 
-<div style="font-size:12px;font-weight:700;color:#64748b;margin-bottom:16px;background:rgba(15,23,42,0.05);padding:10px 14px;border-radius:8px;border:1.5px solid rgba(15,23,42,0.1)">
-  <i class="ph-fill ph-info" style="color:var(--blue)"></i> Min. top up <strong><?= format_rp($min_deposit) ?></strong> · Masuk ke Saldo Beli
+<div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:16px;background:#fef08a;padding:10px 14px;border-radius:8px;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink)">
+  <i class="ph-fill ph-info" style="color:#d97706"></i> Min. top up <strong><?= format_rp($min_deposit) ?></strong> · Masuk ke Saldo Beli
 </div>
 
 <?php if ($flash): ?>
@@ -212,7 +212,7 @@ require dirname(__DIR__) . '/partials/header.php';
       <input type="hidden" name="unique_code" value="<?= $unique_code ?>">
       <div class="alert" style="margin-bottom:16px;font-size:12px;background:#fff;border:3px dashed var(--orange);color:var(--ink);font-weight:700">
         <div style="font-size:11px;color:#64748b;margin-bottom:4px;text-transform:uppercase">Total yang harus ditransfer:</div>
-        <div id="bank-total-transfer" style="font-size:26px;font-weight:900;color:var(--blue);letter-spacing:-0.5px">Rp 0</div>
+        <div id="bank-total-transfer" style="font-size:26px;font-weight:900;color:var(--ink);letter-spacing:-0.5px">Rp 0</div>
         <div style="font-size:11px;font-weight:800;color:var(--orange);margin-top:8px;background:rgba(251,146,60,0.1);padding:8px;border-radius:6px;border:1px solid rgba(251,146,60,0.3);display:flex;align-items:flex-start;gap:6px">
           <i class="ph-fill ph-warning-circle" style="font-size:16px;margin-top:1px"></i> 
           <div>Wajib transfer nominal persis hingga 3 digit terakhir agar deposit cepat diproses otomatis!</div>
@@ -224,7 +224,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <label class="form-label" style="font-size:12px;font-weight:800;color:#475569">Bukti Transfer <span style="font-weight:600;color:#94a3b8;font-size:10px">(JPG/PNG)</span></label>
         <input class="form-control" type="file" name="proof" accept="image/*" style="padding:10px;font-size:12px;background:#fff">
       </div>
-      <button type="submit" class="btn btn--primary btn--full no-dbl-submit" style="font-size:14px;height:48px;background:var(--blue);color:#fff"><i class="ph-bold ph-upload-simple"></i> Kirim Bukti Transfer</button>
+      <button type="submit" class="btn btn--primary btn--full no-dbl-submit" style="font-size:14px;height:48px;background:var(--yellow);color:var(--ink);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink)"><i class="ph-bold ph-upload-simple"></i> Kirim Bukti Transfer</button>
     </form>
   </div>
 </div>
@@ -269,11 +269,11 @@ require dirname(__DIR__) . '/partials/header.php';
       </div>
       <?php endif; ?>
 
-      <div class="alert alert--info" style="margin-bottom:16px;font-size:12px;padding:12px;display:flex;align-items:flex-start;gap:8px;border:2px solid var(--blue);border-radius:8px">
-        <i class="ph-fill ph-lightning" style="color:var(--blue);font-size:18px;margin-top:2px"></i>
+      <div class="alert alert--info" style="margin-bottom:16px;font-size:12px;padding:12px;display:flex;align-items:flex-start;gap:8px;border:3px solid var(--ink);background:#fef08a;color:var(--ink);border-radius:8px;box-shadow:3px 3px 0 var(--ink)">
+        <i class="ph-fill ph-lightning" style="color:#d97706;font-size:18px;margin-top:2px"></i>
         <div>Klik Lanjut untuk menampilkan kode QRIS. Saldo otomatis masuk setelah sukses dibayar.</div>
       </div>
-      <button type="submit" class="btn btn--primary btn--full no-dbl-submit" style="font-size:14px;height:48px;background:var(--blue);color:#fff"><i class="ph-bold ph-qr-code"></i> Lanjut Bayar dengan QRIS</button>
+      <button type="submit" class="btn btn--primary btn--full no-dbl-submit" style="font-size:14px;height:48px;background:var(--yellow);color:var(--ink);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink)"><i class="ph-bold ph-qr-code"></i> Lanjut Bayar dengan QRIS</button>
     </form>
   </div>
 </div>
@@ -287,12 +287,12 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php if (!empty($deps)): ?>
 <div class="section-header" style="margin-top:20px;margin-bottom:12px">
   <div class="section-title" style="font-size:14px;display:flex;align-items:center;gap:6px"><i class="ph-fill ph-clock-counter-clockwise" style="color:var(--ink)"></i> Riwayat Top Up</div>
-  <a href="/history" class="section-link" style="font-weight:800;color:var(--blue)">Lihat semua →</a>
+  <a href="/history" class="section-link" style="font-weight:800;color:var(--ink)">Lihat semua →</a>
 </div>
 <div class="card-trusted" style="border:none;box-shadow:none;background:transparent"><div class="card__body" style="padding:0">
   <?php foreach ($deps as $d): ?>
   <div class="list-item" style="padding:12px 14px;background:#fff;border:2.5px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink);margin-bottom:10px">
-    <div class="list-item__icon" style="background:<?= $d['method']==='qris'?'#d1fae5':'#e0e7ff' ?>;color:<?= $d['method']==='qris'?'var(--green)':'var(--blue)' ?>;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:8px">
+    <div class="list-item__icon" style="background:<?= $d['method']==='qris'?'#d1fae5':'#fef08a' ?>;color:<?= $d['method']==='qris'?'var(--green)':'#d97706' ?>;width:34px;height:34px;font-size:16px;display:flex;align-items:center;justify-content:center;border-radius:8px">
       <i class="<?= $d['method']==='qris' ? 'ph-bold ph-qr-code' : 'ph-bold ph-bank' ?>"></i>
     </div>
     <div class="list-item__body">
