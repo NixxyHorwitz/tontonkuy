@@ -209,7 +209,7 @@ require dirname(__DIR__) . '/partials/header.php';
 .card-trusted__header { background: #f8fafc; border-bottom: 3px solid var(--ink); padding: 12px 16px; font-weight: 900; font-size: 14px; color: var(--ink); display: flex; align-items: center; gap: 6px; }
 .card-trusted__body { padding: 16px; }
 
-.bank-info { background: #f8fafc; border: 2px dashed #94a3b8; border-radius: 8px; padding: 12px; margin-bottom: 16px; position: relative; }
+.bank-info { background: #fef08a; border: 3px solid var(--ink); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; position: relative; box-shadow: 4px 4px 0 var(--ink); }
 .amount-option-btn.active {
   background: var(--yellow) !important;
   box-shadow: 0px 0px 0 var(--ink) !important;
@@ -287,26 +287,29 @@ require dirname(__DIR__) . '/partials/header.php';
 
       <?php if ($has_bank): ?>
       <div class="bank-info">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-          <div style="font-size:11px;font-weight:800;color:#64748b;text-transform:uppercase"><i class="ph-bold ph-bank"></i> Rekening Tujuan</div>
-          <a href="/edit-rekening" class="btn btn--ghost btn--sm" style="font-size:10px;padding:4px 8px;border:1px solid #cbd5e1;background:#fff"><i class="ph-bold ph-pencil-simple"></i> Edit</a>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:900;color:var(--ink);text-transform:uppercase"><i class="ph-bold ph-bank"></i> Rekening Tujuan</div>
+          <a href="/edit-rekening" class="btn btn--sm" style="font-size:10px;padding:6px 12px;border:2.5px solid var(--ink);background:#fff;color:var(--ink);font-weight:900;border-radius:8px;box-shadow:2px 2px 0 var(--ink)"><i class="ph-bold ph-pencil-simple"></i> Edit</a>
         </div>
-          <div style="font-size:13px;font-weight:700">
-            <?php $user_wl = $channel_logos[strtolower($user['bank_name'] ?? '')] ?? null; ?>
+        <div style="font-size:13px;font-weight:700;color:var(--ink)">
+          <?php $user_wl = $channel_logos[strtolower($user['bank_name'] ?? '')] ?? null; ?>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
             <?php if ($user_wl): ?>
-            <img src="/assets/banks/<?= htmlspecialchars($user_wl) ?>" style="height:20px;vertical-align:middle;margin-right:6px;border-radius:4px">
+            <img src="/assets/banks/<?= htmlspecialchars($user_wl) ?>" style="height:24px;border-radius:4px;object-fit:contain">
+            <?php else: ?>
+            <div style="width:24px;height:24px;background:#fff;border:2px solid var(--ink);border-radius:4px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-bank"></i></div>
             <?php endif; ?>
-            <?= htmlspecialchars($user['bank_name']) ?><br>
-            <span style="display:inline-flex;align-items:center;gap:6px">
-              <span id="wd-accnum-display" style="font-size:18px;font-family:monospace;letter-spacing:1px;color:var(--ink)"><?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?></span>
-              <button type="button" id="wd-accnum-toggle" onclick="toggleAccNum()"
-                title="Tampilkan/sembunyikan nomor"
-                style="background:none;border:none;cursor:pointer;padding:0;line-height:1;font-size:16px;color:#94a3b8;flex-shrink:0;transition:color 0.2s">
-                <i class="ph-bold ph-eye"></i>
-              </button>
-            </span><br>
-            <?= htmlspecialchars($user['account_name']) ?>
+            <span style="font-size:14px;font-weight:900"><?= htmlspecialchars($user['bank_name']) ?></span>
           </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span id="wd-accnum-display" style="font-size:18px;font-family:monospace;letter-spacing:1px;font-weight:900;color:var(--ink)"><?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?></span>
+            <button type="button" id="wd-accnum-toggle" onclick="toggleAccNum()"
+              title="Tampilkan/sembunyikan nomor"
+              style="background:none;border:none;cursor:pointer;padding:0;line-height:1;font-size:18px;color:#64748b;flex-shrink:0;transition:color 0.2s">
+              <i class="ph-bold ph-eye"></i>
+            </button>
+          </div>
+          <div style="font-size:12px;font-weight:800;color:#334155"><?= htmlspecialchars($user['account_name']) ?></div>
         </div>
       </div>
 
