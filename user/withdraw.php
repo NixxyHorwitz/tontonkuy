@@ -212,8 +212,8 @@ require dirname(__DIR__) . '/partials/header.php';
 .bank-info { background: #f8fafc; border: 2px dashed #94a3b8; border-radius: 8px; padding: 12px; margin-bottom: 16px; position: relative; }
 .amount-option-btn.active {
   background: var(--yellow) !important;
-  box-shadow: 1px 1px 0 var(--ink) !important;
-  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0 var(--ink) !important;
+  transform: translate(4px, 4px) !important;
 }
 </style>
 
@@ -279,10 +279,12 @@ require dirname(__DIR__) . '/partials/header.php';
 
       <div class="form-group" style="margin-bottom:14px">
         <label class="form-label" style="font-size:12px;font-weight:800;color:#555">Pilih Nominal Penarikan (Rp)</label>
-        <div class="amount-selection-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px;">
+        <div class="amount-selection-grid" style="display:grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 12px;">
           <?php foreach ($available_amounts as $amt): ?>
-            <button type="button" class="amount-option-btn" data-value="<?= $amt ?>" onclick="selectWdAmount(this, <?= $amt ?>)" style="padding: 12px 6px; font-size: 13px; font-weight: 900; text-align: center; background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; box-shadow: 3px 3px 0 var(--ink); cursor: pointer; transition: all 0.1s; outline: none; font-family: inherit;">
-              <?= format_rp($amt) ?>
+            <button type="button" class="amount-option-btn" data-value="<?= $amt ?>" onclick="selectWdAmount(this, <?= $amt ?>)" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 8px; background: #fff; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); cursor: pointer; transition: all 0.1s; outline: none; font-family: inherit;">
+              <img src="/assets/dollar.jpg" alt="uang" style="width: 56px; height: 56px; object-fit: contain; margin-bottom: 8px; mix-blend-mode: multiply; filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.1));">
+              <span style="font-size: 16px; font-weight: 900; color: var(--ink); letter-spacing: -0.5px;"><?= format_rp($amt) ?></span>
+              <span style="font-size: 10px; font-weight: 800; color: #64748b; margin-top: 4px; text-transform: uppercase;">Tarik Saldo</span>
             </button>
           <?php endforeach; ?>
         </div>
