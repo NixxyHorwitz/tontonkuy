@@ -179,13 +179,9 @@ if ($wd_lock_start && $wd_lock_end) {
         $diff = $e_ts - $now_ts;
         $h = floor($diff / 3600);
         $m = floor(($diff % 3600) / 60);
-        $wd_estimation = "⏳ Penarikan saat ini <strong>DITUTUP</strong>. Akan dibuka dalam <strong>{$h} jam {$m} menit</strong>.";
+        $wd_estimation = "Penarikan saat ini <strong>DITUTUP</strong>. Akan dibuka dalam <strong>{$h} jam {$m} menit</strong>.";
     } else {
-        if ($s_ts <= $now_ts) $s_ts += 86400;
-        $diff = $s_ts - $now_ts;
-        $h = floor($diff / 3600);
-        $m = floor(($diff % 3600) / 60);
-        $wd_estimation = "✅ Penarikan saat ini <strong>DIBUKA</strong>. Akan ditutup dalam <strong>{$h} jam {$m} menit</strong>.";
+        $wd_estimation = "Penarikan Buka";
     }
 }
 
@@ -223,10 +219,7 @@ require dirname(__DIR__) . '/partials/header.php';
   <div class="wd-bal__val"><?= format_rp((float)$user['balance_wd']) ?></div>
 </div>
 
-<div class="alert" style="margin-bottom:16px;font-size:12px;background:#fef08a;border:3px solid var(--ink);color:var(--ink);border-radius:8px;display:flex;align-items:flex-start;gap:6px;box-shadow:3px 3px 0 var(--ink)">
-  <i class="ph-fill ph-info" style="color:#d97706;font-size:16px;margin-top:2px"></i>
-  <div><strong>Batas Penarikan:</strong> Minimal <?= format_rp($min_withdraw) ?><?= $max_withdraw > 0 ? ' & Maksimal ' . format_rp($max_withdraw) : '' ?></div>
-</div>
+<!-- Limit alert removed per user request -->
 
 <?php if ($flash): ?>
 <div class="alert alert--<?= $flashType === 'error' ? 'error' : 'success' ?>" style="margin-bottom:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
@@ -234,16 +227,22 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Lock notice / Estimation -->
 <?php if ($wd_estimation): ?>
-<div class="alert <?= $wd_locked ? 'alert--error' : 'alert--success' ?>" style="margin-bottom:16px;font-size:12px;border:2px solid <?= $wd_locked ? 'var(--red)' : 'var(--green)' ?>;border-radius:8px">
-  <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px">
-    <i class="<?= $wd_locked ? 'ph-fill ph-lock-key' : 'ph-fill ph-check-circle' ?>" style="color:<?= $wd_locked ? 'var(--red)' : 'var(--green)' ?>;font-size:16px;margin-top:2px"></i>
-    <div><?= str_replace(['⏳','✅'], '', $wd_estimation) ?></div>
+  <?php if ($wd_locked): ?>
+  <div class="alert alert--error" style="margin-bottom:16px;font-size:12px;border:2px solid var(--red);border-radius:8px">
+    <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px">
+      <i class="ph-fill ph-lock-key" style="color:var(--red);font-size:16px;margin-top:2px"></i>
+      <div><?= $wd_estimation ?></div>
+    </div>
+    <?php if ($wd_lock_notice): ?>
+    <div style="margin-bottom:6px;padding-left:22px"><em>"<?= htmlspecialchars($wd_lock_notice) ?>"</em></div>
+    <?php endif; ?>
+    <div style="font-size:11px;opacity:0.8;padding-left:22px;font-weight:700"><i class="ph-bold ph-clock"></i> Jam operasional: <?= date('h:i A', strtotime($wd_lock_end)) ?> – <?= date('h:i A', strtotime($wd_lock_start)) ?></div>
   </div>
-  <?php if ($wd_locked && $wd_lock_notice): ?>
-  <div style="margin-bottom:6px;padding-left:22px"><em>"<?= htmlspecialchars($wd_lock_notice) ?>"</em></div>
+  <?php else: ?>
+  <div style="display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;border:2px solid #166534;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:800;margin-bottom:16px;box-shadow:2px 2px 0 #166534">
+    <i class="ph-bold ph-check-circle"></i> <?= $wd_estimation ?>
+  </div>
   <?php endif; ?>
-  <div style="font-size:11px;opacity:0.8;padding-left:22px;font-weight:700"><i class="ph-bold ph-clock"></i> Jam operasional: <?= date('h:i A', strtotime($wd_lock_end)) ?> – <?= date('h:i A', strtotime($wd_lock_start)) ?></div>
-</div>
 <?php endif; ?>
 
 <!-- Level block notice -->
@@ -285,35 +284,7 @@ require dirname(__DIR__) . '/partials/header.php';
         </div>
       </div>
 
-      <?php if ($has_bank): ?>
-      <div class="bank-info">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
-          <div style="font-size:11px;font-weight:900;color:var(--ink);text-transform:uppercase"><i class="ph-bold ph-bank"></i> Rekening Tujuan</div>
-          <a href="/edit-rekening" class="btn btn--sm" style="font-size:10px;padding:6px 12px;border:2.5px solid var(--ink);background:#fff;color:var(--ink);font-weight:900;border-radius:8px;box-shadow:2px 2px 0 var(--ink)"><i class="ph-bold ph-pencil-simple"></i> Edit</a>
-        </div>
-        <div style="font-size:13px;font-weight:700;color:var(--ink)">
-          <?php $user_wl = $channel_logos[strtolower($user['bank_name'] ?? '')] ?? null; ?>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            <?php if ($user_wl): ?>
-            <img src="/assets/banks/<?= htmlspecialchars($user_wl) ?>" style="height:24px;border-radius:4px;object-fit:contain">
-            <?php else: ?>
-            <div style="width:24px;height:24px;background:#fff;border:2px solid var(--ink);border-radius:4px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-bank"></i></div>
-            <?php endif; ?>
-            <span style="font-size:14px;font-weight:900"><?= htmlspecialchars($user['bank_name']) ?></span>
-          </div>
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
-            <span id="wd-accnum-display" style="font-size:18px;font-family:monospace;letter-spacing:1px;font-weight:900;color:var(--ink)"><?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?></span>
-            <button type="button" id="wd-accnum-toggle" onclick="toggleAccNum()"
-              title="Tampilkan/sembunyikan nomor"
-              style="background:none;border:none;cursor:pointer;padding:0;line-height:1;font-size:18px;color:#64748b;flex-shrink:0;transition:color 0.2s">
-              <i class="ph-bold ph-eye"></i>
-            </button>
-          </div>
-          <div style="font-size:12px;font-weight:800;color:#334155"><?= htmlspecialchars($user['account_name']) ?></div>
-        </div>
-      </div>
-
-      <?php else: ?>
+      <?php if (!$has_bank): ?>
       <div class="alert alert--warn" style="margin-bottom:12px;font-size:12px">⚠️ Harap isi data rekening bankmu ya. Data ini gak bisa diubah lagi setelah disimpan!</div>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Nama Bank / E-Wallet</label>
@@ -487,9 +458,40 @@ document.addEventListener('DOMContentLoaded', () => {
       <div class="card__title" style="color:var(--ink);font-weight:900;font-size:16px;display:flex;align-items:center;gap:6px"><i class="ph-bold ph-paper-plane-right"></i> Konfirmasi Penarikan</div>
     </div>
     <div class="card__body" style="padding:16px;background:#fff;border-radius:0 0 9px 9px;">
-      <div style="font-size:13px;font-weight:700;margin-bottom:12px;color:#333;text-align:center;">Kamu akan melakukan penarikan sebesar:</div>
-      <div id="brutal-confirm-amt" style="font-size:26px;font-weight:900;color:var(--brand);margin-bottom:12px;text-align:center;letter-spacing:-0.5px;"></div>
-      <div style="font-size:12px;color:#666;margin-bottom:20px;font-weight:600;text-align:center;">Pastikan data rekening bank tujuan sudah benar.<br>Apakah kamu ingin melanjutkan?</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:#333;text-align:center;">Nominal Penarikan:</div>
+      <div id="brutal-confirm-amt" style="font-size:26px;font-weight:900;color:var(--brand);margin-bottom:16px;text-align:center;letter-spacing:-0.5px;"></div>
+      
+      <?php if ($has_bank): ?>
+      <div class="bank-info" style="margin-bottom:20px;padding:12px;box-shadow:3px 3px 0 var(--ink);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+          <div style="font-size:10px;font-weight:900;color:var(--ink);text-transform:uppercase"><i class="ph-bold ph-bank"></i> Rekening Tujuan</div>
+          <a href="/edit-rekening" class="btn btn--sm" style="font-size:9px;padding:4px 8px;border:2px solid var(--ink);background:#fff;color:var(--ink);font-weight:900;border-radius:6px;box-shadow:2px 2px 0 var(--ink)"><i class="ph-bold ph-pencil-simple"></i> Edit</a>
+        </div>
+        <div style="font-size:13px;font-weight:700;color:var(--ink)">
+          <?php $user_wl = $channel_logos[strtolower($user['bank_name'] ?? '')] ?? null; ?>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+            <?php if ($user_wl): ?>
+            <img src="/assets/banks/<?= htmlspecialchars($user_wl) ?>" style="height:24px;border-radius:4px;object-fit:contain">
+            <?php else: ?>
+            <div style="width:24px;height:24px;background:#fff;border:2px solid var(--ink);border-radius:4px;display:flex;align-items:center;justify-content:center"><i class="ph-bold ph-bank"></i></div>
+            <?php endif; ?>
+            <span style="font-size:14px;font-weight:900"><?= htmlspecialchars($user['bank_name']) ?></span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span id="wd-accnum-display" style="font-size:16px;font-family:monospace;letter-spacing:1px;font-weight:900;color:var(--ink)"><?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?></span>
+            <button type="button" id="wd-accnum-toggle" onclick="toggleAccNum()"
+              title="Tampilkan/sembunyikan nomor"
+              style="background:none;border:none;cursor:pointer;padding:0;line-height:1;font-size:18px;color:#64748b;flex-shrink:0;transition:color 0.2s">
+              <i class="ph-bold ph-eye"></i>
+            </button>
+          </div>
+          <div style="font-size:12px;font-weight:800;color:#334155"><?= htmlspecialchars($user['account_name']) ?></div>
+        </div>
+      </div>
+      <?php else: ?>
+      <div style="font-size:12px;color:#666;margin-bottom:20px;font-weight:600;text-align:center;">Pastikan data rekening yang diisi sudah benar.<br>Apakah kamu ingin melanjutkan?</div>
+      <?php endif; ?>
+
       <div style="display:flex;gap:12px;">
         <button type="button" onclick="document.getElementById('brutal-confirm').style.display='none'" class="btn" style="flex:1;background:#eee;color:var(--ink);border:3px solid var(--ink);font-weight:800;border-radius:8px;">Batal</button>
         <button type="button" onclick="confirmBrutalWd()" class="btn btn--primary" style="flex:1.5;background:var(--yellow);color:var(--ink);border:3px solid var(--ink);font-weight:900;border-radius:8px;box-shadow:3px 3px 0 var(--ink);">Ya, Tarik Dana</button>
