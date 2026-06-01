@@ -133,7 +133,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     goto done_redeem;
                 }
             }
-        } }
+        }
         $pdo->rollBack();
     }
 }
