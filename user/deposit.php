@@ -24,7 +24,7 @@ $_form_token = $_SESSION[$_ftk];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $submitted_ftk = $_POST['form_token'] ?? '';
     if (!hash_equals($_SESSION[$_ftk] ?? '', $submitted_ftk)) {
-        $flash = '⚠️ Permintaan sudah diproses atau tidak valid. Silakan refresh halaman.';
+        $flash = '⚠️ Request kamu gagal diproses atau gak valid. Coba refresh halaman dulu ya!';
         $flashType = 'error';
         goto end_dep;
     }
@@ -39,15 +39,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
         $amount += $u_code;
     }
     if ($amount < $min_deposit) {
-        $flash = 'Minimal deposit ' . format_rp($min_deposit) . '.'; $flashType = 'error';
+        $flash = 'Minimal deposit ' . format_rp($min_deposit) . ' ya.'; $flashType = 'error';
     } elseif (!$bank_enabled) {
-        $flash = 'Transfer bank sedang tidak tersedia.'; $flashType = 'error';
+        $flash = 'Transfer bank lagi gak tersedia nih.'; $flashType = 'error';
     } else {
         $proof = null;
         if (!empty($_FILES['proof']['tmp_name'])) {
             $ext = strtolower(pathinfo($_FILES['proof']['name'], PATHINFO_EXTENSION));
             if (!in_array($ext, ['jpg','jpeg','png','webp'])) {
-                $flash = 'Format bukti harus JPG/PNG/WEBP.'; $flashType = 'error';
+                $flash = 'Bukti transfer harus format JPG/PNG/WEBP ya.'; $flashType = 'error';
                 goto end_dep;
             }
             $dir = dirname(__DIR__) . '/uploads/deposits/';
@@ -69,7 +69,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
         
         // Success — regenerate token for next request
         $_SESSION[$_ftk] = bin2hex(random_bytes(16));
-        $flash = '✅ Bukti transfer dikirim! Admin akan memproses dalam 1×24 jam.';
+        $flash = '✅ Bukti transfer berhasil dikirim! Admin bakal memproses dalam 1×24 jam ya.';
     }
 }
 
@@ -80,9 +80,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
         $amount += $u_code;
     }
     if ($amount < $min_deposit) {
-        $flash = 'Minimal deposit ' . format_rp($min_deposit) . '.'; $flashType = 'error';
+        $flash = 'Minimal deposit ' . format_rp($min_deposit) . ' ya.'; $flashType = 'error';
     } elseif (!$qris_enabled || empty($qris_raw)) {
-        $flash = 'QRIS belum tersedia.'; $flashType = 'error';
+        $flash = 'QRIS lagi gak tersedia nih.'; $flashType = 'error';
     } else {
         $pdo->prepare("INSERT INTO deposits (user_id,amount,method,status) VALUES (?,?,'qris','pending')")
             ->execute([$user['id'], $amount]);
@@ -215,7 +215,7 @@ require dirname(__DIR__) . '/partials/header.php';
         <div id="bank-total-transfer" style="font-size:26px;font-weight:900;color:var(--ink);letter-spacing:-0.5px">Rp 0</div>
         <div style="font-size:11px;font-weight:800;color:var(--orange);margin-top:8px;background:rgba(251,146,60,0.1);padding:8px;border-radius:6px;border:1px solid rgba(251,146,60,0.3);display:flex;align-items:flex-start;gap:6px">
           <i class="ph-fill ph-warning-circle" style="font-size:16px;margin-top:1px"></i> 
-          <div>Wajib transfer nominal persis hingga 3 digit terakhir agar deposit cepat diproses otomatis!</div>
+          <div>Wajib transfer nominal persis sampai 3 digit terakhir supaya deposit kamu cepat diproses otomatis!</div>
         </div>
       </div>
       <?php endif; ?>

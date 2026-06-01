@@ -175,7 +175,7 @@ require dirname(__DIR__) . '/partials/header.php';
 <!-- Dashboard Stats -->
 <div style="background:var(--white);border:2.5px solid var(--ink);border-radius:14px;box-shadow:4px 4px 0 var(--ink);padding:14px;margin-bottom:16px;transition:transform 0.2s">
   <div style="font-size:14px;font-weight:900;margin-bottom:12px;display:flex;align-items:center;gap:6px">
-    <i class="ph-fill ph-chart-pie-slice" style="font-size:18px;color:var(--brand)"></i> Statistik Anda
+    <i class="ph-fill ph-chart-pie-slice" style="font-size:18px;color:var(--brand)"></i> Statistik Kamu
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
     <div style="display:flex;flex-direction:column;gap:4px">
@@ -187,7 +187,7 @@ require dirname(__DIR__) . '/partials/header.php';
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:4px">
-      <div style="font-size:10px;font-weight:800;color:#666">Kode Referral</div>
+      <div style="font-size:10px;font-weight:800;color:#666">Kode Referralmu</div>
       <div style="display:flex;align-items:center;gap:6px">
         <div style="font-size:12px;font-weight:900;letter-spacing:1px;background:#f4f4f4;padding:4px 8px;border-radius:6px;border:1.5px solid #ccc;flex:1;text-align:center"><?= $user['referral_code'] ?></div>
         <button type="button" onclick="copyRef('<?= htmlspecialchars($user['referral_code']) ?>')" style="background:var(--ink);color:var(--white);border:none;border-radius:6px;width:28px;height:28px;display:flex;align-items:center;justify-content:center;cursor:pointer">
@@ -197,7 +197,7 @@ require dirname(__DIR__) . '/partials/header.php';
     </div>
   </div>
 </div>
-<div id="ref-toast" style="display:none;text-align:center;font-size:11px;font-weight:800;color:var(--green);margin-bottom:12px">✓ Kode disalin!</div>
+<div id="ref-toast" style="display:none;text-align:center;font-size:11px;font-weight:800;color:var(--green);margin-bottom:12px">✓ Kode berhasil disalin! Siap dibagikan!</div>
 
 <?php if (setting($pdo, 'investment_enabled', '1') === '1'): ?>
 <!-- Invest Banner -->
@@ -269,7 +269,7 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <?php if ($watch_today >= $watch_limit): ?>
 <div class="alert alert--warn" style="margin-bottom:16px;font-size:12px;padding:10px;border-radius:10px;animation:pulse-glow 2s infinite">
-  <i class="ph-bold ph-warning-circle" style="font-size:16px"></i> Limit tonton hari ini habis (<?= $watch_limit ?>). <a href="/upgrade" style="color:inherit;font-weight:800;text-decoration:underline">Upgrade sekarang</a>
+  <i class="ph-bold ph-warning-circle" style="font-size:16px"></i> Limit tonton hari ini udah habis ya (<?= $watch_limit ?>). <a href="/upgrade" style="color:inherit;font-weight:800;text-decoration:underline">Yuk upgrade sekarang!</a>
 </div>
 <?php endif; ?>
 

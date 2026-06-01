@@ -65,9 +65,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $chosen = $ms->fetch();
 
     if (!$chosen) {
-        $flash = 'Paket tidak ditemukan.'; $flashType = 'error';
+        $flash = 'Duh, paketnya gak ketemu nih.'; $flashType = 'error';
     } elseif ((float)$chosen['price'] == 0) {
-        $flash = 'Paket Free tidak perlu upgrade.'; $flashType = 'error';
+        $flash = 'Paket Free gak usah diupgrade ya!'; $flashType = 'error';
     } else {
         $voucher_code = strtoupper(trim($_POST['voucher_code'] ?? ''));
         $price = (float)$chosen['price'];
@@ -80,28 +80,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $v_data = $v_stmt->fetch();
             
             if (!$v_data) {
-                $flash = 'Voucher diskon tidak valid.'; $flashType = 'error';
+                $flash = 'Kode vouchermu gak valid nih.'; $flashType = 'error';
                 goto end_post;
             }
             if ($v_data['expires_at'] && strtotime($v_data['expires_at']) < time()) {
-                $flash = 'Voucher diskon sudah kedaluwarsa.'; $flashType = 'error';
+                $flash = 'Wah, voucher diskon ini udah kedaluwarsa.'; $flashType = 'error';
                 goto end_post;
             }
             if ($v_data['max_claims'] > 0 && $v_data['claims_count'] >= $v_data['max_claims']) {
-                $flash = 'Kuota voucher diskon sudah habis.'; $flashType = 'error';
+                $flash = 'Kuota voucher diskon ini udah abis ya.'; $flashType = 'error';
                 goto end_post;
             }
             
             $chk = $pdo->prepare("SELECT id FROM user_discount_claims WHERE user_id = ? AND voucher_id = ?");
             $chk->execute([$user['id'], $v_data['id']]);
             if ($chk->fetch()) {
-                $flash = 'Kamu sudah menggunakan voucher diskon ini sebelumnya.'; $flashType = 'error';
+                $flash = 'Kamu udah pernah pakai voucher diskon ini sebelumnya.'; $flashType = 'error';
                 goto end_post;
             }
             
             $discounts = json_decode($v_data['discounts'], true) ?: [];
             if (!isset($discounts[$mid])) {
-                $flash = 'Voucher diskon tidak dapat digunakan untuk paket pilihanmu.'; $flashType = 'error';
+                $flash = 'Voucher diskon ini gak bisa dipakai buat paket pilihanmu ya.'; $flashType = 'error';
                 goto end_post;
             }
             
@@ -111,7 +111,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         
         if ((float)$user['balance_dep'] < $final_price) {
-            $flash = 'Saldo Beli tidak mencukupi. Deposit terlebih dahulu.'; $flashType = 'error';
+            $flash = 'Saldo Beli kamu kurang nih. Yuk deposit dulu!'; $flashType = 'error';
         } else {
             try {
                 $pdo->beginTransaction();
@@ -145,11 +145,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $pdo->commit();
                     
                     $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
-                    $flash = '🎉 Upgrade ke ' . htmlspecialchars($chosen['name']) . ' berhasil! Berlaku hingga ' . date('d M Y', strtotime($new_expires)) . '.';
+                    $flash = '🎉 Hore! Upgrade ke ' . htmlspecialchars($chosen['name']) . ' berhasil! Berlaku s/d ' . date('d M Y', strtotime($new_expires)) . ' ya.';
                     $active_membership = $chosen;
                 } else {
                     $pdo->rollBack();
-                    $flash = 'Saldo Beli tidak mencukupi. Transaksi digagalkan.'; $flashType = 'error';
+                    $flash = 'Saldo Beli kamu kurang nih. Transaksi gagal ya.'; $flashType = 'error';
                 }
             } catch (\Throwable $e) {
                 if ($pdo->inTransaction()) {

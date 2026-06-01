@@ -60,20 +60,20 @@ $_form_token_wd = $_SESSION[$_ftk_wd];
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $submitted_ftk_wd = $_POST['form_token'] ?? '';
     if (!hash_equals($_SESSION[$_ftk_wd] ?? '', $submitted_ftk_wd)) {
-        $flash = '⚠️ Permintaan sudah diproses atau tidak valid. Silakan refresh halaman.';
+        $flash = '⚠️ Request kamu gagal diproses atau gak valid. Coba refresh halaman dulu ya!';
         $flashType = 'error';
         goto end_wd;
     }
     unset($_SESSION[$_ftk_wd]);
 
     if (!$user['can_withdraw']) {
-        $flash = '❌ Akses Withdraw dibatasi. Hubungi admin untuk informasi lebih lanjut.'; $flashType = 'error';
+        $flash = '❌ Akses withdraw kamu dibatasi nih. Hubungi admin yuk buat info lebih lanjut!'; $flashType = 'error';
     } elseif ($wd_locked) {
         $flash = '⏰ ' . $wd_lock_notice; $flashType = 'error';
     } elseif ($has_pending_wd) {
-        $flash = '⏳ Kamu masih memiliki WD yang sedang diproses. Tunggu hingga selesai sebelum mengajukan yang baru.'; $flashType = 'error';
+        $flash = '⏳ Kamu masih punya request WD yang lagi diproses nih. Tunggu kelar dulu ya!'; $flashType = 'error';
     } elseif ($level_blocked) {
-        $flash = "Upgrade ke {$min_level_name} untuk bisa menarik saldo."; $flashType = 'error';
+        $flash = "Upgrade ke {$min_level_name} dulu yuk biar bisa tarik saldo!"; $flashType = 'error';
     } else {
         $amount  = (float) preg_replace('/\D/', '', $_POST['amount'] ?? '0');
         
@@ -82,13 +82,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $accname = $has_bank ? $user['account_name'] : trim($_POST['account_name'] ?? '');
 
         if ($amount < $min_withdraw) {
-            $flash = 'Minimal withdraw ' . format_rp($min_withdraw) . '.'; $flashType = 'error';
+            $flash = 'Minimal withdraw ' . format_rp($min_withdraw) . ' ya.'; $flashType = 'error';
         } elseif ($max_withdraw > 0 && $amount > $max_withdraw) {
-            $flash = 'Maksimal withdraw ' . format_rp($max_withdraw) . '.'; $flashType = 'error';
+            $flash = 'Maksimal withdraw ' . format_rp($max_withdraw) . ' ya.'; $flashType = 'error';
         } elseif ($amount > (float)$user['balance_wd']) {
-            $flash = 'Saldo penarikan tidak mencukupi.'; $flashType = 'error';
+            $flash = 'Saldo penarikan kamu gak cukup nih.'; $flashType = 'error';
         } elseif (!$bank || !$accnum || !$accname) {
-            $flash = 'Lengkapi data rekening.'; $flashType = 'error';
+            $flash = 'Lengkapi dulu data rekeningmu ya.'; $flashType = 'error';
         } else {
             $pdo->beginTransaction();
             if (!$has_bank) {
@@ -121,7 +121,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             // Regenerate token
             $_SESSION[$_ftk_wd] = bin2hex(random_bytes(16));
-            $flash = '✅ Permintaan withdraw dikirim! Proses 1-10 menit.';
+            $flash = '✅ Request withdraw berhasil dikirim! Proses 1-10 menit ya.';
             $flashType = 'success';
         }
     }
@@ -286,7 +286,7 @@ require dirname(__DIR__) . '/partials/header.php';
       </div>
 
       <?php else: ?>
-      <div class="alert alert--warn" style="margin-bottom:12px;font-size:12px">⚠️ Harap isi data rekening bank. Data ini tidak dapat diubah setelah diisi!</div>
+      <div class="alert alert--warn" style="margin-bottom:12px;font-size:12px">⚠️ Harap isi data rekening bankmu ya. Data ini gak bisa diubah lagi setelah disimpan!</div>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Nama Bank / E-Wallet</label>
         <input class="form-control" type="text" name="bank_name"
@@ -303,21 +303,21 @@ require dirname(__DIR__) . '/partials/header.php';
         <label class="form-label" style="font-size:12px">Nama Pemilik Rekening</label>
         <input class="form-control" type="text" name="account_name"
                value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>"
-               placeholder="Nama sesuai rekening" required>
+               placeholder="Nama sesuai rekening bank" required>
       </div>
       <?php endif; ?>
 
       <?php if ($has_pending_wd): ?>
         <div class="alert alert--warn" style="margin-bottom:12px;font-size:12px;border:2px solid var(--orange)">
-          <i class="ph-bold ph-hourglass" style="color:var(--orange)"></i> <strong>Ada penarikan pending.</strong> Tunggu hingga selesai diproses.
+          <i class="ph-bold ph-hourglass" style="color:var(--orange)"></i> <strong>Ada penarikan pending.</strong> Tunggu kelar diproses dulu ya.
         </div>
-        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:14px;height:48px"><i class="ph-bold ph-hourglass-high"></i> Menunggu Proses</button>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:14px;height:48px"><i class="ph-bold ph-hourglass-high"></i> Sabar, Lagi Diproses...</button>
       <?php elseif ((float)$user['balance_wd'] < $min_withdraw): ?>
-        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:14px;height:48px"><i class="ph-bold ph-wallet"></i> Saldo Belum Cukup</button>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:14px;height:48px"><i class="ph-bold ph-wallet"></i> Saldo Kurang Dikit!</button>
       <?php elseif ($wd_locked): ?>
-        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:14px;height:48px"><i class="ph-bold ph-clock"></i> Sedang Ditutup</button>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:14px;height:48px"><i class="ph-bold ph-clock"></i> Lagi Tutup Nih</button>
       <?php else: ?>
-        <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full no-dbl-submit" style="font-size:14px;height:48px;background:var(--yellow);color:var(--ink);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink)"><i class="ph-bold ph-paper-plane-right"></i> Ajukan Penarikan</button>
+        <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full no-dbl-submit" style="font-size:14px;height:48px;background:var(--yellow);color:var(--ink);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink)"><i class="ph-bold ph-paper-plane-right"></i> Tarik Saldo Sekarang</button>
       <?php endif; ?>
     </form>
   </div>

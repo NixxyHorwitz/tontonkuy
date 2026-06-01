@@ -11,26 +11,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'check') {
         header('Content-Type: application/json');
         $code_input = strtoupper(trim($_POST['code'] ?? ''));
-        if (!$code_input) { echo json_encode(['error' => 'Masukkan kode redeem.']); exit; }
+        if (!$code_input) { echo json_encode(['error' => 'Masukkan kode redeem kamu dulu ya!']); exit; }
         
         $stmt = $pdo->prepare("SELECT * FROM redeem_codes WHERE code = ?");
         $stmt->execute([$code_input]);
         $codeData = $stmt->fetch();
         
-        if (!$codeData) { echo json_encode(['error' => 'Kode redeem tidak ditemukan atau tidak valid.']); exit; }
-        if ($codeData['expires_at'] && strtotime($codeData['expires_at']) < time()) { echo json_encode(['error' => 'Kode redeem ini sudah kedaluwarsa.']); exit; }
-        if ($codeData['max_claims'] > 0 && $codeData['claims_count'] >= $codeData['max_claims']) { echo json_encode(['error' => 'Kode redeem ini sudah mencapai batas kuota klaim.']); exit; }
+        if (!$codeData) { echo json_encode(['error' => 'Kode redeem-nya gak ketemu atau udah gak valid nih.']); exit; }
+        if ($codeData['expires_at'] && strtotime($codeData['expires_at']) < time()) { echo json_encode(['error' => 'Kode redeem ini udah kedaluwarsa ya.']); exit; }
+        if ($codeData['max_claims'] > 0 && $codeData['claims_count'] >= $codeData['max_claims']) { echo json_encode(['error' => 'Kuota klaim buat kode redeem ini udah abis nih.']); exit; }
         if (!empty($codeData['target_users'])) {
             $allowed = array_map('trim', explode(',', $codeData['target_users']));
             if (!in_array($user['username'], $allowed, true) && !in_array($user['email'], $allowed, true)) {
-                echo json_encode(['error' => 'Kode redeem ini khusus untuk pengguna tertentu saja.']);
+                echo json_encode(['error' => 'Kode redeem ini khusus buat user tertentu aja ya.']);
                 exit;
             }
         }
         
         $chk = $pdo->prepare("SELECT id FROM user_redeems WHERE user_id = ? AND code_id = ?");
         $chk->execute([$user['id'], $codeData['id']]);
-        if ($chk->fetch()) { echo json_encode(['error' => 'Kamu sudah mengklaim kode ini sebelumnya.']); exit; }
+        if ($chk->fetch()) { echo json_encode(['error' => 'Kamu udah pernah klaim kode ini sebelumnya.']); exit; }
         
         $msg_parts = [];
         if ($codeData['reward_wd'] > 0) $msg_parts[] = 'Saldo Penarikan: ' . format_rp((float)$codeData['reward_wd']);
@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $code_input = strtoupper(trim($_POST['code'] ?? ''));
     if (!$code_input) {
-        $flash = 'Masukkan kode redeem.';
+        $flash = 'Masukkan kode redeem kamu dulu ya!';
         $flashType = 'error';
     } else {
         $pdo->beginTransaction();
@@ -59,26 +59,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $codeData = $stmt->fetch();
         
         if (!$codeData) {
-            $flash = 'Kode redeem tidak ditemukan atau tidak valid.';
+            $flash = 'Kode redeem-nya gak ketemu atau udah gak valid nih.';
             $flashType = 'error';
         } else {
             if ($codeData['expires_at'] && strtotime($codeData['expires_at']) < time()) {
-                $flash = 'Kode redeem ini sudah kedaluwarsa.';
+                $flash = 'Kode redeem ini udah kedaluwarsa ya.';
                 $flashType = 'error';
             } elseif ($codeData['max_claims'] > 0 && $codeData['claims_count'] >= $codeData['max_claims']) {
-                $flash = 'Kode redeem ini sudah mencapai batas kuota klaim.';
+                $flash = 'Kuota klaim buat kode redeem ini udah abis nih.';
                 $flashType = 'error';
             } elseif (!empty($codeData['target_users']) && 
                       !in_array($user['username'], array_map('trim', explode(',', $codeData['target_users'])), true) && 
                       !in_array($user['email'], array_map('trim', explode(',', $codeData['target_users'])), true)) {
-                $flash = 'Kode redeem ini khusus untuk pengguna tertentu saja.';
+                $flash = 'Kode redeem ini khusus buat user tertentu aja ya.';
                 $flashType = 'error';
             } else {
                 // Cek apakah user sudah pernah klaim
                 $chk = $pdo->prepare("SELECT id FROM user_redeems WHERE user_id = ? AND code_id = ?");
                 $chk->execute([$user['id'], $codeData['id']]);
                 if ($chk->fetch()) {
-                    $flash = 'Kamu sudah mengklaim kode ini sebelumnya.';
+                    $flash = 'Kamu udah pernah klaim kode ini sebelumnya.';
                     $flashType = 'error';
                 } else {
                     // Record klaim
@@ -95,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     
                     $updateSql = "UPDATE users SET balance_wd = balance_wd + ?, balance_dep = balance_dep + ?, total_earned = total_earned + ?";
                     $updateParams = [$r_wd, $r_dep, $r_wd]; // hanya WD yang dihitung total earned (opsional, tergantung logic bisnis)
-
+ 
                     $level_name = '';
                     if ($r_lvl) {
                         // Get level duration
@@ -110,7 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $updateParams[] = $days;
                         }
                     }
-
+ 
                     $updateSql .= " WHERE id = ?";
                     $updateParams[] = $user['id'];
                     
@@ -128,12 +128,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     if ($r_dep > 0) $msg_parts[] = 'Saldo Beli ' . format_rp($r_dep);
                     if ($level_name) $msg_parts[] = 'Level ' . $level_name;
                     
-                    $flash = '✅ Selamat! Kamu mendapatkan ' . implode(', ', $msg_parts) . '.';
+                    $flash = '🎉 Hore! Kamu dapet ' . implode(', ', $msg_parts) . '. Selamat ya!';
                     $flashType = 'success';
                     goto done_redeem;
                 }
             }
-        }
+        } }
         $pdo->rollBack();
     }
 }
