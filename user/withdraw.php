@@ -270,11 +270,6 @@ require dirname(__DIR__) . '/partials/header.php';
     <form method="POST" id="wd-form">
       <?= csrf_field() ?>
       <input type="hidden" name="form_token" value="<?= htmlspecialchars($_form_token_wd) ?>">
-      <div style="background:var(--bg); border:3px solid var(--ink); border-radius:12px; padding:12px; margin-bottom:16px; text-align:center; font-weight:900; box-shadow: inset 2px 2px 0 rgba(0,0,0,0.05)">
-        <span style="font-size:11px; font-weight:800; color:#666; display:block; margin-bottom:4px">Nominal Terpilih:</span>
-        <span id="display-selected-amount" style="color:var(--brand); font-size:24px; font-weight:900">Belum memilih</span>
-      </div>
-
       <input type="hidden" name="amount" id="selected-amount" value="" required>
 
       <div class="form-group" style="margin-bottom:14px">
@@ -359,7 +354,6 @@ function selectWdAmount(btn, val) {
   document.querySelectorAll('.amount-option-btn').forEach(el => el.classList.remove('active'));
   btn.classList.add('active');
   document.getElementById('selected-amount').value = val;
-  document.getElementById('display-selected-amount').innerText = 'Rp ' + val.toLocaleString('id-ID');
 }
 
 // ── Toggle show/hide account number ──
