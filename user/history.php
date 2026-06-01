@@ -160,7 +160,7 @@ require dirname(__DIR__) . '/partials/header.php';
       </div>
       <div class="list-item__right">
         <span class="badge badge--<?= match($w['status']){'approved'=>'success','pending'=>'warn','rejected'=>'error','refunded'=>'info',default=>'error'} ?>" style="font-size:10px;font-weight:800">
-          <?= ucfirst($w['status']) ?>
+          <?= match($w['status']){'approved'=>'Sukses', 'pending'=>'Menunggu', 'hold'=>'Ditahan', 'rejected'=>'Ditolak', 'refunded'=>'Dikembalikan', default=>ucfirst($w['status'])} ?>
         </span>
         <div class="list-item__amount" style="margin-top:6px;color:var(--red);font-weight:900;font-size:13px;text-align:right">-<?= format_rp((float)$w['amount']) ?></div>
       </div>
