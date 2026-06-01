@@ -30,6 +30,24 @@ $min_withdraw  = $user_mem ? (float)$user_mem['min_wd'] : 0;
 $max_withdraw  = $user_mem ? (float)$user_mem['max_wd'] : 0;
 $max_available = min((float)$user['balance_wd'], $max_withdraw > 0 ? $max_withdraw : (float)$user['balance_wd']);
 
+$predefined_amounts = [10000, 20000, 25000, 30000, 40000, 50000, 75000, 100000, 150000, 200000, 250000, 300000, 400000, 500000, 750000, 1000000, 1500000, 2000000, 2500000, 3000000, 5000000];
+
+if ($min_withdraw > 0 && !in_array((int)$min_withdraw, $predefined_amounts, true)) {
+    $predefined_amounts[] = (int)$min_withdraw;
+}
+if ($max_withdraw > 0 && !in_array((int)$max_withdraw, $predefined_amounts, true)) {
+    $predefined_amounts[] = (int)$max_withdraw;
+}
+
+sort($predefined_amounts);
+
+$available_amounts = [];
+foreach ($predefined_amounts as $amt) {
+    if ($amt >= $min_withdraw && ($max_withdraw == 0 || $amt <= $max_withdraw)) {
+        $available_amounts[] = $amt;
+    }
+}
+
 $has_bank = !empty($user['bank_name']) && !empty($user['account_number']) && !empty($user['account_name']);
 
 $wd_locked = is_wd_locked($pdo);
@@ -81,7 +99,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $accnum  = $has_bank ? $user['account_number'] : trim($_POST['account_number'] ?? '');
         $accname = $has_bank ? $user['account_name'] : trim($_POST['account_name'] ?? '');
 
-        if ($amount < $min_withdraw) {
+        if (!in_array((int)$amount, $available_amounts, true)) {
+            $flash = 'Nominal penarikan gak valid nih. Harus pilih dari daftar ya!'; $flashType = 'error';
+        } elseif ($amount < $min_withdraw) {
             $flash = 'Minimal withdraw ' . format_rp($min_withdraw) . ' ya.'; $flashType = 'error';
         } elseif ($max_withdraw > 0 && $amount > $max_withdraw) {
             $flash = 'Maksimal withdraw ' . format_rp($max_withdraw) . ' ya.'; $flashType = 'error';
@@ -190,6 +210,11 @@ require dirname(__DIR__) . '/partials/header.php';
 .card-trusted__body { padding: 16px; }
 
 .bank-info { background: #f8fafc; border: 2px dashed #94a3b8; border-radius: 8px; padding: 12px; margin-bottom: 16px; position: relative; }
+.amount-option-btn.active {
+  background: var(--yellow) !important;
+  box-shadow: 1px 1px 0 var(--ink) !important;
+  transform: translate(2px, 2px);
+}
 </style>
 
 <!-- Balance -->
@@ -245,19 +270,22 @@ require dirname(__DIR__) . '/partials/header.php';
     <form method="POST" id="wd-form">
       <?= csrf_field() ?>
       <input type="hidden" name="form_token" value="<?= htmlspecialchars($_form_token_wd) ?>">
-      <div class="form-group" style="margin-bottom:12px">
-        <label class="form-label" style="font-size:12px;font-weight:800;color:#555">Nominal Penarikan (Rp)</label>
-        <div style="position:relative">
-          <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);font-weight:900;color:var(--ink);font-size:16px">Rp</span>
-          <input class="form-control" type="number" name="amount" step="1000" placeholder="Min. <?= number_format($min_withdraw,0,'','') ?>" required style="padding-left:42px;font-size:18px;font-weight:900;height:48px;letter-spacing:1px">
-        </div>
+      <div style="background:var(--bg); border:3px solid var(--ink); border-radius:12px; padding:12px; margin-bottom:16px; text-align:center; font-weight:900; box-shadow: inset 2px 2px 0 rgba(0,0,0,0.05)">
+        <span style="font-size:11px; font-weight:800; color:#666; display:block; margin-bottom:4px">Nominal Terpilih:</span>
+        <span id="display-selected-amount" style="color:var(--brand); font-size:24px; font-weight:900">Belum memilih</span>
       </div>
-      <div class="qty-grid">
-        <?php foreach ([50000,100000,200000,500000] as $q): ?>
-        <?php if ($q <= $max_available): ?>
-        <div class="qty-btn" onclick="document.querySelector('[name=amount]').value=<?= $q ?>"><?= format_rp($q) ?></div>
-        <?php endif; ?>
-        <?php endforeach; ?>
+
+      <input type="hidden" name="amount" id="selected-amount" value="" required>
+
+      <div class="form-group" style="margin-bottom:14px">
+        <label class="form-label" style="font-size:12px;font-weight:800;color:#555">Pilih Nominal Penarikan (Rp)</label>
+        <div class="amount-selection-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 8px;">
+          <?php foreach ($available_amounts as $amt): ?>
+            <button type="button" class="amount-option-btn" data-value="<?= $amt ?>" onclick="selectWdAmount(this, <?= $amt ?>)" style="padding: 12px 6px; font-size: 13px; font-weight: 900; text-align: center; background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; box-shadow: 3px 3px 0 var(--ink); cursor: pointer; transition: all 0.1s; outline: none; font-family: inherit;">
+              <?= format_rp($amt) ?>
+            </button>
+          <?php endforeach; ?>
+        </div>
       </div>
 
       <?php if ($has_bank): ?>
@@ -325,6 +353,13 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php endif; ?>
 
 <script>
+function selectWdAmount(btn, val) {
+  document.querySelectorAll('.amount-option-btn').forEach(el => el.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('selected-amount').value = val;
+  document.getElementById('display-selected-amount').innerText = 'Rp ' + val.toLocaleString('id-ID');
+}
+
 // ── Toggle show/hide account number ──
 const _maskedNum = '<?= htmlspecialchars(mask_account($user['account_number'] ?? '')) ?>';
 const _realNum   = '<?= htmlspecialchars($user['account_number'] ?? '') ?>';
@@ -357,6 +392,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const amt = amtInput ? parseFloat(amtInput.value) : 0;
     const maxWd = <?= (float)$max_available ?>;
 
+    if (!amt || isNaN(amt)) {
+      e.preventDefault();
+      alert('Pilih dulu nominal penarikannya ya!');
+      return;
+    }
     if (amt < minWd) {
       e.preventDefault();
       alert('Minimal withdraw Rp ' + minWd.toLocaleString('id-ID'));
