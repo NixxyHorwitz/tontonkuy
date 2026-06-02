@@ -364,7 +364,8 @@ if (isset($update['callback_query'])) {
                             $basePrice = (float)$oStmt->fetchColumn();
                             if (!$basePrice) $basePrice = (float)$uInfo['price'];
                             
-                            $refundAmt = $basePrice * 0.85; // 15% cut
+                            $pct = (float)$uInfo['refund_cut_percent'];
+                            $refundAmt = $basePrice * ((100 - $pct) / 100);
                             
                             $pdo->prepare("UPDATE users SET balance_dep = balance_dep + ?, membership_id = NULL, membership_expires_at = NULL WHERE id = ?")
                                 ->execute([$refundAmt, $req['user_id']]);
@@ -373,7 +374,7 @@ if (isset($update['callback_query'])) {
                             $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
                             $msg .= "👤 <b>User:</b> <code>{$req['username']}</code>\n";
                             $msg .= "🏆 <b>Level Dibatalkan:</b> <code>{$uInfo['name']}</code>\n";
-                            $msg .= "💵 <b>Saldo Dikembalikan:</b> <code>" . format_rp($refundAmt) . " (potongan 15%)</code>\n";
+                            $msg .= "💵 <b>Saldo Dikembalikan:</b> <code>" . format_rp($refundAmt) . " (potongan {$pct}%)</code>\n";
                             $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
                             $msg .= "<i>Refund level telah disetujui dan saldo berhasil dikembalikan.</i>";
                         } else {
@@ -405,6 +406,30 @@ if (isset($update['callback_query'])) {
             }
             answer_cb($token, $cb_id, '⚠️ Error DB: ' . $th->getMessage());
         }
+        http_response_code(200); exit;
+    }
+
+    // ── EDIT REFUND CUT ──────────────────────────────────────────────────────
+    if (preg_match('/^edit_refcut_(\d+)$/', $data, $m)) {
+        $uid = (int)$m[1];
+        answer_cb($token, $cb_id, "📝 Ketik persentase potongan baru (contoh: 25)...");
+        $prompt_msg_id = send_msg($token, $chat_id, "📝 <b>Ketik angka persentase potongan refund baru</b> (0 - 100) untuk User ID: <b>{$uid}</b> lalu kirim sebagai pesan.", []);
+        $state = implode('|', ['awaiting_refcut', $uid, $msg_id, base64_encode($orig), (int)$prompt_msg_id]);
+        set_tg_state($pdo, $chat_id, $state);
+        http_response_code(200); exit;
+    }
+
+    // ── TOGGLE REFUND ACCESS ────────────────────────────────────────────────
+    if (preg_match('/^toggle_ref_(\d+)$/', $data, $m)) {
+        $uid = (int)$m[1];
+        $s = $pdo->prepare("SELECT is_refund_enabled FROM users WHERE id=?");
+        $s->execute([$uid]);
+        $curr = (int)$s->fetchColumn();
+        $new_val = $curr ? 0 : 1;
+        $pdo->prepare("UPDATE users SET is_refund_enabled=? WHERE id=?")->execute([$new_val, $uid]);
+        
+        $txt = $new_val ? "✅ Akses refund diaktifkan." : "🔒 Akses refund diblokir.";
+        answer_cb($token, $cb_id, $txt);
         http_response_code(200); exit;
     }
 

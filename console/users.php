@@ -60,13 +60,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $mem_exp_val = ($mem_exp && $mem_id) ? $mem_exp : null;
             $plinko_c  = (int)($_POST['plinko_coins'] ?? 0);
+            $ref_cut   = (float)($_POST['refund_cut_percent'] ?? 20.0);
+            $ref_en    = (int)($_POST['is_refund_enabled'] ?? 1);
             $sql = "UPDATE users SET username=?, email=?, whatsapp=?, membership_id=?, membership_expires_at=?,
                     balance_wd=?, balance_dep=?, total_earned=?, is_active=?, can_withdraw=?, can_chat=?,
-                    bank_name=?, account_number=?, account_name=?, plinko_coins=? WHERE id=?";
+                    bank_name=?, account_number=?, account_name=?, plinko_coins=?, refund_cut_percent=?, is_refund_enabled=? WHERE id=?";
             $pdo->prepare($sql)->execute([
                 $username, $email, $whatsapp, $mem_id, $mem_exp_val,
                 $bal_wd, $bal_dep, $total_e, $is_active, $can_wd, $can_chat,
-                $bank_name, $account_number, $account_name, $plinko_c, $uid
+                $bank_name, $account_number, $account_name, $plinko_c, $ref_cut, $ref_en, $uid
             ]);
             if ($new_pass !== '') {
                 $pdo->prepare("UPDATE users SET password_hash=? WHERE id=?")
@@ -248,9 +250,21 @@ require __DIR__ . '/partials/header.php';
             <label class="c-label">Total Earned (Rp)</label>
             <input type="number" name="total_earned" id="eu-total-earned" class="c-form-control" step="0.01" min="0">
           </div>
+          </div>
           <div class="c-form-group mb-3">
             <label class="c-label">Koin Plinko</label>
             <input type="number" name="plinko_coins" id="eu-plinko-coins" class="c-form-control" min="0">
+          </div>
+          <div class="c-form-group mb-3">
+            <label class="c-label">Potongan Refund (%)</label>
+            <input type="number" name="refund_cut_percent" id="eu-ref-cut" class="c-form-control" step="0.01" min="0" max="100">
+          </div>
+          <div class="c-form-group mb-3">
+            <label class="c-label">Izin Akses Refund</label>
+            <select name="is_refund_enabled" id="eu-ref-en" class="c-form-control">
+              <option value="1">Diizinkan</option>
+              <option value="0">Diblokir (Disembunyikan)</option>
+            </select>
           </div>
           <div class="c-form-group mb-3">
             <label class="c-label">Paket Membership</label>
@@ -359,6 +373,8 @@ function editUser(u) {
   document.getElementById('eu-bank-name').value   = u.bank_name || '';
   document.getElementById('eu-acc-num').value     = u.account_number || '';
   document.getElementById('eu-acc-name').value    = u.account_name || '';
+  document.getElementById('eu-ref-cut').value     = u.refund_cut_percent !== undefined ? u.refund_cut_percent : '20.00';
+  document.getElementById('eu-ref-en').value      = u.is_refund_enabled !== undefined ? u.is_refund_enabled : 1;
 
   // Format datetime-local: "2026-05-06 15:00:00" → "2026-05-06T15:00"
   const exp = u.membership_expires_at;

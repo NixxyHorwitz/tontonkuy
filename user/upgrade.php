@@ -7,10 +7,26 @@ $flash = $flashType = '';
 
 // Active membership info
 $active_membership = null;
+$can_refund = false;
+$user_settings = ['refund_cut_percent' => 20, 'is_refund_enabled' => 1];
+
 if ($user['membership_id'] && $user['membership_expires_at'] && strtotime($user['membership_expires_at']) > time()) {
     $ms = $pdo->prepare("SELECT * FROM memberships WHERE id=?");
     $ms->execute([$user['membership_id']]);
     $active_membership = $ms->fetch();
+    
+    $uSet = $pdo->prepare("SELECT refund_cut_percent, is_refund_enabled FROM users WHERE id=?");
+    $uSet->execute([$user['id']]);
+    $user_settings = $uSet->fetch() ?: $user_settings;
+    
+    if ($user_settings['is_refund_enabled']) {
+        $lastUp = $pdo->prepare("SELECT confirmed_at FROM upgrade_orders WHERE user_id=? AND membership_id=? AND status='confirmed' ORDER BY id DESC LIMIT 1");
+        $lastUp->execute([$user['id'], $active_membership['id']]);
+        $last_confirmed = $lastUp->fetchColumn();
+        if ($last_confirmed && strtotime($last_confirmed) > time() - (12 * 3600)) {
+            $can_refund = true;
+        }
+    }
 }
 
 // AJAX Check Voucher
@@ -68,22 +84,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmtPending->fetchColumn()) {
             $flash = '❌ Permintaan pengembalian dana kamu sebelumnya masih dalam proses verifikasi otomatis.'; $flashType = 'error';
         } else {
-            $s = $pdo->prepare("SELECT m.name FROM users u LEFT JOIN memberships m ON u.membership_id = m.id WHERE u.id=?");
+            $s = $pdo->prepare("SELECT m.name, u.refund_cut_percent, u.is_refund_enabled FROM users u LEFT JOIN memberships m ON u.membership_id = m.id WHERE u.id=?");
             $s->execute([$user['id']]);
-            $mName = $s->fetchColumn();
+            $uInfo = $s->fetch();
+            $mName = $uInfo['name'] ?? null;
             
             if (!$mName) {
                 $flash = '❌ Kamu tidak memiliki paket aktif.'; $flashType = 'error';
+            } elseif (!$uInfo['is_refund_enabled']) {
+                $flash = '❌ Akses refund kamu telah dinonaktifkan.'; $flashType = 'error';
             } else {
                 $pdo->prepare("INSERT INTO admin_requests (user_id, type) VALUES (?, 'refund_level')")->execute([$user['id']]);
                 $req_id = $pdo->lastInsertId();
                 
+                $pct = (float)$uInfo['refund_cut_percent'];
                 $msg  = "💰 <b>REQUEST REFUND LEVEL</b>\n\n";
                 $msg .= "👤 User: <code>{$user['username']}</code>\n";
                 $msg .= "🏆 Level: <b>{$mName}</b>\n";
-                $msg .= "⚠️ <i>Refund ini akan membatalkan level user dan mengembalikan saldo dengan potongan 15% (jika di-Approve).</i>\n";
+                $msg .= "⚠️ <i>Refund ini akan membatalkan level user dan mengembalikan saldo dengan potongan {$pct}% (jika di-Approve).</i>\n";
                 $kb = [
-                    [['text'=>'✅ Approve Refund', 'callback_data'=>'req_approve_'.$req_id], ['text'=>'❌ Reject', 'callback_data'=>'req_reject_'.$req_id]]
+                    [['text'=>'✅ Approve Refund', 'callback_data'=>'req_approve_'.$req_id], ['text'=>'❌ Reject', 'callback_data'=>'req_reject_'.$req_id]],
+                    [['text'=>"⚙️ Ubah Potongan ({$pct}%)", 'callback_data'=>'edit_refcut_'.$user['id']], ['text'=>'🔒 Cabut Akses Refund', 'callback_data'=>'toggle_ref_'.$user['id']]]
                 ];
                 send_telegram_notif($pdo, $msg, $kb);
                 
@@ -181,6 +202,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $us = $pdo->prepare("SELECT * FROM users WHERE id=?"); $us->execute([$user['id']]); $user = $us->fetch();
                     $flash = '🎉 Hore! Upgrade ke ' . htmlspecialchars($chosen['name']) . ' berhasil! Berlaku s/d ' . date('d M Y', strtotime($new_expires)) . ' ya.';
                     $active_membership = $chosen;
+                    $can_refund = true; // just upgraded, well within 12 hours
+                    
+                    $msgNotif = "🎉 <b>MEMBER UPGRADE LEVEL</b>\n\n";
+                    $msgNotif .= "👤 User: <code>{$user['username']}</code>\n";
+                    $msgNotif .= "🏆 Level Baru: <b>{$chosen['name']}</b>\n";
+                    $msgNotif .= "💰 Harga: " . format_rp((float)$final_price) . "\n";
+                    $msgNotif .= "🕐 Waktu: " . date('d M Y H:i:s');
+                    send_telegram_notif($pdo, $msgNotif);
                 } else {
                     $pdo->rollBack();
                     $flash = 'Saldo Beli kamu kurang nih. Transaksi gagal ya.'; $flashType = 'error';
@@ -264,7 +293,9 @@ require dirname(__DIR__) . '/partials/header.php';
   berlaku s/d <?= date('d M Y', strtotime($user['membership_expires_at'])) ?>
   
   <div style="margin-top:10px;">
-    <button type="button" class="btn btn--sm" onclick="document.getElementById('brutal-refund-confirm').style.display='flex'" style="background:#fff;border:2px solid var(--red);color:var(--red);font-size:11px;font-weight:900;box-shadow:2px 2px 0 var(--red)">Minta Pengembalian Uang dri pembelian level</button>
+    <?php if ($can_refund): ?>
+    <button type="button" class="btn" onclick="document.getElementById('brutal-refund-confirm').style.display='flex'" style="background:#fff;border:2px solid var(--red);color:var(--red);font-size:12px;font-weight:900;box-shadow:2px 2px 0 var(--red); white-space: normal; padding: 10px; width: 100%; text-align: center; display: flex; align-items: center; justify-content: center; line-height: 1.4;">⏪ Minta Pengembalian Uang (Refund)</button>
+    <?php endif; ?>
   </div>
 </div>
 <?php endif; ?>
