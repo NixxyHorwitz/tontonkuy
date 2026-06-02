@@ -257,6 +257,10 @@ require __DIR__ . '/partials/header.php';
             <input type="number" name="balance_dep" id="eu-bal-dep" class="c-form-control" step="0.01" min="0">
           </div>
           <div class="c-form-group mb-3">
+            <label class="c-label">Total Earned (Rp)</label>
+            <input type="number" name="total_earned" id="eu-total-earned" class="c-form-control" step="0.01" min="0">
+          </div>
+          <div class="c-form-group mb-3">
             <label class="c-label">Koin Plinko & Refund Cut (%)</label>
             <div style="display:flex; gap:10px;">
               <input type="number" name="plinko_coins" id="eu-plinko-coins" class="c-form-control" min="0" placeholder="Koin">
