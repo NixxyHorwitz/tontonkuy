@@ -36,6 +36,13 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+// Track global referral cookie
+if (!empty($_GET['ref'])) {
+    $ref_code = strtoupper(trim($_GET['ref']));
+    setcookie('tonton_ref', $ref_code, time() + (86400 * 30), '/');
+    $_COOKIE['tonton_ref'] = $ref_code;
+}
+
 // PDO connection
 function createPdo(): PDO {
     $dsn = sprintf(

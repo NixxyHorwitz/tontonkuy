@@ -121,8 +121,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 end_reg:
 
-// Detect referral from URL param
-$ref_from_url = strtoupper(trim($_GET['ref'] ?? ''));
+// Detect referral from URL param or Cookie
+$ref_from_url = strtoupper(trim($_GET['ref'] ?? $_COOKIE['tonton_ref'] ?? ''));
 
 // Load payment channels for bank select
 $_pay_channels = $pdo->query("SELECT name, type FROM payment_channels WHERE is_active=1 ORDER BY type ASC, sort_order ASC, name ASC")->fetchAll();

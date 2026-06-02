@@ -1,68 +1,93 @@
 <?php
 declare(strict_types=1);
-require_once dirname(__DIR__) . '/auth/guard.php';
+require_once dirname(__DIR__) . '/bootstrap.php';
 
-$watch_limit = user_watch_limit($pdo, $user);
-$watch_today = user_watch_today($pdo, $user);
-
-// Available videos (not yet watched today)
-$videos = $pdo->prepare(
-    "SELECT v.* FROM videos v
-     WHERE v.is_active=1
-       AND v.id NOT IN (
-           SELECT video_id FROM watch_history
-           WHERE user_id=? AND DATE(watched_at)=CURDATE()
-       )
-     ORDER BY v.sort_order ASC, v.id DESC LIMIT 6"
-);
-$videos->execute([$user['id']]);
-$videos = $videos->fetchAll();
-
-// Recent activity
-$history = $pdo->prepare(
-    "SELECT wh.reward_given, wh.watched_at, v.title
-     FROM watch_history wh
-     JOIN videos v ON v.id=wh.video_id
-     WHERE wh.user_id=?
-     ORDER BY wh.watched_at DESC LIMIT 4"
-);
-$history->execute([$user['id']]);
-$history = $history->fetchAll();
-
-// Membership name
-$membership_name = 'Free';
-if ($user['membership_id'] && $user['membership_expires_at'] && strtotime($user['membership_expires_at']) > time()) {
-    $ms = $pdo->prepare("SELECT name FROM memberships WHERE id=?");
-    $ms->execute([$user['membership_id']]);
-    $membership_name = $ms->fetchColumn() ?: 'Free';
+$user = auth_user($pdo);
+$is_guest = false;
+if (!$user) {
+    $is_guest = true;
+    $user = [
+        'id' => 0,
+        'username' => 'Tamu',
+        'balance_wd' => 0,
+        'balance_dep' => 0,
+        'membership_id' => null,
+        'membership_expires_at' => null,
+        'referral_code' => '-',
+        'is_promotor' => 0,
+    ];
 }
 
-// Unread notifications preview (max 3)
-$notif_preview = [];
-$notif_unread  = 0;
-try {
-    $uid = $user['id'];
-    $np = $pdo->prepare(
-        "SELECT n.* FROM notifications n
-         LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
-         WHERE nr.id IS NULL
-           AND (n.target_type='all' OR (n.target_user_ids IS NOT NULL AND JSON_CONTAINS(n.target_user_ids, JSON_QUOTE(?))))
-           AND (n.expires_at IS NULL OR n.expires_at > NOW())
-         ORDER BY n.created_at DESC LIMIT 3"
+// Maintenance mode check — block users but not admins
+if (is_maintenance($pdo) && !auth_admin()) {
+    $maintenance_msg = setting($pdo, 'maintenance_message', 'Sistem sedang dalam perbaikan.');
+    require dirname(__DIR__) . '/user/maintenance.php';
+    exit;
+}
+
+// Track pageview (analytics)
+track_pageview($pdo, parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH));
+
+$watch_limit = $is_guest ? 0 : user_watch_limit($pdo, $user);
+$watch_today = $is_guest ? 0 : user_watch_today($pdo, $user);
+
+// Available videos
+if ($is_guest) {
+    $videos = $pdo->query("SELECT v.* FROM videos v WHERE v.is_active=1 ORDER BY v.sort_order ASC, v.id DESC LIMIT 6")->fetchAll();
+    $history = [];
+    $notif_preview = [];
+    $notif_unread = 0;
+} else {
+    $videos = $pdo->prepare(
+        "SELECT v.* FROM videos v
+         WHERE v.is_active=1
+           AND v.id NOT IN (
+               SELECT video_id FROM watch_history
+               WHERE user_id=? AND DATE(watched_at)=CURDATE()
+           )
+         ORDER BY v.sort_order ASC, v.id DESC LIMIT 6"
     );
-    $np->execute([$uid, (string)$uid]);
-    $notif_preview = $np->fetchAll();
-    // Total unread count
-    $nc = $pdo->prepare(
-        "SELECT COUNT(*) FROM notifications n
-         LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
-         WHERE nr.id IS NULL
-           AND (n.target_type='all' OR (n.target_user_ids IS NOT NULL AND JSON_CONTAINS(n.target_user_ids, JSON_QUOTE(?))))
-           AND (n.expires_at IS NULL OR n.expires_at > NOW())"
+    $videos->execute([$user['id']]);
+    $videos = $videos->fetchAll();
+    
+    // Recent activity
+    $history = $pdo->prepare(
+        "SELECT wh.reward_given, wh.watched_at, v.title
+         FROM watch_history wh
+         JOIN videos v ON v.id=wh.video_id
+         WHERE wh.user_id=?
+         ORDER BY wh.watched_at DESC LIMIT 4"
     );
-    $nc->execute([$uid, (string)$uid]);
-    $notif_unread = (int)$nc->fetchColumn();
-} catch (\Throwable) {}
+    $history->execute([$user['id']]);
+    $history = $history->fetchAll();
+    
+    // Unread notifications preview (max 3)
+    $notif_preview = [];
+    $notif_unread  = 0;
+    try {
+        $uid = $user['id'];
+        $np = $pdo->prepare(
+            "SELECT n.* FROM notifications n
+             LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
+             WHERE nr.id IS NULL
+               AND (n.target_type='all' OR (n.target_user_ids IS NOT NULL AND JSON_CONTAINS(n.target_user_ids, JSON_QUOTE(?))))
+               AND (n.expires_at IS NULL OR n.expires_at > NOW())
+             ORDER BY n.created_at DESC LIMIT 3"
+        );
+        $np->execute([$uid, (string)$uid]);
+        $notif_preview = $np->fetchAll();
+        // Total unread count
+        $nc = $pdo->prepare(
+            "SELECT COUNT(*) FROM notifications n
+             LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
+             WHERE nr.id IS NULL
+               AND (n.target_type='all' OR (n.target_user_ids IS NOT NULL AND JSON_CONTAINS(n.target_user_ids, JSON_QUOTE(?))))
+               AND (n.expires_at IS NULL OR n.expires_at > NOW())"
+        );
+        $nc->execute([$uid, (string)$uid]);
+        $notif_unread = (int)$nc->fetchColumn();
+    } catch (\Throwable) {}
+}
 
 $pageTitle  = 'Beranda — TontonKuy';
 $activePage = 'home';
@@ -103,8 +128,8 @@ require dirname(__DIR__) . '/partials/header.php';
     <h2 style="font-size:18px;font-weight:900;margin:0;line-height:1.2;color:var(--ink)">Halo, <?= htmlspecialchars($user['username']) ?>!</h2>
     <span class="badge badge--neutral" style="font-size:10px;margin-top:4px;background:var(--peach);color:#fff;border-color:var(--ink)"><i class="ph-fill ph-star"></i> <?= $membership_name ?></span>
   </div>
-  <a href="/upgrade" class="upgrade-btn">
-    <i class="ph-bold ph-rocket-launch"></i> UPGRADE
+  <a href="<?= $is_guest ? '/login' : '/upgrade' ?>" class="upgrade-btn">
+    <i class="ph-bold <?= $is_guest ? 'ph-sign-in' : 'ph-rocket-launch' ?>"></i> <?= $is_guest ? 'LOGIN / DAFTAR' : 'UPGRADE' ?>
   </a>
 </div>
 
