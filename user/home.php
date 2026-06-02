@@ -117,18 +117,30 @@ require dirname(__DIR__) . '/partials/header.php';
   100% { transform: translateY(0); }
 }
 @keyframes pulse-glow {
-  0% { box-shadow: 0 0 0 0 rgba(0,229,255, 0.4); }
-  70% { box-shadow: 0 0 0 8px rgba(0,229,255, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(0,229,255, 0); }
+  0% { box-shadow: 0 0 0 0 rgba(255, 107, 53, 0.7); }
+  70% { box-shadow: 0 0 0 12px rgba(255, 107, 53, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 107, 53, 0); }
 }
 .upgrade-btn {
-  background:var(--blue);color:var(--white);text-decoration:none;padding:6px 12px;border-radius:8px;font-weight:900;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink);font-size:11px;display:flex;align-items:center;gap:4px;
+  background: linear-gradient(135deg, #FF6B35, #FF4500);
+  color: #fff;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 50px;
+  font-weight: 900;
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
   animation: pulse-glow 2s infinite;
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: all 0.2s ease;
 }
 .upgrade-btn:hover {
-  transform: translate(-2px, -2px);
-  box-shadow: 4px 4px 0 var(--ink);
+  transform: translate(-2px, -2px) scale(1.02);
+  box-shadow: 5px 5px 0 var(--ink);
 }
 .upgrade-btn i { animation: float 2s ease-in-out infinite; }
 </style>
