@@ -216,7 +216,7 @@ switch ($action) {
                 // We use callback_data because web_app is strictly forbidden in group chats by Telegram API.
                 // We will catch this callback and send the admin a Private Message (PM) containing the web_app button.
                 $inlineKbd['inline_keyboard'][] = [
-                    ['text' => "✏️ Edit Saldo", 'callback_data' => "req_edit:{$userId}"]
+                    ['text' => "✏️ Edit User & Saldo", 'callback_data' => "req_edit:{$userId}"]
                 ];
             }
         }
@@ -742,7 +742,7 @@ switch ($action) {
                 $euStmt->execute([$uId]);
                 $euInfo = $euStmt->fetch();
                 
-                $pmText = "✏️ <b>Edit Saldo User</b>\n";
+                $pmText = "✏️ <b>Edit User & Saldo</b>\n";
                 if ($euInfo) {
                     $lvlName = $euInfo['mem_name'] ?: 'Free';
                     $pmText .= "👤 Username: <b>{$euInfo['username']}</b>\n";
@@ -752,7 +752,7 @@ switch ($action) {
                 } else {
                     $pmText .= "User ID: {$uId}\n";
                 }
-                $pmText .= "\nKlik tombol di bawah untuk membuka Mini App Edit Saldo.";
+                $pmText .= "\nKlik tombol di bawah untuk membuka Mini App Edit User.";
                 
                 // Send Private Message to the admin who clicked the button
                 $pmRes = tg_api($pdo, 'sendMessage', [
@@ -761,7 +761,7 @@ switch ($action) {
                     'parse_mode' => 'HTML',
                     'reply_markup' => [
                         'inline_keyboard' => [
-                            [['text' => "📱 Buka Mini App Edit Saldo", 'web_app' => ['url' => $userEditLink]]]
+                            [['text' => "📱 Buka Mini App Edit User", 'web_app' => ['url' => $userEditLink]]]
                         ]
                     ]
                 ]);

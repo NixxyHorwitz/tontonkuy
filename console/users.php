@@ -64,6 +64,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $plinko_c  = (int)($_POST['plinko_coins'] ?? 0);
             $ref_cut   = (float)($_POST['refund_cut_percent'] ?? 20.0);
             $ref_en    = (int)($_POST['is_refund_enabled'] ?? 1);
+            $is_promo  = (int)($_POST['is_promotor'] ?? 0);
             $sql = "UPDATE users SET username=?, email=?, whatsapp=?, membership_id=?, membership_expires_at=?,
                     balance_wd=?, balance_dep=?, total_earned=?, is_active=?, can_withdraw=?, can_chat=?,
                     bank_name=?, account_number=?, account_name=?, plinko_coins=?, refund_cut_percent=?, is_refund_enabled=?, is_promotor=? WHERE id=?";
@@ -201,7 +202,7 @@ require __DIR__ . '/partials/header.php';
             <input type="text" name="whatsapp" id="eu-whatsapp" class="c-form-control">
           </div>
           <div class="c-form-group mb-3">
-            <label class="c-label">Password Baru <small style="color:#666">(kosongkan jika tidak diubah)</small></label>
+            <label class="c-label">Password Baru <small style="color:#666">(kosongkan jika tak diubah)</small></label>
             <input type="text" name="new_password" class="c-form-control" placeholder="Biarkan kosong jika tidak diubah">
           </div>
           <div class="c-form-group mb-3">
@@ -218,9 +219,6 @@ require __DIR__ . '/partials/header.php';
               <option value="1">Promotor (Gaji Bulanan & Bonus Tinggi)</option>
             </select>
           </div>
-        </div>
-        <!-- Col 2 -->
-        <div class="col-md-6">
           <div class="c-form-group mb-3">
             <label class="c-label">Akses Withdraw</label>
             <select name="can_withdraw" id="eu-can-wd" class="c-form-control">
@@ -235,6 +233,9 @@ require __DIR__ . '/partials/header.php';
               <option value="0">Dibatasi (Blocked)</option>
             </select>
           </div>
+        </div>
+        <!-- Col 2 -->
+        <div class="col-md-6">
           <div class="c-form-group mb-3">
             <label class="c-label">Nama Bank / E-Wallet</label>
             <input type="text" name="bank_name" id="eu-bank-name" class="c-form-control">
@@ -243,13 +244,10 @@ require __DIR__ . '/partials/header.php';
             <label class="c-label">Nomor Rekening</label>
             <input type="text" name="account_number" id="eu-acc-num" class="c-form-control">
           </div>
-          <div class="c-form-group">
+          <div class="c-form-group mb-3">
             <label class="c-label">Nama Pemilik Rekening</label>
             <input type="text" name="account_name" id="eu-acc-name" class="c-form-control">
           </div>
-        </div>
-        <!-- Col 2 -->
-        <div class="col-md-6">
           <div class="c-form-group mb-3">
             <label class="c-label">Saldo Penarikan (Rp)</label>
             <input type="number" name="balance_wd" id="eu-bal-wd" class="c-form-control" step="0.01" min="0">
@@ -259,17 +257,11 @@ require __DIR__ . '/partials/header.php';
             <input type="number" name="balance_dep" id="eu-bal-dep" class="c-form-control" step="0.01" min="0">
           </div>
           <div class="c-form-group mb-3">
-            <label class="c-label">Total Earned (Rp)</label>
-            <input type="number" name="total_earned" id="eu-total-earned" class="c-form-control" step="0.01" min="0">
-          </div>
-          </div>
-          <div class="c-form-group mb-3">
-            <label class="c-label">Koin Plinko</label>
-            <input type="number" name="plinko_coins" id="eu-plinko-coins" class="c-form-control" min="0">
-          </div>
-          <div class="c-form-group mb-3">
-            <label class="c-label">Potongan Refund (%)</label>
-            <input type="number" name="refund_cut_percent" id="eu-ref-cut" class="c-form-control" step="0.01" min="0" max="100">
+            <label class="c-label">Koin Plinko & Refund Cut (%)</label>
+            <div style="display:flex; gap:10px;">
+              <input type="number" name="plinko_coins" id="eu-plinko-coins" class="c-form-control" min="0" placeholder="Koin">
+              <input type="number" name="refund_cut_percent" id="eu-ref-cut" class="c-form-control" step="0.01" min="0" max="100" placeholder="Cut %">
+            </div>
           </div>
           <div class="c-form-group mb-3">
             <label class="c-label">Izin Akses Refund</label>
@@ -288,7 +280,7 @@ require __DIR__ . '/partials/header.php';
             </select>
           </div>
           <div class="c-form-group">
-            <label class="c-label">Expires At Membership</label>
+            <label class="c-label">Expires At</label>
             <input type="datetime-local" name="membership_expires_at" id="eu-mem-exp" class="c-form-control">
           </div>
         </div>

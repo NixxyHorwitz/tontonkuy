@@ -56,6 +56,7 @@ if (!$u) {
 }
 
 $flash = $flashType = '';
+$memberships = $pdo->query("SELECT id, name FROM memberships WHERE is_active=1 ORDER BY sort_order ASC")->fetchAll();
 
 // ── Handle POST ──────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -63,11 +64,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $dep  = (float)preg_replace('/\D/', '', $_POST['balance_dep']        ?? '0');
     $ebdm = (int)  preg_replace('/\D/', '', $_POST['edit_bank_deposit_min'] ?? '50000');
     $plinko_rtp = isset($_POST['plinko_rtp']) && $_POST['plinko_rtp'] !== '' ? (float)$_POST['plinko_rtp'] : null;
+    
+    $is_act = isset($_POST['is_active']) ? (int)$_POST['is_active'] : $u['is_active'];
+    $is_pro = isset($_POST['is_promotor']) ? (int)$_POST['is_promotor'] : $u['is_promotor'];
+    $mem_id = !empty($_POST['membership_id']) ? (int)$_POST['membership_id'] : null;
+    $new_pw = trim($_POST['new_password'] ?? '');
 
-    $pdo->prepare("UPDATE users SET balance_wd=?, balance_dep=?, edit_bank_deposit_min=?, plinko_rtp=? WHERE id=?")
-        ->execute([$wd, $dep, $ebdm, $plinko_rtp, $uid]);
+    $pdo->prepare("UPDATE users SET balance_wd=?, balance_dep=?, edit_bank_deposit_min=?, plinko_rtp=?, is_active=?, is_promotor=?, membership_id=? WHERE id=?")
+        ->execute([$wd, $dep, $ebdm, $plinko_rtp, $is_act, $is_pro, $mem_id, $uid]);
 
-    $flash = "✅ Saldo berhasil diupdate!";
+    if ($new_pw !== '') {
+        $pdo->prepare("UPDATE users SET password_hash=? WHERE id=?")->execute([password_hash($new_pw, PASSWORD_DEFAULT), $uid]);
+    }
+
+    $flash = "✅ Data berhasil diupdate!";
     $flashType = "success";
 
     // Refresh data
@@ -80,7 +90,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Edit Saldo — <?= htmlspecialchars($u['username']) ?></title>
+    <title>Edit User — <?= htmlspecialchars($u['username']) ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
@@ -158,6 +168,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <form method="POST">
+        <div class="card">
+            <div class="section-title">👤 Edit Profil & Status</div>
+
+            <div class="mb-3">
+                <label>Status Akun</label>
+                <select name="is_active" class="form-control">
+                    <option value="1" <?= $u['is_active']==1?'selected':'' ?>>Aktif (Bisa Komentar)</option>
+                    <option value="0" <?= $u['is_active']==0?'selected':'' ?>>Banned (Mute)</option>
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label>Status Promotor</label>
+                <select name="is_promotor" class="form-control">
+                    <option value="0" <?= $u['is_promotor']==0?'selected':'' ?>>User Biasa</option>
+                    <option value="1" <?= $u['is_promotor']==1?'selected':'' ?>>Promotor</option>
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label>Paket Membership</label>
+                <select name="membership_id" class="form-control">
+                    <option value="">Free (Tidak ada)</option>
+                    <?php foreach($memberships as $m): ?>
+                    <option value="<?= $m['id'] ?>" <?= $u['membership_id']==$m['id']?'selected':'' ?>><?= htmlspecialchars($m['name']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label>Password Baru</label>
+                <input type="text" name="new_password" class="form-control" placeholder="Kosongkan jika tidak diubah">
+            </div>
+        </div>
+
         <div class="card">
             <div class="section-title">💰 Edit Saldo</div>
 
