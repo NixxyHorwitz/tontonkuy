@@ -130,9 +130,8 @@ for ($i = $chart_days - 1; $i >= 0; $i--) {
 // 6. Fetch Downlines (Referred Members)
 $downline_stmt = $pdo->prepare("
     SELECT 
-        u.id, u.username, u.created_at,
-        (SELECT name FROM memberships WHERE id = u.membership_id) as membership_name,
-        COALESCE((SELECT SUM(amount) FROM deposits WHERE user_id = u.id AND status = 'confirmed'), 0) as total_deposits
+        u.id, u.username, u.created_at, u.balance_wd,
+        (SELECT name FROM memberships WHERE id = u.membership_id) as membership_name
     FROM users u
     WHERE u.referred_by = ?
     ORDER BY u.created_at DESC
@@ -356,7 +355,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="list-item__right" style="text-align:right">
           <div style="font-size:13px;font-weight:900;color:var(--brand)">
-            <?= format_rp((float)$dl['total_deposits']) ?>
+            <?= format_rp((float)$dl['balance_wd']) ?>
           </div>
           <div style="font-size:10px;font-weight:800;color:#666;margin-top:2px">
             <?= htmlspecialchars($dl['membership_name'] ?: 'Free') ?>
