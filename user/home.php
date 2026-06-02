@@ -15,6 +15,7 @@ if (!$user) {
         'membership_expires_at' => null,
         'referral_code' => '-',
         'is_promotor' => 0,
+        'plinko_coins' => 0,
     ];
 }
 
@@ -87,6 +88,14 @@ if ($is_guest) {
         $nc->execute([$uid, (string)$uid]);
         $notif_unread = (int)$nc->fetchColumn();
     } catch (\Throwable) {}
+}
+
+// Membership name
+$membership_name = 'Free';
+if ($user['membership_id'] && $user['membership_expires_at'] && strtotime($user['membership_expires_at']) > time()) {
+    $ms = $pdo->prepare("SELECT name FROM memberships WHERE id=?");
+    $ms->execute([$user['membership_id']]);
+    $membership_name = $ms->fetchColumn() ?: 'Free';
 }
 
 $pageTitle  = 'Beranda — TontonKuy';
