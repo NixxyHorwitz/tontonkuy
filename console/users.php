@@ -58,17 +58,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($errors) {
             $flash = implode(' ', $errors); $flashType = 'error';
         } else {
+            $mem_id    = $_POST['membership_id'] === '' ? null : (int)$_POST['membership_id'];
+            $mem_exp   = trim($_POST['membership_expires_at'] ?? '');
             $mem_exp_val = ($mem_exp && $mem_id) ? $mem_exp : null;
             $plinko_c  = (int)($_POST['plinko_coins'] ?? 0);
             $ref_cut   = (float)($_POST['refund_cut_percent'] ?? 20.0);
             $ref_en    = (int)($_POST['is_refund_enabled'] ?? 1);
             $sql = "UPDATE users SET username=?, email=?, whatsapp=?, membership_id=?, membership_expires_at=?,
                     balance_wd=?, balance_dep=?, total_earned=?, is_active=?, can_withdraw=?, can_chat=?,
-                    bank_name=?, account_number=?, account_name=?, plinko_coins=?, refund_cut_percent=?, is_refund_enabled=? WHERE id=?";
+                    bank_name=?, account_number=?, account_name=?, plinko_coins=?, refund_cut_percent=?, is_refund_enabled=?, is_promotor=? WHERE id=?";
             $pdo->prepare($sql)->execute([
                 $username, $email, $whatsapp, $mem_id, $mem_exp_val,
                 $bal_wd, $bal_dep, $total_e, $is_active, $can_wd, $can_chat,
-                $bank_name, $account_number, $account_name, $plinko_c, $ref_cut, $ref_en, $uid
+                $bank_name, $account_number, $account_name, $plinko_c, $ref_cut, $ref_en, $is_promo, $uid
             ]);
             if ($new_pass !== '') {
                 $pdo->prepare("UPDATE users SET password_hash=? WHERE id=?")
@@ -107,7 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Load memberships for dropdown
 $memberships = $pdo->query("SELECT id, name FROM memberships WHERE is_active=1 ORDER BY sort_order ASC")->fetchAll();
 
 $total  = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
@@ -155,6 +156,7 @@ require __DIR__ . '/partials/header.php';
           <td data-label="Aksi" style="white-space:nowrap">
             <button class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#2d3149;color:#fff;border:1px solid #3e445b;padding:4px 8px;font-weight:600;"
               onclick='editUser(<?= htmlspecialchars(json_encode($u), ENT_QUOTES) ?>)'>✏️ Edit</button>
+            <a href="/console/user_detail.php?id=<?= $u['id'] ?>" class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#32433e;color:#b2dfdb;border:1px solid #4a665e;padding:4px 8px;font-weight:600;text-decoration:none;">👁️ Detail</a>
             <button class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#1e3a5f;color:#90caf9;border:1px solid #2b4f7e;padding:4px 8px;font-weight:600;"
               onclick="adjustBalance(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>')">💰 Saldo</button>
             <?php if ($u['membership_id'] && $u['membership_name']): ?>
@@ -205,10 +207,20 @@ require __DIR__ . '/partials/header.php';
           <div class="c-form-group mb-3">
             <label class="c-label">Status Akun</label>
             <select name="is_active" id="eu-is-active" class="c-form-control">
-              <option value="1">Aktif</option>
-              <option value="0">Nonaktif</option>
+              <option value="1">Aktif (Bisa Komentar)</option>
+              <option value="0">Banned (Mute)</option>
             </select>
           </div>
+          <div class="c-form-group mb-3">
+            <label class="c-label">Status Promotor</label>
+            <select name="is_promotor" id="eu-is-promo" class="c-form-control">
+              <option value="0">User Biasa</option>
+              <option value="1">Promotor (Gaji Bulanan & Bonus Tinggi)</option>
+            </select>
+          </div>
+        </div>
+        <!-- Col 2 -->
+        <div class="col-md-6">
           <div class="c-form-group mb-3">
             <label class="c-label">Akses Withdraw</label>
             <select name="can_withdraw" id="eu-can-wd" class="c-form-control">
@@ -375,6 +387,7 @@ function editUser(u) {
   document.getElementById('eu-acc-name').value    = u.account_name || '';
   document.getElementById('eu-ref-cut').value     = u.refund_cut_percent !== undefined ? u.refund_cut_percent : '20.00';
   document.getElementById('eu-ref-en').value      = u.is_refund_enabled !== undefined ? u.is_refund_enabled : 1;
+  document.getElementById('eu-is-promo').value    = u.is_promotor !== undefined ? u.is_promotor : 0;
 
   // Format datetime-local: "2026-05-06 15:00:00" → "2026-05-06T15:00"
   const exp = u.membership_expires_at;

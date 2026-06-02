@@ -18,7 +18,8 @@ try {
     $pending_dep = (int)$pdo->query("SELECT COUNT(*) FROM deposits WHERE status='pending'")->fetchColumn();
     $pending_upg = (int)$pdo->query("SELECT COUNT(*) FROM upgrade_orders WHERE status='pending'")->fetchColumn();
     $pending_ord = (int)$pdo->query("SELECT COUNT(*) FROM orders WHERE status='pending'")->fetchColumn();
-} catch(\Throwable) { $pending_wd = $pending_dep = $pending_upg = $pending_ord = 0; }
+    $pending_req = (int)$pdo->query("SELECT COUNT(*) FROM admin_requests WHERE status='pending'")->fetchColumn();
+} catch(\Throwable) { $pending_wd = $pending_dep = $pending_upg = $pending_ord = $pending_req = 0; }
 
 $_favicon    = setting($pdo, 'favicon_path', '');
 $absolute_fav = $_favicon ? (preg_match('~^https?://~', $_favicon) ? $_favicon : '/' . ltrim($_favicon, '/')) : '';
@@ -224,6 +225,13 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
     <a href="/console/" class="c-nav-link <?= $activePage==='dashboard'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
       Dashboard
+    </a>
+    <?php endif; ?>
+    <?php if (staff_can('users')): ?>
+    <a href="/console/requests.php" class="c-nav-link <?= $activePage==='requests'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+      Permintaan
+      <?php if ($pending_req > 0): ?><span class="badge-dot"><?= $pending_req ?></span><?php endif; ?>
     </a>
     <?php endif; ?>
     <?php if (staff_can('videos')): ?>
