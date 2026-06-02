@@ -59,6 +59,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $action = $_POST['action'] ?? '';
+    
+    if ($action === 'refund_level') {
+        $stmtPending = $pdo->prepare("SELECT id FROM admin_requests WHERE user_id=? AND type='refund_level' AND status='pending'");
+        $stmtPending->execute([$user['id']]);
+        
+        if ($stmtPending->fetchColumn()) {
+            $flash = '❌ Permintaan pengembalian dana kamu sebelumnya masih dalam proses verifikasi otomatis.'; $flashType = 'error';
+        } else {
+            $s = $pdo->prepare("SELECT m.name FROM users u LEFT JOIN memberships m ON u.membership_id = m.id WHERE u.id=?");
+            $s->execute([$user['id']]);
+            $mName = $s->fetchColumn();
+            
+            if (!$mName) {
+                $flash = '❌ Kamu tidak memiliki paket aktif.'; $flashType = 'error';
+            } else {
+                $pdo->prepare("INSERT INTO admin_requests (user_id, type) VALUES (?, 'refund_level')")->execute([$user['id']]);
+                $req_id = $pdo->lastInsertId();
+                
+                $msg  = "💰 <b>REQUEST REFUND LEVEL</b>\n\n";
+                $msg .= "👤 User: <code>{$user['username']}</code>\n";
+                $msg .= "🏆 Level: <b>{$mName}</b>\n";
+                $msg .= "⚠️ <i>Refund ini akan membatalkan level user dan mengembalikan saldo dengan potongan 15% (jika di-Approve).</i>\n";
+                $kb = [
+                    [['text'=>'✅ Approve Refund', 'callback_data'=>'req_approve_'.$req_id], ['text'=>'❌ Reject', 'callback_data'=>'req_reject_'.$req_id]]
+                ];
+                send_telegram_notif($pdo, $msg, $kb);
+                
+                $flash = '✅ Permintaan pengembalian dana kamu telah masuk dan sedang diverifikasi oleh sistem secara otomatis.';
+            }
+        }
+        goto end_post;
+    }
+
     $mid = (int)($_POST['membership_id'] ?? 0);
     $ms  = $pdo->prepare("SELECT * FROM memberships WHERE id=? AND is_active=1");
     $ms->execute([$mid]);
@@ -228,6 +262,10 @@ require dirname(__DIR__) . '/partials/header.php';
   ⭐ Paket aktif: <strong><?= htmlspecialchars($active_membership['name']) ?></strong>
   — Limit <?= $active_membership['watch_limit'] ?>× /hari,
   berlaku s/d <?= date('d M Y', strtotime($user['membership_expires_at'])) ?>
+  
+  <div style="margin-top:10px;">
+    <button type="button" class="btn btn--sm" onclick="document.getElementById('brutal-refund-confirm').style.display='flex'" style="background:#fff;border:2px solid var(--red);color:var(--red);font-size:11px;font-weight:900;box-shadow:2px 2px 0 var(--red)">Minta Pengembalian Uang dri pembelian level</button>
+  </div>
 </div>
 <?php endif; ?>
 
@@ -490,5 +528,26 @@ document.getElementById('upgrade-modal').addEventListener('click', function(e) {
   if (e.target === this) closeConfirm();
 });
 </script>
+<!-- Neo-brutalism Refund Confirm Modal -->
+<div id="brutal-refund-confirm" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:9999;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(3px)">
+  <div class="card card--danger" style="width:100%;max-width:340px;box-shadow:6px 6px 0 var(--red);border:3px solid var(--red);border-radius:12px;animation:popIn .3s cubic-bezier(.175,.885,.32,1.275)">
+    <div class="card__header" style="background:var(--red);border-bottom:3px solid var(--red);border-radius:9px 9px 0 0;padding:12px 16px">
+      <div class="card__title" style="color:#fff;font-weight:900;font-size:15px">⚠️ Konfirmasi Pengembalian</div>
+    </div>
+    <div class="card__body" style="padding:16px;background:#fff;border-radius:0 0 9px 9px">
+      <div style="font-size:13px;font-weight:700;margin-bottom:14px;color:#333">Yakin ingin meminta pengembalian uang dari pembelian level Anda?</div>
+      <div style="font-size:11px;color:#e67e22;font-weight:700;margin-bottom:20px">⚠️ Level aktif Anda akan dibatalkan saat pengajuan ini disetujui.</div>
+      
+      <form method="POST">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="refund_level">
+        <div style="display:flex;gap:10px">
+          <button type="button" class="btn btn--ghost" style="flex:1;font-size:13px;border:2px solid #ccc;color:#555" onclick="document.getElementById('brutal-refund-confirm').style.display='none'">Batal</button>
+          <button type="submit" class="btn btn--primary" style="flex:1;font-size:13px;background:var(--red);color:#fff;border-color:var(--red);box-shadow:3px 3px 0 #8b0000">Ya, Minta Refund</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>

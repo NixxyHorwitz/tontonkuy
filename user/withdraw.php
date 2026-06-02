@@ -261,9 +261,9 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php if ($has_pending_bank): ?>
 <div class="card card--danger" style="margin-bottom:16px;background:rgba(245, 158, 11, 0.1);border:2.5px solid #f59e0b;box-shadow:4px 4px 0 #f59e0b">
   <div class="card__body" style="text-align:center;padding:24px 16px">
-    <div style="font-size:42px;margin-bottom:12px">⏳</div>
-    <h6 style="color:#d97706;margin-bottom:6px;font-weight:900;font-size:16px">Penarikan Dikunci Sementara</h6>
-    <div style="font-size:12px;color:#555;font-weight:700">Akses penarikan ditutup sementara karena kamu memiliki permintaan pergantian rekening bank yang sedang menunggu persetujuan Admin.</div>
+    <div style="font-size:42px;margin-bottom:12px">⚙️</div>
+    <h6 style="color:#d97706;margin-bottom:6px;font-weight:900;font-size:16px">Verifikasi Rekening Baru</h6>
+    <div style="font-size:12px;color:#555;font-weight:700">Akses penarikan ditunda sementara karena sistem sedang memverifikasi data rekening barumu secara otomatis.</div>
   </div>
 </div>
 <?php elseif (!$user['can_withdraw']): ?>

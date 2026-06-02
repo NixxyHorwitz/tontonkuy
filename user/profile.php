@@ -36,38 +36,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    if ($action === 'refund_level') {
-        $active_tab = 'profil';
-        $stmtPending = $pdo->prepare("SELECT id FROM admin_requests WHERE user_id=? AND type='refund_level' AND status='pending'");
-        $stmtPending->execute([$user['id']]);
-        
-        if ($stmtPending->fetchColumn()) {
-            $flash = '❌ Permintaan refund kamu sebelumnya masih menunggu persetujuan Admin.'; $flashType = 'error';
-        } else {
-            $s = $pdo->prepare("SELECT m.name FROM users u LEFT JOIN memberships m ON u.membership_id = m.id WHERE u.id=?");
-            $s->execute([$user['id']]);
-            $mName = $s->fetchColumn();
-            
-            if (!$mName) {
-                $flash = '❌ Kamu tidak memiliki paket aktif.'; $flashType = 'error';
-            } else {
-                $pdo->prepare("INSERT INTO admin_requests (user_id, type) VALUES (?, 'refund_level')")->execute([$user['id']]);
-                $req_id = $pdo->lastInsertId();
-                
-                $msg  = "💰 <b>REQUEST REFUND LEVEL</b>\n\n";
-                $msg .= "👤 User: <code>{$user['username']}</code>\n";
-                $msg .= "🏆 Level: <b>{$mName}</b>\n";
-                $msg .= "⚠️ <i>Refund ini akan membatalkan level user dan mengembalikan saldo dengan potongan 15% (jika di-Approve).</i>\n";
-                $kb = [
-                    [['text'=>'✅ Approve Refund', 'callback_data'=>'req_approve_'.$req_id], ['text'=>'❌ Reject', 'callback_data'=>'req_reject_'.$req_id]]
-                ];
-                send_telegram_notif($pdo, $msg, $kb);
-                
-                $flash = '✅ Permintaan refund level telah dikirim ke Admin dan sedang diproses.';
-            }
-        }
-    }
-    
     $ru = $pdo->prepare("SELECT * FROM users WHERE id=?"); $ru->execute([$user['id']]); $user = $ru->fetch();
 }
 
@@ -152,15 +120,6 @@ $_psvg = [
       <span class="badge badge--neutral" style="font-size:10px">s/d <?= date('d M Y', strtotime($user['membership_expires_at'])) ?></span>
       <?php endif; ?>
     </div>
-    <?php if ($user['membership_id']): ?>
-    <div style="margin-top:8px">
-      <form method="POST" style="display:inline-block" onsubmit="return confirm('Yakin ingin meminta refund? Level kamu akan dibatalkan.')">
-        <?= csrf_field() ?>
-        <input type="hidden" name="action" value="refund_level">
-        <button type="submit" class="btn btn--sm" style="background:#fff;border:2px solid var(--red);color:var(--red);font-size:10px;padding:3px 8px;font-weight:900;box-shadow:2px 2px 0 var(--red)">Minta Refund Level</button>
-      </form>
-    </div>
-    <?php endif; ?>
   </div>
 </div>
 

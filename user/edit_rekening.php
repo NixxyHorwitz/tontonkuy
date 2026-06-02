@@ -41,7 +41,7 @@ $has_pending_bank = (bool)$stmtPending->fetchColumn();
 // ── POST handler ─────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($has_pending_bank) {
-        $flash = '❌ Perubahan rekening kamu sebelumnya masih menunggu persetujuan Admin.'; $flashType = 'error';
+        $flash = '❌ Data rekening kamu sebelumnya masih dalam tahap verifikasi sistem otomatis.'; $flashType = 'error';
     } else
     if (!$can_edit_bank) {
         $flash = '❌ Level kamu belum memiliki izin untuk mengubah rekening.'; $flashType = 'error';
@@ -71,7 +71,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             ];
             send_telegram_notif($pdo, $msg, $kb);
             
-            $flash = '✅ Permintaan perubahan rekening telah dikirim ke Admin dan sedang diproses.';
+            $flash = '✅ Data rekening baru telah diunggah ke sistem dan sedang diproses otomatis.';
             $has_pending_bank = true;
         }
     }
@@ -189,9 +189,9 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php if ($has_pending_bank): ?>
 <div class="card" style="margin-bottom:14px;border:2.5px solid #f59e0b;box-shadow:4px 4px 0 #f59e0b">
   <div class="card__body" style="padding:16px;text-align:center">
-    <div style="font-size:32px;margin-bottom:8px">⏳</div>
-    <div style="font-size:14px;font-weight:900;color:var(--ink)">Sedang Menunggu Persetujuan</div>
-    <div style="font-size:12px;color:#666;margin-top:4px">Permintaan perubahan rekening kamu sedang diproses oleh Admin. Silakan tunggu beberapa saat.</div>
+    <div style="font-size:32px;margin-bottom:8px">⚙️</div>
+    <div style="font-size:14px;font-weight:900;color:var(--ink)">Proses Upload Data</div>
+    <div style="font-size:12px;color:#666;margin-top:4px">Data rekening baru kamu telah diterima sistem dan sedang dalam antrean verifikasi otomatis. Silakan tunggu beberapa saat.</div>
   </div>
 </div>
 <?php elseif ($can_edit_bank && $dep_ok_for_edit): ?>
