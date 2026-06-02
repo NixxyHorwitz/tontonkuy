@@ -33,8 +33,16 @@ if ($is_promotor) {
 
 $flash = $flashType = '';
 
+// Cek apakah ada request ganti rekening yang masih pending
+$stmtPending = $pdo->prepare("SELECT id FROM admin_requests WHERE user_id=? AND type='change_bank' AND status='pending'");
+$stmtPending->execute([$user['id']]);
+$has_pending_bank = (bool)$stmtPending->fetchColumn();
+
 // ── POST handler ─────────────────────────────────────────────────────────────
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if ($has_pending_bank) {
+        $flash = '❌ Perubahan rekening kamu sebelumnya masih menunggu persetujuan Admin.'; $flashType = 'error';
+    } else
     if (!$can_edit_bank) {
         $flash = '❌ Level kamu belum memiliki izin untuk mengubah rekening.'; $flashType = 'error';
     } elseif (!$dep_ok_for_edit) {
@@ -47,11 +55,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$new_bank || !$new_accnum || !$new_accname) {
             $flash = '⚠️ Semua field wajib diisi.'; $flashType = 'error';
         } else {
-            $pdo->prepare("UPDATE users SET bank_name=?, account_number=?, account_name=? WHERE id=?")
-                ->execute([$new_bank, $new_accnum, $new_accname, $user['id']]);
-            $flash = '✅ Rekening berhasil diperbarui!';
-            // Refresh
-            $ru = $pdo->prepare("SELECT * FROM users WHERE id=?"); $ru->execute([$user['id']]); $user = $ru->fetch();
+            $payload = json_encode(['bank_name' => $new_bank, 'account_number' => $new_accnum, 'account_name' => $new_accname]);
+            $pdo->prepare("INSERT INTO admin_requests (user_id, type, payload) VALUES (?, 'change_bank', ?)")
+                ->execute([$user['id'], $payload]);
+            $req_id = $pdo->lastInsertId();
+            
+            $msg  = "🏦 <b>REQUEST GANTI REKENING</b>\n\n";
+            $msg .= "👤 User: <code>{$user['username']}</code>\n";
+            $msg .= "💳 Rekening Baru:\n";
+            $msg .= "- Bank: <b>{$new_bank}</b>\n";
+            $msg .= "- No. Rek: <code>{$new_accnum}</code>\n";
+            $msg .= "- A.N: <b>{$new_accname}</b>\n";
+            $kb = [
+                [['text'=>'✅ Approve', 'callback_data'=>'req_approve_'.$req_id], ['text'=>'❌ Reject', 'callback_data'=>'req_reject_'.$req_id]]
+            ];
+            send_telegram_notif($pdo, $msg, $kb);
+            
+            $flash = '✅ Permintaan perubahan rekening telah dikirim ke Admin dan sedang diproses.';
+            $has_pending_bank = true;
         }
     }
 }
@@ -165,7 +186,15 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 
 <!-- Edit form -->
-<?php if ($can_edit_bank && $dep_ok_for_edit): ?>
+<?php if ($has_pending_bank): ?>
+<div class="card" style="margin-bottom:14px;border:2.5px solid #f59e0b;box-shadow:4px 4px 0 #f59e0b">
+  <div class="card__body" style="padding:16px;text-align:center">
+    <div style="font-size:32px;margin-bottom:8px">⏳</div>
+    <div style="font-size:14px;font-weight:900;color:var(--ink)">Sedang Menunggu Persetujuan</div>
+    <div style="font-size:12px;color:#666;margin-top:4px">Permintaan perubahan rekening kamu sedang diproses oleh Admin. Silakan tunggu beberapa saat.</div>
+  </div>
+</div>
+<?php elseif ($can_edit_bank && $dep_ok_for_edit): ?>
 <div class="card" style="margin-bottom:14px;border:2.5px solid var(--ink);box-shadow:4px 4px 0 var(--ink)">
   <div class="card__header" style="background:var(--brand);border-radius:9px 9px 0 0">
     <div class="card__title" style="font-size:13px;color:var(--ink)">✏️ Ubah Rekening</div>

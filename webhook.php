@@ -324,6 +324,83 @@ if (isset($update['callback_query'])) {
         http_response_code(200); exit;
     }
 
+    // ── ADMIN REQUEST APPROVE / REJECT ───────────────────────────────────────
+    if (preg_match('/^req_(approve|reject)_(\d+)$/', $data, $m)) {
+        $action = $m[1]; // approve or reject
+        $id = (int)$m[2];
+        
+        $pdo->beginTransaction();
+        $req = $pdo->prepare("SELECT r.*, u.username, u.balance_dep FROM admin_requests r JOIN users u ON u.id = r.user_id WHERE r.id=? FOR UPDATE");
+        $req->execute([$id]); $req = $req->fetch();
+        
+        if ($req && $req['status'] === 'pending') {
+            $new_status = $action === 'approve' ? 'approved' : 'rejected';
+            $pdo->prepare("UPDATE admin_requests SET status=?, updated_at=NOW() WHERE id=?")->execute([$new_status, $id]);
+            
+            if ($action === 'approve') {
+                if ($req['type'] === 'change_bank') {
+                    $payload = json_decode($req['payload'], true);
+                    $pdo->prepare("UPDATE users SET bank_name=?, account_number=?, account_name=? WHERE id=?")
+                        ->execute([$payload['bank_name'], $payload['account_number'], $payload['account_name'], $req['user_id']]);
+                    
+                    $msg = "✅ <b>REQUEST GANTI REKENING (APPROVED)</b>\n";
+                    $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+                    $msg .= "👤 <b>User:</b> <code>{$req['username']}</code>\n";
+                    $msg .= "🏦 <b>Bank Baru:</b> <code>{$payload['bank_name']}</code>\n";
+                    $msg .= "💳 <b>Nomor:</b> <code>{$payload['account_number']}</code>\n";
+                    $msg .= "👨‍💼 <b>A.N:</b> <code>{$payload['account_name']}</code>\n";
+                    $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+                    $msg .= "<i>Perubahan rekening telah disetujui.</i>";
+                    
+                } elseif ($req['type'] === 'refund_level') {
+                    $s = $pdo->prepare("SELECT u.membership_id, m.price, m.name FROM users u LEFT JOIN memberships m ON u.membership_id = m.id WHERE u.id=?");
+                    $s->execute([$req['user_id']]);
+                    $uInfo = $s->fetch();
+                    
+                    if ($uInfo && $uInfo['membership_id']) {
+                        $oStmt = $pdo->prepare("SELECT amount FROM upgrade_orders WHERE user_id=? AND membership_id=? AND status='confirmed' ORDER BY id DESC LIMIT 1");
+                        $oStmt->execute([$req['user_id'], $uInfo['membership_id']]);
+                        $basePrice = (float)$oStmt->fetchColumn();
+                        if (!$basePrice) $basePrice = (float)$uInfo['price'];
+                        
+                        $refundAmt = $basePrice * 0.85; // 15% cut
+                        
+                        $pdo->prepare("UPDATE users SET balance_dep = balance_dep + ?, membership_id = NULL, membership_expires_at = NULL WHERE id = ?")
+                            ->execute([$refundAmt, $req['user_id']]);
+                            
+                        $msg = "✅ <b>REQUEST REFUND LEVEL (APPROVED)</b>\n";
+                        $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+                        $msg .= "👤 <b>User:</b> <code>{$req['username']}</code>\n";
+                        $msg .= "🏆 <b>Level Dibatalkan:</b> <code>{$uInfo['name']}</code>\n";
+                        $msg .= "💵 <b>Saldo Dikembalikan:</b> <code>" . format_rp($refundAmt) . " (potongan 15%)</code>\n";
+                        $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+                        $msg .= "<i>Refund level telah disetujui dan saldo berhasil dikembalikan.</i>";
+                    } else {
+                        $pdo->rollBack();
+                        answer_cb($token, $cb_id, '⚠️ User tidak memiliki level aktif untuk di-refund.');
+                        http_response_code(200); exit;
+                    }
+                }
+            } else {
+                // Rejected
+                $title = $req['type'] === 'change_bank' ? 'GANTI REKENING' : 'REFUND LEVEL';
+                $msg = "❌ <b>REQUEST {$title} (REJECTED)</b>\n";
+                $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+                $msg .= "👤 <b>User:</b> <code>{$req['username']}</code>\n";
+                $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+                $msg .= "<i>Permintaan ini telah DITOLAK.</i>";
+            }
+            
+            $pdo->commit();
+            answer_cb($token, $cb_id, "✅ Request {$new_status}!");
+            edit_msg($token, $chat_id, $msg_id, $msg, []);
+        } else {
+            $pdo->rollBack();
+            answer_cb($token, $cb_id, '⚠️ Sudah diproses atau tidak ditemukan.');
+        }
+        http_response_code(200); exit;
+    }
+
     // ── REJECT / HOLD (ask for reason) ─────────────────────────────────────────
     if (preg_match('/^(depo|wd)_(reject|hold)_(\d+)$/', $data, $m)) {
         $type   = $m[1];

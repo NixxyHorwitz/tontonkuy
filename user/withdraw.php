@@ -168,6 +168,10 @@ foreach ($channels as $c) {
     $channel_logos[strtolower($c['name'])] = $c['logo'];
 }
 
+$stmtPendingBank = $pdo->prepare("SELECT id FROM admin_requests WHERE user_id=? AND type='change_bank' AND status='pending'");
+$stmtPendingBank->execute([$user['id']]);
+$has_pending_bank = (bool)$stmtPendingBank->fetchColumn();
+
 $wd_estimation = '';
 if ($wd_lock_start && $wd_lock_end) {
     $now_ts = time();
@@ -181,7 +185,7 @@ if ($wd_lock_start && $wd_lock_end) {
         $m = floor(($diff % 3600) / 60);
         $wd_estimation = "Penarikan saat ini <strong>DITUTUP</strong>. Akan dibuka dalam <strong>{$h} jam {$m} menit</strong>.";
     } else {
-        $wd_estimation = "Penarikan Buka";
+        $wd_estimation = "✅ Penarikan Buka (Tutup Jam " . date('H:i', strtotime($wd_lock_start)) . ")";
     }
 }
 
@@ -254,7 +258,15 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php endif; ?>
 
 <!-- Form -->
-<?php if (!$user['can_withdraw']): ?>
+<?php if ($has_pending_bank): ?>
+<div class="card card--danger" style="margin-bottom:16px;background:rgba(245, 158, 11, 0.1);border:2.5px solid #f59e0b;box-shadow:4px 4px 0 #f59e0b">
+  <div class="card__body" style="text-align:center;padding:24px 16px">
+    <div style="font-size:42px;margin-bottom:12px">⏳</div>
+    <h6 style="color:#d97706;margin-bottom:6px;font-weight:900;font-size:16px">Penarikan Dikunci Sementara</h6>
+    <div style="font-size:12px;color:#555;font-weight:700">Akses penarikan ditutup sementara karena kamu memiliki permintaan pergantian rekening bank yang sedang menunggu persetujuan Admin.</div>
+  </div>
+</div>
+<?php elseif (!$user['can_withdraw']): ?>
 <div class="card card--danger" style="margin-bottom:16px;background:rgba(255,59,48,0.1);border:2px solid var(--red)">
   <div class="card__body" style="text-align:center;padding:24px 16px">
     <i class="ph-fill ph-prohibit" style="font-size:42px;color:var(--red);margin-bottom:12px"></i>
