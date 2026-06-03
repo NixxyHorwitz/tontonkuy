@@ -170,18 +170,10 @@ require dirname(__DIR__) . '/partials/header.php';
     </div>
 
     <!-- Metrics splits (hiding targets as requested) -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:12px;border-top:1.5px dashed var(--ink);padding-top:12px">
-      <div>
-        <div style="font-size:10px;font-weight:800;color:#666;text-transform:uppercase">💰 Volume Deposit</div>
-        <div style="font-size:14px;font-weight:900;color:var(--ink);margin-top:2px">
-          <?= format_rp((float)$today_target['actual_deposits']) ?>
-        </div>
-      </div>
-      <div>
-        <div style="font-size:10px;font-weight:800;color:#666;text-transform:uppercase">🧑‍🤝‍🧑 Member Baru</div>
-        <div style="font-size:14px;font-weight:900;color:var(--ink);margin-top:2px">
-          <?= number_format((int)$today_target['actual_regs']) ?> member
-        </div>
+    <div style="margin-top:12px;border-top:1.5px dashed var(--ink);padding-top:12px;text-align:center">
+      <div style="font-size:10px;font-weight:800;color:#666;text-transform:uppercase">🧑‍🤝‍🧑 Total Member Baru (Hari Ini)</div>
+      <div style="font-size:16px;font-weight:900;color:var(--ink);margin-top:4px">
+        <?= number_format((int)$today_target['actual_regs']) ?> member
       </div>
     </div>
   </div>
@@ -252,7 +244,7 @@ require dirname(__DIR__) . '/partials/header.php';
           </div>
           <div style="font-size:10px;color:#666;font-weight:700;margin-top:3px">
             Pencapaian: <strong style="color:var(--ink)"><?= number_format((float)$log['percentage'], 1) ?>%</strong>
-            · Reg: <?= $log['actual_regs'] ?>)
+            · Reg: <?= $log['actual_regs'] ?> Member
           </div>
           <?php if ($log['is_paid']): ?>
           <div style="font-size:9px;color:#4CAF82;font-weight:700;margin-top:2px">
