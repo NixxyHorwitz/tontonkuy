@@ -145,15 +145,7 @@ require dirname(__DIR__) . '/partials/header.php';
 .qty-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0 var(--ink); }
 </style>
 
-  <div class="dep-bal-strip__item">
-    <div class="dep-bal-strip__lbl"><i class="ph-bold ph-wallet"></i> Saldo Beli</div>
-    <div class="dep-bal-strip__val"><?= format_rp((float)$user['balance_dep']) ?></div>
-  </div>
-  <div class="dep-bal-strip__item">
-    <div class="dep-bal-strip__lbl"><i class="ph-bold ph-paper-plane-right"></i> Saldo Penarikan</div>
-    <div class="dep-bal-strip__val"><?= format_rp((float)$user['balance_wd']) ?></div>
-  </div>
-</div>
+
 
 <div style="font-size:11px;font-weight:800;color:var(--ink);margin-bottom:12px;background:#fef08a;padding:8px 12px;border-radius:8px;border:2.5px solid var(--ink);box-shadow:2.5px 2.5px 0 var(--ink);display:flex;align-items:center;gap:6px">
   <i class="ph-fill ph-info" style="color:#d97706;font-size:16px"></i> <span>Min. top up <strong><?= format_rp($min_deposit) ?></strong></span>
