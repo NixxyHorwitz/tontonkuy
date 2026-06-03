@@ -154,6 +154,22 @@ require dirname(__DIR__) . '/partials/header.php';
   </a>
 </div>
 
+<?php 
+$is_newcomer = !$is_guest && (empty($history) || (isset($user['created_at']) && strtotime($user['created_at']) > time() - 3 * 86400) || ($user['balance_wd'] == 0 && $user['balance_dep'] == 0));
+if ($is_newcomer): 
+?>
+<div style="background:#fef08a;border:2.5px solid var(--ink);border-radius:12px;padding:12px;margin-bottom:16px;box-shadow:3px 3px 0 var(--ink);display:flex;align-items:center;gap:12px;animation:float 3s ease-in-out infinite">
+  <div style="background:#fff;border:2px solid var(--ink);border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:2px 2px 0 var(--ink)">
+    <i class="ph-bold ph-book-open-text" style="font-size:20px;color:#d97706"></i>
+  </div>
+  <div style="flex:1">
+    <div style="font-size:12px;font-weight:900;color:var(--ink);margin-bottom:2px">Baru gabung di NontonKuy?</div>
+    <div style="font-size:10px;font-weight:700;color:#666">Yuk baca panduan dulu supaya paham cara dapetin duitnya!</div>
+  </div>
+  <a href="/panduan" class="btn btn--primary btn--sm" style="font-size:10px;padding:6px 10px;white-space:nowrap;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink)">Baca Panduan</a>
+</div>
+<?php endif; ?>
+
 <!-- Dual Balance Cards -->
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
   <!-- Saldo Penarikan -->

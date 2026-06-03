@@ -15,6 +15,10 @@ if ($sort_mode === 'reward_asc') $order_by = 'v.reward_amount ASC, v.id DESC';
 if ($sort_mode === 'duration_asc') $order_by = 'v.watch_duration ASC, v.id DESC';
 if ($sort_mode === 'random') $order_by = 'RAND()';
 
+$page = max(1, (int)($_GET['page'] ?? 1));
+$limit = 10;
+$offset = ($page - 1) * $limit;
+
 // All active videos with watch status for today
 $videos = $pdo->prepare(
     "SELECT v.*,
@@ -22,10 +26,50 @@ $videos = $pdo->prepare(
         WHERE wh.user_id=? AND wh.video_id=v.id AND DATE(wh.watched_at)=CURDATE()) AS watched_today
      FROM videos v
      WHERE v.is_active=1
-     ORDER BY {$order_by}"
+     ORDER BY {$order_by}
+     LIMIT {$limit} OFFSET {$offset}"
 );
 $videos->execute([$user['id']]);
 $videos = $videos->fetchAll();
+
+if (isset($_GET['ajax'])) {
+    if (empty($videos)) {
+        echo '';
+        exit;
+    }
+    foreach ($videos as $v) {
+        $done    = (bool)$v['watched_today'];
+        $blocked = !$done && ($watch_today >= $watch_limit);
+        $href    = ($done || $blocked) ? 'javascript:void(0)' : '/watch?id='.$v['id'];
+        ?>
+        <a href="<?= $href ?>" class="vcard <?= $done ? 'vcard--done' : '' ?>" <?= ($done||$blocked) ? 'style="pointer-events:none"' : '' ?>>
+          <div class="vcard__thumb">
+            <img src="<?= yt_thumb($v['youtube_id']) ?>" alt="<?= htmlspecialchars($v['title']) ?>" loading="lazy" onerror="this.src='https://img.youtube.com/vi/<?= $v['youtube_id'] ?>/hqdefault.jpg'">
+            <div class="vcard__play">
+              <?php if ($done): ?>
+                <i class="ph-fill ph-check-circle" style="color:var(--green)"></i>
+              <?php else: ?>
+                <i class="ph-fill ph-play-circle" style="color:var(--white)"></i>
+              <?php endif; ?>
+            </div>
+            <div class="vcard__badge <?= $done ? 'vcard__badge--done' : '' ?>">
+              <?= $done ? '✓ Done' : '+'.format_rp((float)$v['reward_amount']) ?>
+            </div>
+          </div>
+          <div class="vcard__info">
+            <div class="vcard__title"><?= htmlspecialchars($v['title']) ?></div>
+            <div class="vcard__meta">
+              <span class="vcard__reward <?= $done ? 'vcard__reward--done' : '' ?>">
+                <?= $done ? '<i class="ph-bold ph-check"></i> Claimed' : '<i class="ph-bold ph-coins" style="color:var(--yellow)"></i> '.format_rp((float)$v['reward_amount']) ?>
+              </span>
+              <span style="display:flex;align-items:center;gap:2px"><i class="ph-bold ph-clock" style="color:var(--sky)"></i> <?= $v['watch_duration'] ?>s</span>
+            </div>
+          </div>
+        </a>
+        <?php
+    }
+    exit;
+}
 
 $pageTitle  = 'Tonton Video — NontonKuy';
 $activePage = 'videos';
@@ -85,7 +129,7 @@ require dirname(__DIR__) . '/partials/header.php';
 .vcard__reward--done { color:var(--green); }
 </style>
 
-<div class="vgrid">
+<div class="vgrid" id="vgrid">
 <?php foreach ($videos as $v):
   $done    = (bool)$v['watched_today'];
   $blocked = !$done && ($watch_today >= $watch_limit);
@@ -117,6 +161,59 @@ require dirname(__DIR__) . '/partials/header.php';
 </a>
 <?php endforeach; ?>
 </div>
+
+<div id="loader" style="text-align:center;padding:20px;display:none">
+  <i class="ph-bold ph-spinner ph-spin" style="font-size:24px;color:var(--ink)"></i>
+  <div style="font-size:11px;font-weight:700;margin-top:8px">Memuat video...</div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  let page = 1;
+  let isLoading = false;
+  let hasMore = <?= count($videos) === $limit ? 'true' : 'false' ?>;
+  const grid = document.getElementById('vgrid');
+  const loader = document.getElementById('loader');
+
+  if (!hasMore) return; // No more pages to load initially
+
+  const observer = new IntersectionObserver((entries) => {
+    if (entries[0].isIntersecting && !isLoading && hasMore) {
+      loadMore();
+    }
+  }, { rootMargin: '100px' });
+
+  // Create a sentinel element to observe
+  const sentinel = document.createElement('div');
+  sentinel.style.height = '1px';
+  grid.parentNode.insertBefore(sentinel, grid.nextSibling);
+  observer.observe(sentinel);
+
+  async function loadMore() {
+    isLoading = true;
+    loader.style.display = 'block';
+    page++;
+
+    try {
+      const res = await fetch(`?ajax=1&page=${page}`);
+      const html = await res.text();
+
+      if (html.trim() === '') {
+        hasMore = false;
+        observer.unobserve(sentinel);
+      } else {
+        grid.insertAdjacentHTML('beforeend', html);
+      }
+    } catch (e) {
+      console.error('Error loading more videos:', e);
+      page--; // revert page count on error
+    } finally {
+      isLoading = false;
+      loader.style.display = 'none';
+    }
+  }
+});
+</script>
 <?php endif; ?>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
