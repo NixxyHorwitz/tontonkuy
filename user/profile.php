@@ -115,7 +115,7 @@ $_psvg = [
     <div class="prof-name"><?= htmlspecialchars($user['username']) ?></div>
     <div class="prof-email"><?= htmlspecialchars($user['email']) ?></div>
     <div style="margin-top:5px;display:flex;gap:5px;flex-wrap:wrap">
-      <span class="badge badge--brand" style="font-size:10px"><i class="ph-fill ph-star" style="color:var(--yellow)"></i> <?= $membership_name ?></span>
+      <span class="badge badge--brand" style="font-size:10px;display:inline-flex;align-items:center;gap:3px"><i class="ph-fill ph-star"></i> <?= $membership_name ?></span>
       <?php if ($user['membership_expires_at'] && strtotime($user['membership_expires_at']) > time()): ?>
       <span class="badge badge--neutral" style="font-size:10px">s/d <?= date('d M Y', strtotime($user['membership_expires_at'])) ?></span>
       <?php endif; ?>
