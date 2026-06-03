@@ -5,9 +5,13 @@ require_once dirname(__DIR__) . '/auth/guard.php';
 // ── Mission definitions (hardcoded) ───────────────────────────
 $ALL_MISSIONS = [
     // HARIAN
-    ['slug'=>'daily_watch_3',       'category'=>'daily',    'title'=>'Tonton 3 Video',             'desc'=>'Tonton minimal 3 video hari ini.',           'target'=>3,   'reward'=>200,   'icon'=>'ph-film-slate'],
-    ['slug'=>'daily_watch_5',       'category'=>'daily',    'title'=>'Tonton 5 Video',             'desc'=>'Tonton minimal 5 video hari ini.',           'target'=>5,   'reward'=>500,   'icon'=>'ph-film-reel'],
-    ['slug'=>'daily_checkin',       'category'=>'daily',    'title'=>'Check-in Hari Ini',          'desc'=>'Lakukan check-in harian.',                   'target'=>1,   'reward'=>100,   'icon'=>'ph-calendar-check'],
+    ['slug'=>'daily_watch_3',       'category'=>'daily',    'title'=>'Tonton 3 Video',             'desc'=>'Tonton minimal 3 video hari ini.',              'target'=>3,   'reward'=>200,   'icon'=>'ph-film-slate'],
+    ['slug'=>'daily_watch_5',       'category'=>'daily',    'title'=>'Tonton 5 Video',             'desc'=>'Tonton minimal 5 video hari ini.',              'target'=>5,   'reward'=>500,   'icon'=>'ph-film-reel'],
+    // Plinko mission (hanya tampil jika plinko aktif)
+    ...( setting($pdo, 'plinko_enabled', '1') === '1'
+        ? [['slug'=>'daily_plinko', 'category'=>'daily', 'title'=>'Main Plinko 3x', 'desc'=>'Mainkan Plinko minimal 3 kali hari ini.', 'target'=>3, 'reward'=>300, 'icon'=>'ph-circles-three']]
+        : []
+    ),
     // MINGGUAN
     ['slug'=>'weekly_streak_7',     'category'=>'weekly',   'title'=>'Streak 7 Hari',              'desc'=>'Check-in setiap hari selama 7 hari penuh.',  'target'=>7,   'reward'=>2000,  'icon'=>'ph-fire'],
     ['slug'=>'weekly_watch_20',     'category'=>'weekly',   'title'=>'Tonton 20 Video Minggu Ini', 'desc'=>'Tonton total 20 video minggu ini.',          'target'=>20,  'reward'=>1500,  'icon'=>'ph-television'],
@@ -27,6 +31,10 @@ $weekKey  = date('Y-\WW'); // e.g. 2026-W23
 function get_progress(PDO $pdo, array $user, array $mission): int {
     $uid = $user['id'];
     switch ($mission['slug']) {
+        case 'daily_plinko':
+            $s = $pdo->prepare("SELECT COUNT(*) FROM plinko_history WHERE user_id=? AND DATE(created_at)=CURDATE()");
+            $s->execute([$uid]);
+            return (int)$s->fetchColumn();
         case 'daily_watch_3':
         case 'daily_watch_5':
             $s = $pdo->prepare("SELECT COUNT(*) FROM watch_history WHERE user_id=? AND DATE(watched_at)=CURDATE()");
