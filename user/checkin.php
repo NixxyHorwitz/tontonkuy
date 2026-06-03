@@ -71,7 +71,7 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   color: var(--ink, #000);
   margin-bottom: 2px;
   letter-spacing: -1px;
-  text-shadow: 2px 2px 0px #fff, 4px 4px 0px var(--ink, #000);
+  text-shadow: 3px 3px 0px rgba(0,0,0,0.15);
 }
 .neo-subtitle {
   font-size: 14px;
@@ -93,10 +93,12 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   padding: 24px;
   margin-bottom: 24px;
   text-align: center;
+  position: relative;
+  overflow: hidden;
 }
 .neo-card--trusted { background: var(--yellow, #eab308); color: var(--ink); }
 .neo-card--trusted .neo-card__subtitle { color: var(--ink); font-weight: 900; background: #fff; padding: 4px 10px; border: 2px solid var(--ink); display: inline-block; border-radius: 4px; box-shadow: 2px 2px 0 var(--ink); transform: rotate(-2deg); margin-bottom: 12px; text-transform: uppercase; font-size: 14px;}
-.neo-card--trusted .neo-card__amount { color: var(--ink); text-shadow: 2px 2px 0 #fff; font-size: 36px; font-weight: 900; margin-bottom: 20px; letter-spacing: -1px; }
+.neo-card--trusted .neo-card__amount { color: var(--ink); font-size: 36px; font-weight: 900; margin-bottom: 20px; letter-spacing: -1px; }
 
 .neo-btn {
   background: #00E5FF;
@@ -236,27 +238,45 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   <?php endif; ?>
 
   <div class="neo-card neo-card--trusted">
-    <div style="margin-bottom: 16px; animation: float 3s ease-in-out infinite;">
-      <img src="/assets/chest.png" alt="Reward Chest" style="width: 90px; height: 90px; object-fit: contain; filter: drop-shadow(0px 8px 8px rgba(0,0,0,0.15));">
-    </div>
-    <div class="neo-card__subtitle">Reward Hari Ini</div>
-    <div class="neo-card__amount">
-      <?= format_rp($checkin_reward) ?>
-    </div>
+    <!-- SVG Decorations -->
+    <svg style="position:absolute; top:15px; left:15px; opacity:0.12; width:50px; height:50px; animation: float 4s ease-in-out infinite alternate;" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M50 0 L61 39 L100 50 L61 61 L50 100 L39 61 L0 50 L39 39 Z" fill="var(--ink)"/>
+    </svg>
+    <svg style="position:absolute; top:35px; right:20px; opacity:0.15; width:45px; height:45px; transform: rotate(15deg);" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="40" y="0" width="20" height="100" fill="var(--ink)"/>
+      <rect x="0" y="40" width="100" height="20" fill="var(--ink)"/>
+    </svg>
+    <svg style="position:absolute; bottom:60px; left:-15px; opacity:0.12; width:70px; height:70px; transform: rotate(-10deg);" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 50 L25 20 L50 50 L75 20 L100 50" stroke="var(--ink)" stroke-width="12" stroke-linejoin="miter" stroke-linecap="square"/>
+    </svg>
+    <svg style="position:absolute; bottom:-15px; right:-5px; opacity:0.12; width:80px; height:80px;" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="50" cy="50" r="35" stroke="var(--ink)" stroke-width="16"/>
+    </svg>
 
-    <?php if (!$already): ?>
-    <form method="POST">
-      <?= csrf_field() ?>
-      <input type="hidden" name="action" value="checkin">
-      <button type="submit" class="neo-btn">
-        <i class="ph-bold ph-target"></i> Klaim Saldo Harian
+    <!-- Foreground Content -->
+    <div style="position:relative; z-index:10;">
+      <div style="margin-bottom: 16px; animation: float 3s ease-in-out infinite;">
+        <img src="/assets/chest.png" alt="Reward Chest" style="width: 90px; height: 90px; object-fit: contain; filter: drop-shadow(0px 8px 8px rgba(0,0,0,0.15));">
+      </div>
+      <div class="neo-card__subtitle">Reward Hari Ini</div>
+      <div class="neo-card__amount">
+        <?= format_rp($checkin_reward) ?>
+      </div>
+
+      <?php if (!$already): ?>
+      <form method="POST">
+        <?= csrf_field() ?>
+        <input type="hidden" name="action" value="checkin">
+        <button type="submit" class="neo-btn">
+          <i class="ph-bold ph-target"></i> Klaim Saldo Harian
+        </button>
+      </form>
+      <?php else: ?>
+      <button class="neo-btn" disabled>
+        <i class="ph-bold ph-check-circle"></i> Sudah Diklaim
       </button>
-    </form>
-    <?php else: ?>
-    <button class="neo-btn" disabled>
-      <i class="ph-bold ph-check-circle"></i> Sudah Diklaim
-    </button>
-    <?php endif; ?>
+      <?php endif; ?>
+    </div>
   </div>
 
   <div class="neo-title" style="font-size: 18px; margin-top: 32px;">Minggu Ini</div>
@@ -269,7 +289,7 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
       $class = $is_done ? 'done' : ($is_active ? 'active' : '');
       $img = ($i === 7) ? '/assets/chest.png' : '/assets/coins.png';
       $img_filter = $is_done || $is_active ? 'filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.2));' : 'filter: grayscale(1) opacity(0.3);';
-      $node_style = 'width:42px;height:42px;border:none;background:transparent;box-shadow:none;position:relative;margin:0 auto;';
+      $node_style = 'width:42px;height:42px;border:none;background:#E8E4DA;border-radius:50%;box-shadow:none;position:relative;margin:0 auto;z-index:2;';
     ?>
     <div class="step-item <?= $class ?>">
       <div class="step-node" style="<?= $node_style ?>">
