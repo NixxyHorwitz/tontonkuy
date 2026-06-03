@@ -5,17 +5,17 @@ require_once dirname(__DIR__) . '/auth/guard.php';
 // ── Mission definitions (hardcoded) ───────────────────────────
 $ALL_MISSIONS = [
     // HARIAN
-    ['slug'=>'daily_watch_3',       'category'=>'daily',    'title'=>'Tonton 3 Video',             'desc'=>'Tonton minimal 3 video hari ini.',              'target'=>3,   'reward'=>200,   'icon'=>'ph-film-slate'],
-    ['slug'=>'daily_watch_5',       'category'=>'daily',    'title'=>'Tonton 5 Video',             'desc'=>'Tonton minimal 5 video hari ini.',              'target'=>5,   'reward'=>500,   'icon'=>'ph-film-reel'],
+    ['slug'=>'daily_watch_3',       'category'=>'daily',    'title'=>'Tonton 3 Video',             'desc'=>'Tonton minimal 3 video hari ini.',              'target'=>3,   'reward'=>1000,  'icon'=>'ph-film-slate'],
+    ['slug'=>'daily_watch_5',       'category'=>'daily',    'title'=>'Tonton 5 Video',             'desc'=>'Tonton minimal 5 video hari ini.',              'target'=>5,   'reward'=>2500,  'icon'=>'ph-film-reel'],
     // Plinko mission (hanya tampil jika plinko aktif)
     ...( setting($pdo, 'plinko_enabled', '1') === '1'
-        ? [['slug'=>'daily_plinko', 'category'=>'daily', 'title'=>'Main Plinko 3x', 'desc'=>'Mainkan Plinko minimal 3 kali hari ini.', 'target'=>3, 'reward'=>300, 'icon'=>'ph-circles-three']]
+        ? [['slug'=>'daily_plinko', 'category'=>'daily', 'title'=>'Main Plinko 3x', 'desc'=>'Mainkan Plinko minimal 3 kali hari ini.', 'target'=>3, 'reward'=>1500, 'icon'=>'ph-circles-three']]
         : []
     ),
     // MINGGUAN
-    ['slug'=>'weekly_streak_7',     'category'=>'weekly',   'title'=>'Streak 7 Hari',              'desc'=>'Check-in setiap hari selama 7 hari penuh.',  'target'=>7,   'reward'=>2000,  'icon'=>'ph-fire'],
-    ['slug'=>'weekly_watch_20',     'category'=>'weekly',   'title'=>'Tonton 20 Video Minggu Ini', 'desc'=>'Tonton total 20 video minggu ini.',          'target'=>20,  'reward'=>1500,  'icon'=>'ph-television'],
-    ['slug'=>'weekly_watch_7days',  'category'=>'weekly',   'title'=>'Aktif 7 Hari (Nonton)',      'desc'=>'Tonton video di 7 hari berbeda minggu ini.', 'target'=>7,   'reward'=>2500,  'icon'=>'ph-star'],
+    ['slug'=>'weekly_streak_7',     'category'=>'weekly',   'title'=>'Streak 7 Hari',              'desc'=>'Check-in setiap hari selama 7 hari penuh.',  'target'=>7,   'reward'=>10000, 'icon'=>'ph-fire'],
+    ['slug'=>'weekly_watch_20',     'category'=>'weekly',   'title'=>'Tonton 20 Video Minggu Ini', 'desc'=>'Tonton total 20 video minggu ini.',          'target'=>20,  'reward'=>8000,  'icon'=>'ph-television'],
+    ['slug'=>'weekly_watch_7days',  'category'=>'weekly',   'title'=>'Aktif 7 Hari (Nonton)',      'desc'=>'Tonton video di 7 hari berbeda minggu ini.', 'target'=>7,   'reward'=>12000, 'icon'=>'ph-star'],
     // LIFETIME
     ['slug'=>'lifetime_first_ref',  'category'=>'lifetime', 'title'=>'Daftarkan 1 Referral',       'desc'=>'Ajak 1 teman bergabung via kode referralmu.','target'=>1,   'reward'=>5000,  'icon'=>'ph-user-plus'],
     ['slug'=>'lifetime_5_refs',     'category'=>'lifetime', 'title'=>'Agen Rekruter',               'desc'=>'Ajak 5 teman bergabung via kode referralmu.','target'=>5,   'reward'=>15000, 'icon'=>'ph-users-three'],
@@ -158,165 +158,173 @@ require dirname(__DIR__) . '/partials/header.php';
 ?>
 
 <style>
-/* ── Mission Page – Neo-Brutalism ─────────── */
+/* ── Mission Page – Compact Neo-Brutalism ─── */
 .mission-header {
-  background: var(--ink);
-  color: #fff;
-  padding: 20px 16px 16px;
-  margin: -16px -16px 20px;
-  border-bottom: 4px solid var(--ink);
+  background: linear-gradient(135deg, var(--yellow) 0%, #f97316 100%);
+  color: var(--ink);
+  padding: 14px 14px 12px;
+  margin: -14px -14px 14px;
+  border-bottom: 3px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
   position: relative;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
 }
-.mission-header::before {
-  content: '';
-  position: absolute; inset: 0;
-  background: repeating-linear-gradient(45deg, transparent, transparent 8px, rgba(255,255,255,0.04) 8px, rgba(255,255,255,0.04) 16px);
+.mission-header::after {
+  content: '🎯';
+  position: absolute; right: 60px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 56px; opacity: 0.12; pointer-events: none;
 }
+.mission-header__left { position: relative; z-index: 1; }
 .mission-header__title {
-  font-size: 28px; font-weight: 900; text-transform: uppercase;
-  letter-spacing: -1px; position: relative;
+  font-size: 22px; font-weight: 900; text-transform: uppercase;
+  letter-spacing: -0.5px; line-height: 1;
 }
 .mission-header__sub {
-  font-size: 13px; opacity: 0.7; font-weight: 700; position: relative; margin-top: 2px;
+  font-size: 11px; font-weight: 700; opacity: 0.75; margin-top: 2px;
 }
 .mission-header__badge {
-  position: absolute; top: 16px; right: 16px;
-  background: var(--yellow); color: var(--ink);
-  border: 3px solid #fff; border-radius: 50%;
-  width: 52px; height: 52px;
-  display: flex; align-items: center; justify-content: center;
-  flex-direction: column; font-weight: 900; font-size: 18px; line-height: 1;
+  background: var(--ink); color: var(--yellow);
+  border: 2.5px solid var(--ink); border-radius: 10px;
+  padding: 6px 10px; text-align: center;
+  font-weight: 900; font-size: 20px; line-height: 1;
+  flex-shrink: 0; position: relative; z-index: 1;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
 }
-.mission-header__badge small { font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.mission-header__badge small { display: block; font-size: 8px; font-weight: 800; text-transform: uppercase; opacity: 0.8; margin-top: 1px; }
 
 /* ── Tabs ─────── */
 .mission-tabs {
   display: grid; grid-template-columns: repeat(3, 1fr);
-  border: 3px solid var(--ink); border-radius: 10px;
+  border: 2.5px solid var(--ink); border-radius: 8px;
   overflow: hidden; box-shadow: 3px 3px 0 var(--ink);
-  margin-bottom: 20px;
+  margin-bottom: 14px;
 }
 .mission-tab {
-  padding: 10px 4px; text-align: center;
-  font-size: 11px; font-weight: 900; text-transform: uppercase;
+  padding: 8px 4px; text-align: center;
+  font-size: 10px; font-weight: 900; text-transform: uppercase;
   background: #fff; color: var(--ink); border: none;
   cursor: pointer; letter-spacing: 0.3px;
-  border-right: 3px solid var(--ink);
+  border-right: 2.5px solid var(--ink);
   transition: background 0.15s;
 }
 .mission-tab:last-child { border-right: none; }
 .mission-tab.active { background: var(--yellow); }
-.mission-tab__icon { display: block; font-size: 20px; margin-bottom: 2px; }
+.mission-tab__icon { display: block; font-size: 17px; margin-bottom: 1px; }
 
 /* ── Mission Card ─────── */
 .mission-card {
   background: #fff;
-  border: 3px solid var(--ink);
-  border-radius: 12px;
-  box-shadow: 4px 4px 0 var(--ink);
-  margin-bottom: 14px;
+  border: 2.5px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 3px 3px 0 var(--ink);
+  margin-bottom: 10px;
   overflow: hidden;
-  transition: transform 0.1s;
 }
 .mission-card--done { background: #f0fdf4; }
-.mission-card--claimed { background: #f8f8f8; opacity: 0.7; }
+.mission-card--claimed { background: #f9fafb; opacity: 0.65; }
 .mission-card__head {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 14px 10px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 10px 6px;
 }
 .mission-card__icon-wrap {
-  width: 48px; height: 48px; border-radius: 10px;
-  border: 3px solid var(--ink);
+  width: 38px; height: 38px; border-radius: 8px;
+  border: 2px solid var(--ink);
   box-shadow: 2px 2px 0 var(--ink);
   display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; font-size: 22px;
+  flex-shrink: 0; font-size: 18px;
   background: var(--yellow);
 }
 .mission-card--done .mission-card__icon-wrap { background: #bbf7d0; }
 .mission-card--claimed .mission-card__icon-wrap { background: #e5e7eb; }
 .mission-card__info { flex: 1; min-width: 0; }
 .mission-card__title {
-  font-size: 14px; font-weight: 900; color: var(--ink); line-height: 1.2;
+  font-size: 13px; font-weight: 900; color: var(--ink); line-height: 1.2;
 }
 .mission-card__desc {
-  font-size: 11px; color: #666; font-weight: 700; margin-top: 2px;
+  font-size: 10px; color: #777; font-weight: 700; margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .mission-card__reward {
-  font-size: 13px; font-weight: 900; color: var(--ink);
+  font-size: 11px; font-weight: 900; color: var(--ink);
   background: var(--yellow); border: 2px solid var(--ink);
-  padding: 3px 8px; border-radius: 6px; box-shadow: 2px 2px 0 var(--ink);
+  padding: 2px 7px; border-radius: 6px; box-shadow: 2px 2px 0 var(--ink);
   white-space: nowrap; flex-shrink: 0;
 }
-.mission-card--claimed .mission-card__reward { background: #e5e7eb; box-shadow: none; border-color: #aaa; color: #888; }
+.mission-card--claimed .mission-card__reward { background: #e5e7eb; box-shadow: none; border-color: #bbb; color: #999; }
 
-/* ── Progress Bar ─────── */
-.mission-progress { padding: 0 14px 14px; }
+/* ── Progress ─────── */
+.mission-progress { padding: 0 10px 10px; }
 .mission-progress__bar-wrap {
-  background: #e5e7eb; border: 2px solid var(--ink);
-  border-radius: 6px; height: 14px; overflow: hidden;
-  box-shadow: 2px 2px 0 var(--ink);
+  background: #e5e7eb; border: 1.5px solid var(--ink);
+  border-radius: 4px; height: 10px; overflow: hidden;
+  box-shadow: 1.5px 1.5px 0 var(--ink);
 }
 .mission-progress__bar {
   height: 100%; background: var(--yellow);
-  border-right: 2px solid var(--ink);
   transition: width 0.5s ease;
 }
-.mission-progress__bar--done { background: #22c55e; border-right-color: transparent; }
+.mission-progress__bar--done { background: #22c55e; }
 .mission-progress__meta {
   display: flex; justify-content: space-between;
-  font-size: 10px; font-weight: 900; margin-top: 5px; color: #555;
+  font-size: 9px; font-weight: 900; margin-top: 4px; color: #666;
 }
 
 /* ── Claim Button ─────── */
 .mission-claim-btn {
-  width: 100%; margin-top: 6px;
-  padding: 10px; font-size: 13px; font-weight: 900;
-  text-transform: uppercase; letter-spacing: 0.5px;
-  border: 3px solid var(--ink); border-radius: 8px;
-  box-shadow: 3px 3px 0 var(--ink);
+  width: 100%; margin-top: 5px;
+  padding: 8px; font-size: 11px; font-weight: 900;
+  text-transform: uppercase; letter-spacing: 0.3px;
+  border: 2.5px solid var(--ink); border-radius: 7px;
+  box-shadow: 2.5px 2.5px 0 var(--ink);
   cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
   background: #00E5FF; color: var(--ink);
-  display: flex; align-items: center; justify-content: center; gap: 6px;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
 }
-.mission-claim-btn:active { transform: translate(3px,3px); box-shadow: 0 0 0 var(--ink); }
+.mission-claim-btn:active { transform: translate(2px,2px); box-shadow: 0 0 0 var(--ink); }
 .mission-claim-btn:disabled {
-  background: #e5e7eb; color: #9ca3af; cursor: not-allowed;
-  box-shadow: 2px 2px 0 #9ca3af; border-color: #9ca3af;
+  background: #f3f4f6; color: #9ca3af; cursor: not-allowed;
+  box-shadow: none; border-color: #d1d5db;
 }
 .mission-claim-btn--claimed {
-  background: #d1fae5; color: #166534;
+  background: #dcfce7; color: #166534;
   border-color: #166534; box-shadow: 2px 2px 0 #166534;
   cursor: default;
 }
 
 /* ── Section Header ─────── */
 .mission-section-hdr {
-  font-size: 12px; font-weight: 900; text-transform: uppercase;
-  letter-spacing: 0.5px; color: #555;
-  display: flex; align-items: center; gap: 6px;
-  margin-bottom: 12px;
-  padding-bottom: 6px; border-bottom: 3px solid var(--ink);
+  font-size: 10px; font-weight: 900; text-transform: uppercase;
+  letter-spacing: 0.5px; color: #666;
+  display: flex; align-items: center; gap: 5px;
+  margin-bottom: 10px;
+  padding-bottom: 5px; border-bottom: 2px solid var(--ink);
 }
 
-/* ── Tab panels ─────── */
 .tab-panel { display: none; }
 .tab-panel.active { display: block; }
 
 @keyframes missionIn {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
 }
-.mission-card { animation: missionIn 0.2s ease both; }
+.mission-card { animation: missionIn 0.18s ease both; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 
 <!-- Page Header -->
 <div class="mission-header">
-  <div class="mission-header__title">🎯 Misi</div>
-  <div class="mission-header__sub">Selesaikan misi &amp; klaim saldo tarik!</div>
+  <div class="mission-header__left">
+    <div class="mission-header__title">🎯 Misi</div>
+    <div class="mission-header__sub">Selesaikan &amp; klaim saldo tarik!</div>
+  </div>
   <div class="mission-header__badge">
     <?= $claimed_today ?>
-    <small>Klaim</small>
+    <small>Diklaim</small>
   </div>
 </div>
 
@@ -530,8 +538,4 @@ function claimMission(slug, btn) {
     });
 }
 </script>
-<style>
-@keyframes spin { to { transform: rotate(360deg); } }
-</style>
-
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>
