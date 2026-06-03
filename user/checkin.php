@@ -65,40 +65,47 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   padding: 10px 0;
 }
 .neo-title {
-  font-size: 24px;
+  font-size: 32px;
   font-weight: 900;
   text-transform: uppercase;
   color: var(--ink, #000);
-  margin-bottom: 5px;
-  letter-spacing: -0.5px;
+  margin-bottom: 2px;
+  letter-spacing: -1px;
+  text-shadow: 2px 2px 0px #fff, 4px 4px 0px var(--ink, #000);
 }
 .neo-subtitle {
-  font-size: 13px;
+  font-size: 14px;
   color: #444;
-  font-weight: 700;
-  margin-bottom: 20px;
+  font-weight: 800;
+  margin-bottom: 24px;
+  background: #fff;
+  display: inline-block;
+  padding: 4px 8px;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  transform: rotate(-1deg);
 }
 .neo-card {
   background: #fff;
-  border: 3px solid var(--ink, #000);
-  box-shadow: 5px 5px 0px var(--ink, #000);
-  border-radius: 12px;
+  border: 4px solid var(--ink, #000);
+  box-shadow: 6px 6px 0px var(--ink, #000);
+  border-radius: 12px 4px 20px 4px;
   padding: 24px;
   margin-bottom: 24px;
   text-align: center;
 }
 .neo-card--trusted { background: var(--yellow, #eab308); color: var(--ink); }
-.neo-card--trusted .neo-card__subtitle { color: rgba(0,0,0,0.6); }
-.neo-card--trusted .neo-card__amount { color: var(--ink); }
+.neo-card--trusted .neo-card__subtitle { color: var(--ink); font-weight: 900; background: #fff; padding: 4px 10px; border: 2px solid var(--ink); display: inline-block; border-radius: 4px; box-shadow: 2px 2px 0 var(--ink); transform: rotate(-2deg); margin-bottom: 12px; text-transform: uppercase; font-size: 14px;}
+.neo-card--trusted .neo-card__amount { color: var(--ink); text-shadow: 2px 2px 0 #fff; font-size: 36px; font-weight: 900; margin-bottom: 20px; letter-spacing: -1px; }
 
 .neo-btn {
-  background: var(--yellow, #eab308);
+  background: #00E5FF;
   border: 3px solid var(--ink, #000);
   box-shadow: 4px 4px 0px var(--ink, #000);
-  border-radius: 8px;
+  border-radius: 4px 12px 4px 12px;
   padding: 14px 20px;
   font-weight: 900;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--ink);
   cursor: pointer;
   width: 100%;
@@ -108,16 +115,17 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   align-items: center;
   justify-content: center;
   gap: 8px;
+  letter-spacing: 0.5px;
 }
 .neo-btn:active:not(:disabled) {
   transform: translate(4px, 4px);
   box-shadow: 0px 0px 0px var(--ink, #000);
 }
 .neo-btn:disabled, .neo-btn.disabled {
-  background: #e0e0e0;
-  color: #888;
-  border-color: #888;
-  box-shadow: 4px 4px 0px #888;
+  background: #d4d4d8;
+  color: #71717a;
+  border-color: var(--ink);
+  box-shadow: 4px 4px 0px var(--ink);
   cursor: not-allowed;
 }
 
@@ -127,18 +135,19 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   align-items: flex-start;
   justify-content: space-between;
   position: relative;
-  margin: 30px 0;
+  margin: 30px 0 40px 0;
   padding: 0 5px;
 }
 .weekly-stepper::before {
   content: '';
   position: absolute;
-  top: 14px; /* center of 32px node (border included) */
-  left: 16px;
-  right: 16px;
-  height: 4px;
+  top: 18px; 
+  left: 20px;
+  right: 20px;
+  height: 6px;
   background: var(--ink, #000);
-  z-index: 1;
+  z-index: 0;
+  border-bottom: 2px dashed #fff;
 }
 .step-item {
   position: relative;
@@ -148,51 +157,36 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   align-items: center;
   gap: 8px;
 }
-.step-node {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: 3px solid var(--ink, #000);
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 900;
-  font-size: 13px;
-  color: var(--ink, #000);
-  transition: all 0.2s ease;
-}
-.step-item.done .step-node {
-  background: var(--green, #10b981); /* Emerald */
-  color: #fff;
-  box-shadow: 2px 2px 0 var(--ink, #000);
-}
-.step-item.active .step-node {
-  background: var(--yellow, #eab308); /* Gold */
-  color: var(--ink);
-  transform: scale(1.15);
-  box-shadow: 3px 3px 0 var(--ink, #000);
+.step-item.active {
+  transform: scale(1.15) translateY(-4px);
+  transition: transform 0.2s;
 }
 .step-lbl {
   font-size: 10px;
-  font-weight: 800;
+  font-weight: 900;
   text-transform: uppercase;
-  color: #555;
+  color: var(--ink);
+  background: #fff;
+  padding: 2px 6px;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  transform: rotate(2deg);
 }
+.step-item:nth-child(even) .step-lbl { transform: rotate(-2deg); }
 
 /* Neo Alert */
 .neo-alert {
-  border: 3px solid var(--ink, #000);
-  border-radius: 8px;
+  border: 4px solid var(--ink, #000);
+  border-radius: 4px 12px 4px 12px;
   padding: 12px 16px;
-  font-weight: 700;
+  font-weight: 800;
   font-size: 13px;
-  margin-bottom: 20px;
-  box-shadow: 3px 3px 0 var(--ink, #000);
+  margin-bottom: 24px;
+  box-shadow: 4px 4px 0 var(--ink, #000);
 }
-.neo-alert--success { background: #d1fae5; color: var(--ink, #000); border-color: var(--green); }
-.neo-alert--warn { background: #fef08a; color: var(--ink, #000); border-color: var(--orange); }
-.neo-alert--error { background: #fee2e2; color: var(--ink, #000); border-color: var(--red); }
+.neo-alert--success { background: #00FF66; color: var(--ink, #000); }
+.neo-alert--warn { background: #00E5FF; color: var(--ink, #000); }
+.neo-alert--error { background: #FF00E6; color: #fff; }
 
 .stat-grid {
   display: grid;
@@ -201,24 +195,29 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   margin-bottom: 24px;
 }
 .neo-stat {
-  background: #fff;
-  border: 3px solid var(--ink, #000);
-  box-shadow: 4px 4px 0 var(--ink, #000);
-  border-radius: 12px;
+  border: 4px solid var(--ink, #000);
+  box-shadow: 5px 5px 0 var(--ink, #000);
+  border-radius: 4px;
   padding: 16px;
   text-align: center;
+  position: relative;
+  overflow: hidden;
 }
+.neo-stat:nth-child(1) { background: #FF00E6; color: #fff; transform: rotate(-1deg); }
+.neo-stat:nth-child(2) { background: #00FF66; color: var(--ink); transform: rotate(1deg); }
+
 .neo-stat__val {
-  font-size: 24px;
+  font-size: 26px;
   font-weight: 900;
-  color: var(--ink, #000);
-  margin-bottom: 4px;
+  letter-spacing: -1px;
+  margin-bottom: 2px;
+  text-shadow: 2px 2px 0 rgba(0,0,0,0.2);
 }
 .neo-stat__lbl {
   font-size: 11px;
-  font-weight: 800;
-  color: #666;
+  font-weight: 900;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 @keyframes float {
   0%, 100% { transform: translateY(0); }
@@ -240,8 +239,8 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
     <div style="margin-bottom: 16px; animation: float 3s ease-in-out infinite;">
       <img src="/assets/chest.png" alt="Reward Chest" style="width: 90px; height: 90px; object-fit: contain; filter: drop-shadow(0px 8px 8px rgba(0,0,0,0.15));">
     </div>
-    <div class="neo-card__subtitle" style="font-size: 14px; font-weight: 800; text-transform: uppercase;">Reward Hari Ini</div>
-    <div class="neo-card__amount" style="font-size: 32px; font-weight: 900; margin-bottom: 24px; letter-spacing: -1px;">
+    <div class="neo-card__subtitle">Reward Hari Ini</div>
+    <div class="neo-card__amount">
       <?= format_rp($checkin_reward) ?>
     </div>
 
@@ -284,14 +283,14 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
     <?php endfor; ?>
   </div>
 
-  <div class="stat-grid" style="margin-top: 36px;">
+  <div class="stat-grid" style="margin-top: 24px;">
     <div class="neo-stat">
-      <div class="neo-stat__val" style="color:var(--orange)"><?= $streak ?></div>
-      <div class="neo-stat__lbl"><i class="ph-fill ph-fire" style="color:var(--orange)"></i> Hari Aktif</div>
+      <div class="neo-stat__val"><?= $streak ?></div>
+      <div class="neo-stat__lbl"><i class="ph-fill ph-fire"></i> Hari Aktif</div>
     </div>
     <div class="neo-stat">
-      <div class="neo-stat__val" style="font-size: 16px; margin-top: 8px;"><?= format_rp((float)$user['balance_dep']) ?></div>
-      <div class="neo-stat__lbl" style="margin-top: 6px;">Saldo Beli</div>
+      <div class="neo-stat__val" style="font-size: 20px; margin-top: 6px;"><?= format_rp((float)$user['balance_dep']) ?></div>
+      <div class="neo-stat__lbl">Saldo Beli</div>
     </div>
   </div>
 
