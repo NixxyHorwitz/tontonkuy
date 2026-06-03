@@ -54,6 +54,18 @@ require __DIR__ . '/partials/header.php';
 
 <div class="c-content">
     <div class="row mb-4">
+        <!-- New Endpoint URL section spanning full width if needed, or inline -->
+        <div class="col-md-12 mb-3">
+            <div class="c-stat" style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 20px;background:#1a1d27;border:1px dashed var(--brand)">
+                <div>
+                    <div style="font-size:11px;color:#888;text-transform:uppercase;font-weight:700;letter-spacing:1px">Endpoint Heartbeat API</div>
+                    <div style="font-size:14px;font-weight:800;color:var(--brand);margin-top:2px;font-family:monospace" id="endpoint-url">
+                        <?= (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] . '/api/heartbeat.php' ?>
+                    </div>
+                </div>
+                <button onclick="copyEndpoint()" class="btn btn-sm" style="background:var(--brand);color:#fff;border-radius:8px;font-weight:700;font-size:12px;padding:6px 16px">📋 Salin Tautan</button>
+            </div>
+        </div>
         <div class="col-md-6">
             <div class="c-stat" style="display:flex;align-items:center;gap:20px">
                 <div class="c-stat__icon" style="background:<?= $status === 'ON' ? 'var(--lime)' : ($status === 'OFF' ? 'var(--peach)' : '#555') ?>;width:60px;height:60px;border-radius:16px;font-size:24px">
@@ -95,13 +107,13 @@ require __DIR__ . '/partials/header.php';
         </div>
         <div class="c-card-body p-0">
             <div class="table-responsive">
-                <table class="c-table">
-                    <thead>
+                <table class="table" style="font-size:13.5px;color:#e0e0f0;margin-bottom:0">
+                    <thead style="background:#0f1117;color:#666;font-size:11px;text-transform:uppercase;letter-spacing:.5px">
                         <tr>
-                            <th width="15%">Waktu</th>
-                            <th width="15%">Device</th>
-                            <th width="10%">Interval</th>
-                            <th>Payload JSON</th>
+                            <th width="15%" style="border-bottom:1px solid #1f2235;padding:10px 14px">Waktu</th>
+                            <th width="15%" style="border-bottom:1px solid #1f2235;padding:10px 14px">Device</th>
+                            <th width="10%" style="border-bottom:1px solid #1f2235;padding:10px 14px">Interval</th>
+                            <th style="border-bottom:1px solid #1f2235;padding:10px 14px">Payload JSON</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -135,6 +147,15 @@ require __DIR__ . '/partials/header.php';
 </div>
 
 <script>
+    function copyEndpoint() {
+        const url = document.getElementById('endpoint-url').innerText.trim();
+        navigator.clipboard.writeText(url).then(() => {
+            alert('✅ Tautan berhasil disalin: ' + url);
+        }).catch(err => {
+            alert('Gagal menyalin tautan: ' + err);
+        });
+    }
+
     // Auto refresh halaman setiap 60 detik
     setTimeout(() => {
         window.location.reload();
