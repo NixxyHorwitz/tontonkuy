@@ -176,12 +176,12 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Action Grid -->
 <style>
+.qact-wrap { position: relative; margin-bottom: 14px; }
 .qact-row {
   display: flex;
-  gap: 6px;
+  gap: 8px;
   overflow-x: auto;
-  padding: 2px 0 10px;
-  margin-bottom: 6px;
+  padding: 2px 0 8px;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
@@ -194,17 +194,17 @@ require dirname(__DIR__) . '/partials/header.php';
   flex-shrink: 0;
   text-decoration: none;
   color: var(--ink);
-  width: 62px;
+  width: 60px;
 }
 .qact-item__icon {
-  width: 46px; height: 46px;
+  width: 48px; height: 48px;
   border-radius: 14px;
   border: 2.5px solid var(--ink);
-  box-shadow: 2px 2px 0 var(--ink);
+  box-shadow: 2.5px 2.5px 0 var(--ink);
   display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
-  transition: transform 0.15s, box-shadow 0.15s;
-  background: var(--yellow);
+  font-size: 21px;
+  color: #fff;
+  transition: transform 0.12s, box-shadow 0.12s;
 }
 .qact-item:active .qact-item__icon {
   transform: translate(2px, 2px);
@@ -215,41 +215,80 @@ require dirname(__DIR__) . '/partials/header.php';
   text-align: center; line-height: 1.2;
   color: var(--ink);
 }
+/* Scroll indicator */
+.qact-dots {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+.qact-dot {
+  width: 18px; height: 4px;
+  border-radius: 2px;
+  background: #ddd;
+  border: 1px solid #ccc;
+  transition: background .2s, width .2s;
+}
+.qact-dot.active {
+  background: var(--ink);
+  width: 28px;
+}
 </style>
-<div class="qact-row">
+<div class="qact-wrap">
+<div class="qact-row" id="qact-row">
   <a href="/deposit" class="qact-item">
-    <div class="qact-item__icon" style="background:var(--sky)"><i class="ph-bold ph-upload-simple"></i></div>
+    <div class="qact-item__icon" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9)"><i class="ph-bold ph-upload-simple"></i></div>
     <span class="qact-item__label">Topup</span>
   </a>
   <a href="/withdraw" class="qact-item">
-    <div class="qact-item__icon" style="background:var(--peach)"><i class="ph-bold ph-download-simple"></i></div>
+    <div class="qact-item__icon" style="background:linear-gradient(135deg,#fb923c,#f97316)"><i class="ph-bold ph-download-simple"></i></div>
     <span class="qact-item__label">Tarik</span>
   </a>
   <a href="/history" class="qact-item">
-    <div class="qact-item__icon" style="background:var(--lavender)"><i class="ph-bold ph-receipt"></i></div>
+    <div class="qact-item__icon" style="background:linear-gradient(135deg,#a78bfa,#7c3aed)"><i class="ph-bold ph-receipt"></i></div>
     <span class="qact-item__label">Riwayat</span>
   </a>
   <a href="/missions" class="qact-item">
-    <div class="qact-item__icon" style="background:#00E5FF"><i class="ph-bold ph-target"></i></div>
+    <div class="qact-item__icon" style="background:linear-gradient(135deg,#06b6d4,#0891b2)"><i class="ph-bold ph-target"></i></div>
     <span class="qact-item__label">Misi</span>
   </a>
   <a href="/checkin" class="qact-item">
-    <div class="qact-item__icon" style="background:var(--mint)"><i class="ph-bold ph-calendar-check"></i></div>
+    <div class="qact-item__icon" style="background:linear-gradient(135deg,#34d399,#059669)"><i class="ph-bold ph-calendar-check"></i></div>
     <span class="qact-item__label">Absen</span>
   </a>
   <a href="/redeem" class="qact-item">
-    <div class="qact-item__icon" style="background:var(--salmon);color:#fff"><i class="ph-bold ph-gift"></i></div>
+    <div class="qact-item__icon" style="background:linear-gradient(135deg,#f472b6,#db2777)"><i class="ph-bold ph-gift"></i></div>
     <span class="qact-item__label">Redeem</span>
   </a>
   <a href="/referral" class="qact-item">
-    <div class="qact-item__icon" style="background:#e9d5ff"><i class="ph-bold ph-users"></i></div>
+    <div class="qact-item__icon" style="background:linear-gradient(135deg,#c084fc,#9333ea)"><i class="ph-bold ph-users"></i></div>
     <span class="qact-item__label">Referral</span>
   </a>
   <a href="/panduan" class="qact-item">
-    <div class="qact-item__icon" style="background:var(--yellow)"><i class="ph-bold ph-book-open"></i></div>
+    <div class="qact-item__icon" style="background:linear-gradient(135deg,#fbbf24,#d97706)"><i class="ph-bold ph-book-open"></i></div>
     <span class="qact-item__label">Panduan</span>
   </a>
 </div>
+<div class="qact-dots" id="qact-dots"></div>
+</div>
+<script>
+(function(){
+  const row  = document.getElementById('qact-row');
+  const wrap = document.getElementById('qact-dots');
+  // Show 3 dots representing scroll position thirds
+  const DOTS = 3;
+  for(let i=0;i<DOTS;i++){
+    const d = document.createElement('div');
+    d.className = 'qact-dot' + (i===0?' active':'');
+    wrap.appendChild(d);
+  }
+  row.addEventListener('scroll', () => {
+    const pct = row.scrollLeft / (row.scrollWidth - row.clientWidth);
+    const idx = Math.min(DOTS-1, Math.round(pct * (DOTS-1)));
+    wrap.querySelectorAll('.qact-dot').forEach((d,i) => d.classList.toggle('active', i===idx));
+  });
+})();
+</script>
 
 <!-- Dashboard Stats -->
 <div style="background:var(--white);border:2.5px solid var(--ink);border-radius:14px;box-shadow:4px 4px 0 var(--ink);padding:14px;margin-bottom:16px;transition:transform 0.2s">

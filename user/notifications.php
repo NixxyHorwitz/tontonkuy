@@ -51,27 +51,71 @@ $type_cfg = [
 ];
 ?>
 
-<div class="page-title-bar" style="display:flex;align-items:center;justify-content:space-between">
-  <div>
-    <h1 style="font-size:20px">🔔 Notifikasi</h1>
-    <?php if ($unread_count > 0): ?>
-    <p><?= $unread_count ?> belum dibaca</p>
-    <?php else: ?>
-    <p style="color:#22c55e">Semua sudah dibaca ✓</p>
-    <?php endif; ?>
+<style>
+.notif-header {
+  background: linear-gradient(135deg, #a78bfa, #7c3aed);
+  color: #fff;
+  padding: 14px 14px 12px;
+  margin: -14px -14px 14px;
+  border-bottom: 3px solid var(--ink);
+  box-shadow: 0 3px 0 var(--ink);
+  display: flex; align-items: center; justify-content: space-between;
+  position: relative; overflow: hidden;
+}
+.notif-header::after {
+  content: '🔔';
+  position: absolute; right: 56px; top: 50%;
+  transform: translateY(-50%);
+  font-size: 52px; opacity: 0.12; pointer-events: none;
+}
+.notif-header__left { position: relative; z-index: 1; }
+.notif-header__title { font-size: 20px; font-weight: 900; text-transform: uppercase; letter-spacing: -0.5px; line-height: 1; }
+.notif-header__sub { font-size: 11px; font-weight: 700; opacity: 0.85; margin-top: 2px; }
+.notif-header__badge {
+  background: var(--ink); color: #a78bfa;
+  border: 2px solid var(--ink); border-radius: 10px;
+  padding: 5px 10px; text-align: center;
+  font-weight: 900; font-size: 20px; line-height: 1;
+  flex-shrink: 0; position: relative; z-index: 1;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.2);
+}
+.notif-header__badge small { display: block; font-size: 8px; font-weight: 800; text-transform: uppercase; opacity: 0.8; margin-top: 1px; }
+.notif-mark-all {
+  position: relative; z-index: 1;
+  background: rgba(255,255,255,0.2);
+  border: 2px solid #fff;
+  color: #fff;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 11px; font-weight: 900;
+  cursor: pointer;
+  box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
+  transition: transform .1s;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.notif-mark-all:active { transform: translate(1px,1px); }
+</style>
+
+<div class="notif-header">
+  <div class="notif-header__left">
+    <div class="notif-header__title">🔔 Notifikasi</div>
+    <div class="notif-header__sub">
+      <?php if ($unread_count > 0): ?><?= $unread_count ?> belum dibaca<?php else: ?>Semua sudah dibaca ✓<?php endif; ?>
+    </div>
   </div>
   <?php if ($unread_count > 0): ?>
-  <button id="btn-mark-all" class="btn btn--ghost btn--sm" onclick="markAllRead()">
-    Tandai semua dibaca
-  </button>
+  <button id="btn-mark-all" class="notif-mark-all" onclick="markAllRead()">Baca Semua</button>
+  <?php else: ?>
+  <div class="notif-header__badge"><?= count($notifications) ?><small>Total</small></div>
   <?php endif; ?>
 </div>
 
 <?php if (empty($notifications)): ?>
-<div class="card" style="text-align:center;padding:50px 20px">
-  <div style="font-size:48px;margin-bottom:12px">📭</div>
-  <div style="font-weight:800;font-size:16px;margin-bottom:4px">Belum ada notifikasi</div>
-  <div style="font-size:13px;color:#888">Notifikasi dari admin akan muncul di sini</div>
+<div style="background:#fff;border:2.5px solid var(--ink);border-radius:12px;box-shadow:4px 4px 0 var(--ink);text-align:center;padding:40px 20px;margin-top:4px">
+  <div style="font-size:44px;margin-bottom:10px">📭</div>
+  <div style="font-weight:900;font-size:15px;margin-bottom:4px">Belum ada notifikasi</div>
+  <div style="font-size:12px;color:#888">Notifikasi dari admin akan muncul di sini</div>
 </div>
 
 <?php else: ?>
@@ -113,63 +157,82 @@ $type_cfg = [
 <?php endif; ?>
 
 <style>
+/* ── Notif type accent colors ── */
+:root {
+  --notif-info:    #38bdf8;
+  --notif-success: #4ade80;
+  --notif-warning: #fbbf24;
+  --notif-alert:   #f87171;
+  --notif-congrats:#c084fc;
+}
 .notif-item {
   display: flex;
-  gap: 12px;
+  gap: 10px;
   align-items: flex-start;
-  padding: 14px 16px;
+  padding: 12px 12px 10px;
   border: 2.5px solid var(--ink);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  border-radius: 12px;
+  box-shadow: 3px 3px 0 var(--ink);
   margin-bottom: 10px;
   position: relative;
-  transition: opacity .3s, transform .2s;
+  transition: opacity .3s;
+  background: #fff;
 }
 .notif-item--read {
-  opacity: .72;
-  box-shadow: 2px 2px 0 var(--ink);
+  opacity: .62;
+  box-shadow: 2px 2px 0 #bbb;
+  border-color: #ccc;
+}
+.notif-item__accent {
+  width: 4px;
+  border-radius: 3px;
+  flex-shrink: 0;
+  align-self: stretch;
+  min-height: 40px;
 }
 .notif-item__icon {
-  font-size: 26px;
+  font-size: 22px;
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
-  background: var(--white);
+  width: 38px; height: 38px;
   border: 2px solid var(--ink);
   border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   box-shadow: 2px 2px 0 var(--ink);
+  background: #fff;
 }
+.notif-item--read .notif-item__icon { box-shadow: none; border-color: #ccc; }
 .notif-item__body { flex: 1; min-width: 0; }
-.notif-item__title { font-weight: 900; font-size: 14px; line-height: 1.3; }
-.notif-item__msg { font-size: 13px; color: #444; margin-top: 4px; font-weight: 600; line-height: 1.5; }
+.notif-item__header { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; flex-wrap: wrap; }
+.notif-item__unread-dot { width: 7px; height: 7px; background: var(--brand); border-radius: 50%; flex-shrink: 0; border: 1.5px solid var(--ink); }
+.notif-item__type-badge {
+  font-size: 9px; font-weight: 900; text-transform: uppercase;
+  padding: 2px 7px; border-radius: 5px;
+  border: 1.5px solid var(--ink); letter-spacing: 0.3px;
+}
+.notif-item__title { font-weight: 900; font-size: 13px; line-height: 1.3; flex: 1; }
+.notif-item__msg { font-size: 12px; color: #444; margin-top: 3px; font-weight: 600; line-height: 1.5; }
 .notif-item__cta {
   display: inline-block;
-  margin-top: 8px;
-  font-size: 12px;
-  font-weight: 900;
-  color: var(--brand);
+  margin-top: 7px;
+  font-size: 11px; font-weight: 900;
+  color: var(--ink);
   text-decoration: none;
-  border: 1.5px solid var(--brand);
+  border: 2px solid var(--ink);
   border-radius: 6px;
   padding: 3px 10px;
+  background: var(--yellow);
   box-shadow: 2px 2px 0 var(--ink);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
 }
 .notif-item__time {
-  font-size: 11px;
-  color: #666;
-  margin-top: 6px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  font-size: 10px; color: #888;
+  margin-top: 5px; font-weight: 700;
 }
 .notif-item__read-btn {
   position: absolute;
   top: 10px; right: 10px;
-  background: var(--white);
+  background: var(--yellow);
   border: 2px solid var(--ink);
   border-radius: 6px;
   width: 26px; height: 26px;
@@ -179,7 +242,7 @@ $type_cfg = [
   transition: transform .1s, box-shadow .1s;
 }
 .notif-item__read-btn:hover { transform: translate(-1px,-1px); box-shadow: 3px 3px 0 var(--ink); }
-.notif-item__read-btn:active { transform: translate(1px,1px); box-shadow: 1px 1px 0 var(--ink); }
+.notif-item__read-btn:active { transform: translate(1px,1px); box-shadow: 0 0 0 var(--ink); }
 </style>
 
 <script>
