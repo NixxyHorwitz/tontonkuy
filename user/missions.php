@@ -522,14 +522,11 @@ function claimMission(slug, btn) {
         btn.className = 'mission-claim-btn mission-claim-btn--claimed';
         btn.innerHTML = '<i class="ph-bold ph-check-circle"></i> Sudah Diklaim';
         btn.disabled = true;
-        // Toast
-        if (window.showToast) showToast(data.msg, 'success');
-        else alert(data.msg);
+        nToast(data.msg, 'success');
       } else {
         btn.disabled = false;
         btn.innerHTML = '<i class="ph-bold ph-gift"></i> Klaim Reward!';
-        if (window.showToast) showToast(data.msg, 'error');
-        else alert(data.msg);
+        nToast(data.msg, 'error');
       }
     })
     .catch(() => {
