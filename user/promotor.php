@@ -252,7 +252,7 @@ require dirname(__DIR__) . '/partials/header.php';
           </div>
           <div style="font-size:10px;color:#666;font-weight:700;margin-top:3px">
             Pencapaian: <strong style="color:var(--ink)"><?= number_format((float)$log['percentage'], 1) ?>%</strong>
-            (Depo: <?= format_rp((float)$log['actual_deposits']) ?> · Reg: <?= $log['actual_regs'] ?>)
+            · Reg: <?= $log['actual_regs'] ?>)
           </div>
           <?php if ($log['is_paid']): ?>
           <div style="font-size:9px;color:#4CAF82;font-weight:700;margin-top:2px">
