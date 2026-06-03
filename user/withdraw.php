@@ -196,24 +196,24 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <style>
 /* Trusted Neo-Brutalism Theme */
-.wd-bal { background: var(--yellow, #eab308); color: var(--ink); border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); padding: 16px; margin-bottom: 16px; position: relative; overflow: hidden; }
-.wd-bal::after { content:''; position:absolute; top:-20px; right:-20px; width:80px; height:80px; background: rgba(0,0,0,0.05); border-radius: 50%; }
-.wd-bal__lbl { font-size: 12px; font-weight: 800; color: rgba(0,0,0,0.6); margin-bottom: 4px; display: flex; align-items: center; gap: 4px; }
-.wd-bal__val { font-size: 28px; font-weight: 900; letter-spacing: -0.5px; }
+.wd-bal { background: var(--yellow, #eab308); color: var(--ink); border: 2.5px solid var(--ink); border-radius: 12px; box-shadow: 3px 3px 0 var(--ink); padding: 12px 14px; margin-bottom: 12px; position: relative; overflow: hidden; }
+.wd-bal::after { content:''; position:absolute; top:-20px; right:-20px; width:70px; height:70px; background: rgba(0,0,0,0.05); border-radius: 50%; }
+.wd-bal__lbl { font-size: 11px; font-weight: 800; color: rgba(0,0,0,0.6); margin-bottom: 2px; display: flex; align-items: center; gap: 4px; }
+.wd-bal__val { font-size: 24px; font-weight: 900; letter-spacing: -0.5px; }
 
-.qty-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
-.qty-btn { font-size: 11px; font-weight: 800; padding: 10px 4px; text-align: center; background: #fff; border: 2px solid var(--ink); border-radius: 8px; box-shadow: 2px 2px 0 var(--ink); cursor: pointer; transition: transform 0.1s; }
+.qty-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 12px; }
+.qty-btn { font-size: 11px; font-weight: 800; padding: 8px 4px; text-align: center; background: #fff; border: 2px solid var(--ink); border-radius: 8px; box-shadow: 2px 2px 0 var(--ink); cursor: pointer; transition: transform 0.1s; }
 .qty-btn:active { transform: translate(2px, 2px); box-shadow: 0px 0px 0 var(--ink); }
 
-.card-trusted { background: #fff; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 4px 4px 0 var(--ink); overflow: hidden; margin-bottom: 16px; }
-.card-trusted__header { background: #f8fafc; border-bottom: 3px solid var(--ink); padding: 12px 16px; font-weight: 900; font-size: 14px; color: var(--ink); display: flex; align-items: center; gap: 6px; }
-.card-trusted__body { padding: 16px; }
+.card-trusted { background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; box-shadow: 3px 3px 0 var(--ink); overflow: hidden; margin-bottom: 12px; }
+.card-trusted__header { background: #f8fafc; border-bottom: 2.5px solid var(--ink); padding: 10px 14px; font-weight: 900; font-size: 13px; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+.card-trusted__body { padding: 12px 14px; }
 
-.bank-info { background: #fef08a; border: 3px solid var(--ink); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; position: relative; box-shadow: 4px 4px 0 var(--ink); }
+.bank-info { background: #fef08a; border: 2.5px solid var(--ink); border-radius: 10px; padding: 12px 14px; margin-bottom: 12px; position: relative; box-shadow: 3px 3px 0 var(--ink); }
 .amount-option-btn.active {
   background: var(--yellow) !important;
   box-shadow: 0px 0px 0 var(--ink) !important;
-  transform: translate(3px, 3px) !important;
+  transform: translate(2px, 2px) !important;
 }
 </style>
 
@@ -226,24 +226,24 @@ require dirname(__DIR__) . '/partials/header.php';
 <!-- Limit alert removed per user request -->
 
 <?php if ($flash): ?>
-<div class="alert alert--<?= $flashType === 'error' ? 'error' : 'success' ?>" style="margin-bottom:10px;font-size:13px"><?= htmlspecialchars($flash) ?></div>
+<div class="alert alert--<?= $flashType === 'error' ? 'error' : 'success' ?>" style="margin-bottom:10px;font-size:12px;padding:8px 12px"><?= htmlspecialchars($flash) ?></div>
 <?php endif; ?>
 
 <!-- Lock notice / Estimation -->
 <?php if ($wd_estimation): ?>
   <?php if ($wd_locked): ?>
-  <div class="alert alert--error" style="margin-bottom:16px;font-size:12px;border:2px solid var(--red);border-radius:8px">
-    <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px">
-      <i class="ph-fill ph-lock-key" style="color:var(--red);font-size:16px;margin-top:2px"></i>
+  <div class="alert alert--error" style="margin-bottom:12px;font-size:11px;border:2px solid var(--red);border-radius:8px;padding:8px 12px">
+    <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px">
+      <i class="ph-fill ph-lock-key" style="color:var(--red);font-size:14px;margin-top:2px"></i>
       <div><?= $wd_estimation ?></div>
     </div>
     <?php if ($wd_lock_notice): ?>
-    <div style="margin-bottom:6px;padding-left:22px"><em>"<?= htmlspecialchars($wd_lock_notice) ?>"</em></div>
+    <div style="margin-bottom:4px;padding-left:20px"><em>"<?= htmlspecialchars($wd_lock_notice) ?>"</em></div>
     <?php endif; ?>
-    <div style="font-size:11px;opacity:0.8;padding-left:22px;font-weight:700"><i class="ph-bold ph-clock"></i> Jam operasional: <?= date('h:i A', strtotime($wd_lock_end)) ?> – <?= date('h:i A', strtotime($wd_lock_start)) ?></div>
+    <div style="font-size:10px;opacity:0.8;padding-left:20px;font-weight:700"><i class="ph-bold ph-clock"></i> Jam operasional: <?= date('h:i A', strtotime($wd_lock_end)) ?> – <?= date('h:i A', strtotime($wd_lock_start)) ?></div>
   </div>
   <?php else: ?>
-  <div style="display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;border:2px solid #166534;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:800;margin-bottom:16px;box-shadow:2px 2px 0 #166534">
+  <div style="display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;border:2px solid #166534;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:800;margin-bottom:12px;box-shadow:2px 2px 0 #166534">
     <i class="ph-bold ph-check-circle"></i> <?= $wd_estimation ?>
   </div>
   <?php endif; ?>
@@ -251,9 +251,9 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Level block notice -->
 <?php if ($level_blocked): ?>
-<div id="level-blocked-notice" class="alert alert--warn" style="display:none;margin-bottom:16px;font-size:12px;align-items:center;justify-content:space-between;gap:8px;flex-wrap:nowrap;border:2px solid var(--orange)">
-  <span style="display:flex;align-items:center;gap:4px"><i class="ph-fill ph-lock-key" style="color:var(--orange);font-size:16px"></i> Kamu perlu upgrade ke <strong><?= htmlspecialchars($min_level_name) ?></strong>.</span>
-  <a href="/upgrade" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:11px;padding:6px 12px;flex-shrink:0">Upgrade →</a>
+<div id="level-blocked-notice" class="alert alert--warn" style="display:none;margin-bottom:12px;font-size:11px;padding:8px 12px;align-items:center;justify-content:space-between;gap:6px;flex-wrap:nowrap;border:2px solid var(--orange)">
+  <span style="display:flex;align-items:center;gap:4px"><i class="ph-fill ph-lock-key" style="color:var(--orange);font-size:14px"></i> Kamu perlu upgrade ke <strong><?= htmlspecialchars($min_level_name) ?></strong>.</span>
+  <a href="/upgrade" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:10px;padding:4px 10px;flex-shrink:0">Upgrade →</a>
 </div>
 <?php endif; ?>
 
@@ -283,14 +283,14 @@ require dirname(__DIR__) . '/partials/header.php';
       <input type="hidden" name="form_token" value="<?= htmlspecialchars($_form_token_wd) ?>">
       <input type="hidden" name="amount" id="selected-amount" value="" required>
 
-      <div class="form-group" style="margin-bottom:14px">
-        <label class="form-label" style="font-size:12px;font-weight:800;color:#555">Pilih Nominal Penarikan (Rp)</label>
-        <div class="amount-selection-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px;">
+      <div class="form-group" style="margin-bottom:12px">
+        <label class="form-label" style="font-size:11px;font-weight:800;color:#555">Pilih Nominal Penarikan (Rp)</label>
+        <div class="amount-selection-grid" style="display:grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 6px;">
           <?php foreach ($available_amounts as $amt): ?>
-            <button type="button" class="amount-option-btn" data-value="<?= $amt ?>" onclick="selectWdAmount(this, <?= $amt ?>)" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 10px 4px; background: #fff; border: 2.5px solid var(--ink); border-radius: 8px; box-shadow: 3px 3px 0 var(--ink); cursor: pointer; transition: all 0.1s; outline: none; font-family: inherit;">
-              <img src="/assets/dollar.jpg" alt="uang" style="width: 36px; height: 36px; object-fit: contain; margin-bottom: 6px; mix-blend-mode: multiply; filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.1));">
-              <span style="font-size: 13px; font-weight: 900; color: var(--ink); letter-spacing: -0.5px;"><?= format_rp($amt) ?></span>
-              <span style="font-size: 9px; font-weight: 800; color: #64748b; margin-top: 2px; text-transform: uppercase;">Tarik</span>
+            <button type="button" class="amount-option-btn" data-value="<?= $amt ?>" onclick="selectWdAmount(this, <?= $amt ?>)" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 6px 4px; background: #fff; border: 2.5px solid var(--ink); border-radius: 8px; box-shadow: 2.5px 2.5px 0 var(--ink); cursor: pointer; transition: all 0.1s; outline: none; font-family: inherit;">
+              <img src="/assets/dollar.png" alt="uang" style="width: 28px; height: 28px; object-fit: contain; margin-bottom: 4px; mix-blend-mode: multiply; filter: drop-shadow(1px 1px 0 rgba(0,0,0,0.1));">
+              <span style="font-size: 12px; font-weight: 900; color: var(--ink); letter-spacing: -0.5px;"><?= format_rp($amt) ?></span>
+              <span style="font-size: 8px; font-weight: 800; color: #64748b; margin-top: 2px; text-transform: uppercase;">Tarik</span>
             </button>
           <?php endforeach; ?>
         </div>
@@ -319,16 +319,16 @@ require dirname(__DIR__) . '/partials/header.php';
       <?php endif; ?>
 
       <?php if ($has_pending_wd): ?>
-        <div class="alert alert--warn" style="margin-bottom:12px;font-size:12px;border:2px solid var(--orange)">
+        <div class="alert alert--warn" style="margin-bottom:10px;font-size:11px;border:2px solid var(--orange);padding:8px">
           <i class="ph-bold ph-hourglass" style="color:var(--orange)"></i> <strong>Ada penarikan pending.</strong> Tunggu kelar diproses dulu ya.
         </div>
-        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:14px;height:48px"><i class="ph-bold ph-hourglass-high"></i> Sabar, Lagi Diproses...</button>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px;height:42px"><i class="ph-bold ph-hourglass-high"></i> Sabar, Lagi Diproses...</button>
       <?php elseif ((float)$user['balance_wd'] < $min_withdraw): ?>
-        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:14px;height:48px"><i class="ph-bold ph-wallet"></i> Saldo Kurang Dikit!</button>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px;height:42px"><i class="ph-bold ph-wallet"></i> Saldo Kurang Dikit!</button>
       <?php elseif ($wd_locked): ?>
-        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:14px;height:48px"><i class="ph-bold ph-clock"></i> Lagi Tutup Nih</button>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px;height:42px"><i class="ph-bold ph-clock"></i> Lagi Tutup Nih</button>
       <?php else: ?>
-        <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full no-dbl-submit" style="font-size:14px;height:48px;background:var(--yellow);color:var(--ink);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink)"><i class="ph-bold ph-paper-plane-right"></i> Tarik Saldo Sekarang</button>
+        <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full no-dbl-submit" style="font-size:13px;height:42px;background:var(--yellow);color:var(--ink);border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink)"><i class="ph-bold ph-paper-plane-right"></i> Tarik Saldo Sekarang</button>
       <?php endif; ?>
     </form>
   </div>
