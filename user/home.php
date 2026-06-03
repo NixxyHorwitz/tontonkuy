@@ -237,11 +237,11 @@ require dirname(__DIR__) . '/partials/header.php';
 <div class="qact-wrap">
 <div class="qact-row" id="qact-row">
   <a href="/deposit" class="qact-item">
-    <div class="qact-item__icon" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9)"><i class="ph-bold ph-upload-simple"></i></div>
+    <div class="qact-item__icon" style="background:linear-gradient(135deg,#38bdf8,#0ea5e9)"><i class="ph-bold ph-download-simple"></i></div>
     <span class="qact-item__label">Topup</span>
   </a>
   <a href="/withdraw" class="qact-item">
-    <div class="qact-item__icon" style="background:linear-gradient(135deg,#fb923c,#f97316)"><i class="ph-bold ph-download-simple"></i></div>
+    <div class="qact-item__icon" style="background:linear-gradient(135deg,#fb923c,#f97316)"><i class="ph-bold ph-upload-simple"></i></div>
     <span class="qact-item__label">Tarik</span>
   </a>
   <a href="/history" class="qact-item">
