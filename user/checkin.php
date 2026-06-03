@@ -237,7 +237,9 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
   <?php endif; ?>
 
   <div class="neo-card neo-card--trusted">
-    <div style="font-size: 48px; margin-bottom: 10px; animation: float 3s ease-in-out infinite; color: var(--yellow)"><i class="ph-fill ph-gift"></i></div>
+    <div style="margin-bottom: 16px; animation: float 3s ease-in-out infinite;">
+      <img src="/assets/chest.png" alt="Reward Chest" style="width: 90px; height: 90px; object-fit: contain; filter: drop-shadow(0px 8px 8px rgba(0,0,0,0.15));">
+    </div>
     <div class="neo-card__subtitle" style="font-size: 14px; font-weight: 800; text-transform: uppercase;">Reward Hari Ini</div>
     <div class="neo-card__amount" style="font-size: 32px; font-weight: 900; margin-bottom: 24px; letter-spacing: -1px;">
       <?= format_rp($checkin_reward) ?>
@@ -266,10 +268,18 @@ if ($streak == 0 && $already) { $completed_days = 1; } // fallback
       $is_done = $i <= $completed_days;
       $is_active = (!$already && $i == $completed_days + 1);
       $class = $is_done ? 'done' : ($is_active ? 'active' : '');
+      $img = ($i === 7) ? '/assets/chest.png' : '/assets/coins.png';
+      $img_filter = $is_done || $is_active ? 'filter: drop-shadow(2px 2px 0px rgba(0,0,0,0.2));' : 'filter: grayscale(1) opacity(0.3);';
+      $node_style = 'width:42px;height:42px;border:none;background:transparent;box-shadow:none;position:relative;margin:0 auto;';
     ?>
     <div class="step-item <?= $class ?>">
-      <div class="step-node"><?= $is_done ? '<i class="ph-bold ph-check"></i>' : $i ?></div>
-      <div class="step-lbl">Hari <?= $i ?></div>
+      <div class="step-node" style="<?= $node_style ?>">
+        <img src="<?= $img ?>" style="width:100%;height:100%;object-fit:contain; <?= $img_filter ?>">
+        <?php if ($is_done): ?>
+          <div style="position:absolute;bottom:-2px;right:-4px;background:var(--green);color:#fff;border-radius:50%;width:18px;height:18px;font-size:11px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:1.5px 1.5px 0 var(--ink)"><i class="ph-bold ph-check"></i></div>
+        <?php endif; ?>
+      </div>
+      <div class="step-lbl" style="margin-top:8px;<?= $is_active ? 'color:var(--yellow);font-size:11px;' : '' ?>">Hari <?= $i ?></div>
     </div>
     <?php endfor; ?>
   </div>
