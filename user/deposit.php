@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -116,7 +116,7 @@ end_dep:
 $deps = $pdo->prepare("SELECT * FROM deposits WHERE user_id=? ORDER BY created_at DESC LIMIT 6");
 $deps->execute([$user['id']]); $deps = $deps->fetchAll();
 
-$pageTitle  = 'Isi Saldo — TontonKuy';
+$pageTitle  = 'Isi Saldo — NontonKuy';
 $activePage = 'deposit';
 require dirname(__DIR__) . '/partials/header.php';
 ?>

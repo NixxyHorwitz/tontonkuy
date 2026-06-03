@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 // This file is included by guard.php — $maintenance_msg is already set
 // Can also be accessed directly as a standalone page
@@ -11,7 +11,7 @@ $maintenance_msg ??= setting($pdo, 'maintenance_message', 'Sistem sedang dalam p
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Maintenance — TontonKuy</title>
+<title>Maintenance — NontonKuy</title>
 <link rel="stylesheet" href="/assets/css/app.css?v=<?= @filemtime($_SERVER['DOCUMENT_ROOT'].'/assets/css/app.css') ?: time() ?>">
 <style>
   .maint-shell {

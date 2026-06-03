@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -9,7 +9,7 @@ if (!$plinko_enabled) {
     redirect('/home');
 }
 
-$pageTitle  = 'Event Khusus — TontonKuy';
+$pageTitle  = 'Event Khusus — NontonKuy';
 $activePage = 'events';
 require dirname(__DIR__) . '/partials/header.php';
 ?>

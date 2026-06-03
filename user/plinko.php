@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -162,7 +162,7 @@ try {
     $history = $h_stmt->fetchAll();
 } catch (\Throwable $e) {}
 
-$pageTitle  = 'Mini Game Plinko — TontonKuy';
+$pageTitle  = 'Mini Game Plinko — NontonKuy';
 $activePage = 'plinko';
 require dirname(__DIR__) . '/partials/header.php';
 ?>

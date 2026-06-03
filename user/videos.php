@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -27,7 +27,7 @@ $videos = $pdo->prepare(
 $videos->execute([$user['id']]);
 $videos = $videos->fetchAll();
 
-$pageTitle  = 'Tonton Video — TontonKuy';
+$pageTitle  = 'Tonton Video — NontonKuy';
 $activePage = 'videos';
 require dirname(__DIR__) . '/partials/header.php';
 ?>

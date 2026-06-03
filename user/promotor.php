@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -139,7 +139,7 @@ $downline_stmt = $pdo->prepare("
 $downline_stmt->execute([$user['referral_code']]);
 $downlines = $downline_stmt->fetchAll();
 
-$pageTitle  = 'Promotor Dashboard — TontonKuy';
+$pageTitle  = 'Promotor Dashboard — NontonKuy';
 $activePage = 'referral';
 require dirname(__DIR__) . '/partials/header.php';
 ?>

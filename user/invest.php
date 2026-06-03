@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -223,7 +223,7 @@ $profit_logs = $pdo->prepare("
 $profit_logs->execute([$user['id']]);
 $profit_logs = $profit_logs->fetchAll();
 
-$pageTitle = 'Investasi Ponzi — TontonKuy';
+$pageTitle = 'Investasi Ponzi — NontonKuy';
 $activePage = 'invest';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
@@ -678,7 +678,7 @@ require dirname(__DIR__) . '/partials/header.php';
     </div>
     <div class="guide-modal__body">
       <div style="font-size:12px; font-weight:700; color:#444; line-height:1.5; text-align:center; margin-bottom:4px;">
-        Selamat datang di **Portal Investasi TontonKuy**! Pelajari 4 langkah mudah untuk mulai melipatgandakan saldo Anda:
+        Selamat datang di **Portal Investasi NontonKuy**! Pelajari 4 langkah mudah untuk mulai melipatgandakan saldo Anda:
       </div>
       
       <!-- Step 1 -->

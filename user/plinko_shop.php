@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -101,7 +101,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle  = 'Lapak Koin Plinko — TontonKuy';
+$pageTitle  = 'Lapak Koin Plinko — NontonKuy';
 $activePage = 'plinko-shop';
 require dirname(__DIR__) . '/partials/header.php';
 

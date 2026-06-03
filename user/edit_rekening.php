@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -88,7 +88,7 @@ foreach ($channels as $c) {
 $banks    = array_filter($channels, fn($c) => $c['type'] === 'bank');
 $ewallets = array_filter($channels, fn($c) => $c['type'] === 'ewallet');
 
-$pageTitle  = 'Edit Rekening — TontonKuy';
+$pageTitle  = 'Edit Rekening — NontonKuy';
 $activePage = 'profile';
 require dirname(__DIR__) . '/partials/header.php';
 ?>

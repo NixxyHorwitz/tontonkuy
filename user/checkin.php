@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check
     }
 }
 
-$pageTitle  = 'Check-in Harian — TontonKuy';
+$pageTitle  = 'Check-in Harian — NontonKuy';
 $activePage = 'checkin';
 require dirname(__DIR__) . '/partials/header.php';
 

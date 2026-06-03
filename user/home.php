@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
 
@@ -98,7 +98,7 @@ if ($user['membership_id'] && $user['membership_expires_at'] && strtotime($user[
     $membership_name = $ms->fetchColumn() ?: 'Free';
 }
 
-$pageTitle  = 'Beranda — TontonKuy';
+$pageTitle  = 'Beranda — NontonKuy';
 $activePage = 'home';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
@@ -439,7 +439,7 @@ require dirname(__DIR__) . '/partials/header.php';
 // Popup settings from DB
 $popup_enabled      = setting($pdo, 'popup_enabled', '1') === '1';
 $popup_title        = setting($pdo, 'popup_title',   'Hei, sudah baca panduan?');
-$popup_body         = setting($pdo, 'popup_body',    'Biar makin lancar dapat reward, yuk baca dulu cara kerja TontonKuy! Dari cara tonton, jenis saldo, sampai tips withdraw.');
+$popup_body         = setting($pdo, 'popup_body',    'Biar makin lancar dapat reward, yuk baca dulu cara kerja NontonKuy! Dari cara tonton, jenis saldo, sampai tips withdraw.');
 $popup_cta_text     = setting($pdo, 'popup_cta_text', 'Baca Panduan');
 $popup_cta_url      = setting($pdo, 'popup_cta_url',  '/panduan');
 $popup_delay        = max(0, (int) setting($pdo, 'popup_delay', '1500'));

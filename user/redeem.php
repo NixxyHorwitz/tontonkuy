@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -139,7 +139,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 done_redeem:
 
-$pageTitle  = 'Redeem Code — TontonKuy';
+$pageTitle  = 'Redeem Code — NontonKuy';
 $activePage = 'redeem';
 require dirname(__DIR__) . '/partials/header.php';
 ?>

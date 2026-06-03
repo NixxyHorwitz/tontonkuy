@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -189,7 +189,7 @@ if ($wd_lock_start && $wd_lock_end) {
     }
 }
 
-$pageTitle  = 'Withdraw — TontonKuy';
+$pageTitle  = 'Withdraw — NontonKuy';
 $activePage = 'withdraw';
 require dirname(__DIR__) . '/partials/header.php';
 ?>

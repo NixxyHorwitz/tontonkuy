@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
 if (auth_user($pdo)) redirect('/home');
@@ -46,8 +46,8 @@ end_login:
 ?>
 <?php
 // Load SEO settings
-$_seo_title  = setting($pdo, 'seo_title', 'TontonKuy');
-$_seo_desc   = setting($pdo, 'seo_description', 'Tonton video dan kumpulkan reward di TontonKuy!');
+$_seo_title  = setting($pdo, 'seo_title', 'NontonKuy');
+$_seo_desc   = setting($pdo, 'seo_description', 'Tonton video dan kumpulkan reward di NontonKuy!');
 $_seo_kw     = setting($pdo, 'seo_keywords', '');
 $_seo_og     = setting($pdo, 'seo_og_image', '');
 $_seo_robots = setting($pdo, 'seo_robots', 'index,follow');

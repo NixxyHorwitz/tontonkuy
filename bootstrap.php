@@ -1,8 +1,8 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 
 // ============================================================
-// BOOTSTRAP — TontonKuy Platform
+// BOOTSTRAP — NontonKuy Platform
 // ============================================================
 
 // Load .env

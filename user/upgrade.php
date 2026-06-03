@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -225,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 end_post:
 
-$pageTitle  = 'Upgrade Paket — TontonKuy';
+$pageTitle  = 'Upgrade Paket — NontonKuy';
 $activePage = 'upgrade';
 require dirname(__DIR__) . '/partials/header.php';
 ?>

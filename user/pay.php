@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
 $user = require_auth($pdo);
@@ -30,7 +30,7 @@ if (($_GET['action'] ?? '') === 'dl_qr') {
     $img    = @file_get_contents($remote);
     if (!$img) { http_response_code(502); exit('Failed to generate QR'); }
     header('Content-Type: image/png');
-    header('Content-Disposition: attachment; filename="QRIS-TontonKuy-dep' . $dep_id . '.png"');
+    header('Content-Disposition: attachment; filename="QRIS-NontonKuy-dep' . $dep_id . '.png"');
     header('Content-Length: ' . strlen($img));
     header('Cache-Control: no-store');
     echo $img;
@@ -93,7 +93,7 @@ $qr_dl_url   = '?id=' . $dep_id . '&action=dl_qr';
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#FFE566">
-<title>Bayar QRIS — TontonKuy</title>
+<title>Bayar QRIS — NontonKuy</title>
 <?php if ($fav_url): ?>
 <link rel="icon" href="<?= htmlspecialchars($fav_url) ?>">
 <link rel="apple-touch-icon" href="<?= htmlspecialchars($fav_url) ?>">

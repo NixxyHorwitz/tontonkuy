@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -57,7 +57,7 @@ $referreds = $refs->fetchAll();
 
 $ref_url = base_url('register?ref=' . $user['referral_code']);
 
-$pageTitle  = 'Referral — TontonKuy';
+$pageTitle  = 'Referral — NontonKuy';
 $activePage = 'referral';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
@@ -110,11 +110,11 @@ require dirname(__DIR__) . '/partials/header.php';
       </button>
     </div>
     <div style="display:flex;gap:8px;margin-top:10px">
-      <a href="https://wa.me/?text=<?= urlencode('Yuk gabung TontonKuy, tonton video & dapat reward! Daftar pakai link ku: ' . $ref_url) ?>"
+      <a href="https://wa.me/?text=<?= urlencode('Yuk gabung NontonKuy, tonton video & dapat reward! Daftar pakai link ku: ' . $ref_url) ?>"
          target="_blank" class="btn btn--green btn--sm btn--full">
         💬 Share ke WhatsApp
       </a>
-      <a href="https://t.me/share/url?url=<?= urlencode($ref_url) ?>&text=<?= urlencode('Gabung TontonKuy, dapat reward tiap nonton video!') ?>"
+      <a href="https://t.me/share/url?url=<?= urlencode($ref_url) ?>&text=<?= urlencode('Gabung NontonKuy, dapat reward tiap nonton video!') ?>"
          target="_blank" class="btn btn--ghost btn--sm btn--full">
         ✈️ Telegram
       </a>

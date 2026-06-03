@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/auth/guard.php';
 
@@ -37,7 +37,7 @@ foreach ($notifications as $n) {
     if (!$n['is_read']) $unread_count++;
 }
 
-$pageTitle  = 'Notifikasi — TontonKuy';
+$pageTitle  = 'Notifikasi — NontonKuy';
 $activePage = 'notifications';
 require dirname(__DIR__) . '/partials/header.php';
 

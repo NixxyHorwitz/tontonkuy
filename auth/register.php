@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 require_once dirname(__DIR__) . '/bootstrap.php';
 if (auth_user($pdo)) redirect('/home');
@@ -134,7 +134,7 @@ $cap_ts  = time();
 $cap_tok = hash_hmac('sha256', (string)$cap_ts, 'TONTON_CAP_' . session_id());
 ?>
 <?php
-$_seo_title  = setting($pdo, 'seo_title', 'TontonKuy');
+$_seo_title  = setting($pdo, 'seo_title', 'NontonKuy');
 $_seo_desc   = setting($pdo, 'seo_description', 'Daftar gratis dan mulai tonton video untuk dapat reward!');
 $_seo_kw     = setting($pdo, 'seo_keywords', '');
 $_seo_og     = setting($pdo, 'seo_og_image', '');

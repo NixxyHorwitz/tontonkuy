@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 declare(strict_types=1);
 // DEBUG: tampilkan semua error PHP ke log
 ini_set('display_errors', '0');
@@ -8,7 +8,7 @@ error_reporting(E_ALL);
 require_once __DIR__ . '/../bootstrap.php';
 $user         = require_auth($pdo);
 $_favicon     = setting($pdo, 'favicon_path', '');
-$_seo_title   = setting($pdo, 'seo_title', 'TontonKuy');
+$_seo_title   = setting($pdo, 'seo_title', 'NontonKuy');
 $_lc_enabled  = setting($pdo, 'livechat_enabled', '1') === '1';
 $_ai_enabled  = setting($pdo, 'chat_ai_enabled', '1') === '1';
 $_adm_enabled = setting($pdo, 'chat_admin_enabled', '1') === '1';
