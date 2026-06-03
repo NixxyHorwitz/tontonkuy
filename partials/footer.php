@@ -5,26 +5,15 @@
       <i class="ph-bold ph-house" style="font-size:24px"></i>
       Beranda
     </a>
-    <a href="/videos" class="nav-item <?= ($activePage??'')==='videos'?'active':'' ?>">
-      <i class="ph-bold ph-play-circle" style="font-size:24px"></i>
-      Tonton
+    <a href="/missions" class="nav-item <?= ($activePage??'')==='missions'?'active':'' ?>">
+      <i class="ph-bold ph-target" style="font-size:24px"></i>
+      Misi
     </a>
-    <?php
-    $_invest_on = setting($pdo, 'investment_enabled', '1') === '1';
-    if ($_invest_on):
-    ?>
-    <a href="/invest" class="nav-item nav-item--center <?= ($activePage??'')==='invest'?'active':'' ?>">
-      <div class="nav-center-btn" style="background:var(--mint) !important;color:var(--ink) !important">
-        <i class="ph-bold ph-chart-line-up" style="font-size:26px"></i>
-      </div>
-    </a>
-    <?php else: ?>
-    <a href="/checkin" class="nav-item nav-item--center <?= ($activePage??'')==='checkin'?'active':'' ?>">
+    <a href="/videos" class="nav-item nav-item--center <?= ($activePage??'')==='videos'?'active':'' ?>">
       <div class="nav-center-btn">
-        <i class="ph-bold ph-calendar-check" style="font-size:26px"></i>
+        <i class="ph-bold ph-play-circle" style="font-size:26px"></i>
       </div>
     </a>
-    <?php endif; ?>
     <a href="/referral" class="nav-item <?= ($activePage??'')==='referral'?'active':'' ?>">
       <i class="ph-bold ph-users" style="font-size:24px"></i>
       Referral
