@@ -2,9 +2,9 @@
 declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 
-// Only run from CLI or with secret param
-if (php_sapi_name() !== 'cli' && ($_GET['secret'] ?? '') !== ($_ENV['APP_KEY'] ?? 'run')) {
-    http_response_code(403); die('Forbidden');
+// Simple one-time migration — delete this file after running!
+if (php_sapi_name() !== 'cli') {
+    header('Content-Type: text/plain; charset=utf-8');
 }
 
 echo "=== TontonKuy Missions Migration ===\n\n";
