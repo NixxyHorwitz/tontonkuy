@@ -321,6 +321,10 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><rect x="7" y="7" width="3" height="3"/><rect x="14" y="7" width="3" height="3"/><rect x="7" y="14" width="3" height="3"/><rect x="14" y="14" width="3" height="3"/></svg>
       Log QRIS Otomatis
     </a>
+    <a href="/console/heartbeats.php" class="c-nav-link <?= $activePage==='heartbeats'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M20.42 4.58a5.4 5.4 0 00-7.65 0l-.77.78-.77-.78a5.4 5.4 0 00-7.65 0C1.46 6.7 1.33 10.28 4 13l8 8 8-8c2.67-2.72 2.54-6.3.42-8.42z"/></svg>
+      Status Forwarder
+    </a>
     <?php endif; ?>
     <?php if (staff_can('target')): ?>
     <a href="/console/target.php" class="c-nav-link <?= $activePage==='target'?'active':'' ?>">
