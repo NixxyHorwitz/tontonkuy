@@ -374,11 +374,13 @@ require dirname(__DIR__) . '/partials/header.php';
     // Extract icon if it exists, else default. The original DB might have emojis, let's just use the neo icon if DB has an emoji.
     $ni = $nc['icon'];
   ?>
-  <div style="display:flex;align-items:center;gap:10px;background:<?= $nc['bg'] ?>;border:2px solid var(--ink);border-radius:12px;padding:10px;margin-bottom:6px">
-    <i class="ph-fill <?= $ni ?>" style="font-size:24px"></i>
+  <div style="display:flex;align-items:center;gap:10px;background:<?= $nc['bg'] ?>;border:2.5px solid var(--ink);box-shadow:4px 4px 0 var(--ink);border-radius:12px;padding:10px;margin-bottom:12px">
+    <div style="width:36px;height:36px;border-radius:10px;background:#fff;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:2px 2px 0 var(--ink)">
+      <i class="ph-fill <?= $ni ?>" style="font-size:20px;color:var(--ink)"></i>
+    </div>
     <div style="flex:1;min-width:0">
-      <div style="font-weight:900;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= htmlspecialchars($nf['title']) ?></div>
-      <div style="font-size:10px;color:#444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><?= htmlspecialchars($nf['message']) ?></div>
+      <div style="font-weight:900;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px"><?= htmlspecialchars($nf['title']) ?></div>
+      <div style="font-size:11px;color:#444;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:700"><?= htmlspecialchars($nf['message']) ?></div>
     </div>
   </div>
   <?php endforeach; ?>
