@@ -70,17 +70,17 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Summary stats -->
 <div class="history-stats">
-  <div class="history-stat" style="background:#fde047;color:#b45309">
-    <div class="history-stat__lbl"><i class="ph-bold ph-gift"></i> Reward</div>
-    <div class="history-stat__val" style="color:var(--ink)"><?= format_rp($total_earned) ?></div>
+  <div class="history-stat" style="background:linear-gradient(135deg, #c084fc, #9333ea);color:#fff">
+    <div class="history-stat__lbl" style="color:#f3e8ff"><i class="ph-bold ph-gift"></i> Reward</div>
+    <div class="history-stat__val"><?= format_rp($total_earned) ?></div>
   </div>
-  <div class="history-stat" style="background:#facc15;color:#a16207">
-    <div class="history-stat__lbl"><i class="ph-bold ph-wallet"></i> Top Up</div>
-    <div class="history-stat__val" style="color:var(--ink)"><?= format_rp($total_dep) ?></div>
+  <div class="history-stat" style="background:linear-gradient(135deg, #38bdf8, #0284c7);color:#fff">
+    <div class="history-stat__lbl" style="color:#e0f2fe"><i class="ph-bold ph-wallet"></i> Top Up</div>
+    <div class="history-stat__val"><?= format_rp($total_dep) ?></div>
   </div>
-  <div class="history-stat" style="background:#eab308;color:#854d0e">
-    <div class="history-stat__lbl"><i class="ph-bold ph-paper-plane-right"></i> Tarik</div>
-    <div class="history-stat__val" style="color:var(--ink)"><?= format_rp($total_wd) ?></div>
+  <div class="history-stat" style="background:linear-gradient(135deg, #fb923c, #ea580c);color:#fff">
+    <div class="history-stat__lbl" style="color:#ffedd5"><i class="ph-bold ph-paper-plane-right"></i> Tarik</div>
+    <div class="history-stat__val"><?= format_rp($total_wd) ?></div>
   </div>
 </div>
 
@@ -141,7 +141,7 @@ require dirname(__DIR__) . '/partials/header.php';
       </div>
       <div class="h-item__rt">
         <span class="badge badge--<?= match($d['status']){'confirmed'=>'success','pending'=>'warn','rejected'=>'error',default=>'error'} ?>" style="font-size:9px;padding:2px 5px">
-          <?= ucfirst($d['status']) ?>
+          <?= match($d['status']){'confirmed'=>'Sukses', 'pending'=>'Menunggu', 'rejected'=>'Ditolak', default=>ucfirst($d['status'])} ?>
         </span>
         <?php if ($d['status']==='pending' && $d['method']==='qris'): ?>
         <a href="/pay?id=<?= $d['id'] ?>" class="btn btn--yellow btn--sm" style="padding:3px 6px;font-size:9px"><i class="ph-bold ph-arrow-right"></i> Bayar</a>
