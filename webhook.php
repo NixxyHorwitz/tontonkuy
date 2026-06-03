@@ -354,7 +354,7 @@ if (isset($update['callback_query'])) {
                         $msg .= "<i>Perubahan rekening telah disetujui.</i>";
                         
                     } elseif ($req['type'] === 'refund_level') {
-                        $s = $pdo->prepare("SELECT u.membership_id, m.price, m.name FROM users u LEFT JOIN memberships m ON u.membership_id = m.id WHERE u.id=?");
+                        $s = $pdo->prepare("SELECT u.membership_id, u.refund_cut_percent, m.price, m.name FROM users u LEFT JOIN memberships m ON u.membership_id = m.id WHERE u.id=?");
                         $s->execute([$req['user_id']]);
                         $uInfo = $s->fetch();
                         
@@ -410,7 +410,7 @@ if (isset($update['callback_query'])) {
     }
 
     // ── EDIT REFUND CUT ──────────────────────────────────────────────────────
-    if (preg_match('/^edit_refcut_(\d+)$/', $data, $m)) {
+    if (preg_match('/^refund_cut_(\d+)$/', $data, $m)) {
         $uid = (int)$m[1];
         answer_cb($token, $cb_id, "📝 Ketik persentase potongan baru (contoh: 25)...");
         $prompt_msg_id = send_msg($token, $chat_id, "📝 <b>Ketik angka persentase potongan refund baru</b> (0 - 100) untuk User ID: <b>{$uid}</b> lalu kirim sebagai pesan.", []);
@@ -420,7 +420,7 @@ if (isset($update['callback_query'])) {
     }
 
     // ── TOGGLE REFUND ACCESS ────────────────────────────────────────────────
-    if (preg_match('/^toggle_ref_(\d+)$/', $data, $m)) {
+    if (preg_match('/^refund_revoke_(\d+)$/', $data, $m)) {
         $uid = (int)$m[1];
         $s = $pdo->prepare("SELECT is_refund_enabled FROM users WHERE id=?");
         $s->execute([$uid]);
@@ -537,6 +537,31 @@ if (isset($update['message'])) {
     if (!$state) { http_response_code(200); exit; }
 
     $parts = explode('|', $state, 7);
+    
+    if ($parts[0] === 'awaiting_refcut') {
+        [, $uid, $orig_msg_id, $orig_b64, $prompt_msg_id] = array_pad($parts, 5, 0);
+        $uid = (int)$uid;
+        $orig_msg_id = (int)$orig_msg_id;
+        $prompt_msg_id = (int)$prompt_msg_id;
+        $new_cut = (int)$text;
+        
+        clear_tg_state($pdo, $chat_id);
+        
+        if ($new_cut >= 0 && $new_cut <= 100) {
+            $pdo->prepare("UPDATE users SET refund_cut_percent=? WHERE id=?")->execute([$new_cut, $uid]);
+            $msg = "✅ Persentase potongan refund untuk User ID {$uid} berhasil diubah menjadi <b>{$new_cut}%</b>.";
+        } else {
+            $msg = "⚠️ Angka tidak valid. Harus antara 0 - 100.";
+        }
+        
+        if ($prompt_msg_id) {
+            edit_msg($token, $chat_id, $prompt_msg_id, $msg, []);
+        } else {
+            send_msg($token, $chat_id, $msg, []);
+        }
+        http_response_code(200); exit;
+    }
+
     if ($parts[0] !== 'awaiting_reason') { http_response_code(200); exit; }
 
     [, $type, $action, $id, $orig_msg_id, $orig_b64, $prompt_msg_id] = array_pad($parts, 7, 0);
