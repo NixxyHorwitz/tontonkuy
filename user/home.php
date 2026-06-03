@@ -216,6 +216,10 @@ require dirname(__DIR__) . '/partials/header.php';
     <div class="action-btn__icon" style="background:var(--yellow)"><i class="ph-bold ph-book-open"></i></div>
     <span class="action-btn__label">Panduan</span>
   </a>
+  <a href="/missions" class="action-btn">
+    <div class="action-btn__icon" style="background:#00E5FF"><i class="ph-bold ph-target"></i></div>
+    <span class="action-btn__label">Misi</span>
+  </a>
 </div>
 
 <!-- Dashboard Stats -->
