@@ -176,49 +176,78 @@ require dirname(__DIR__) . '/partials/header.php';
 
 <!-- Action Grid -->
 <style>
-@keyframes wiggle {
-  0% { transform: rotate(0deg); }
-  25% { transform: rotate(-5deg); }
-  50% { transform: rotate(0deg); }
-  75% { transform: rotate(5deg); }
-  100% { transform: rotate(0deg); }
+.qact-row {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0 10px;
+  margin-bottom: 6px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
-.action-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
-.action-btn { background: var(--white); border: 2.5px solid var(--ink); border-radius: 12px; padding: 12px 6px; box-shadow: 3px 3px 0 var(--ink); text-decoration: none; color: var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
-.action-btn:hover { transform: translateY(-4px) scale(1.02); box-shadow: 5px 5px 0 var(--ink); background: #fafafa; }
-.action-btn:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
-.action-btn__icon { width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; border: 2px solid var(--ink); background: var(--yellow); transition: transform 0.3s; }
-.action-btn:hover .action-btn__icon { animation: wiggle 0.5s ease; }
-.action-btn__label { font-size: 11px; font-weight: 800; text-align: center; }
+.qact-row::-webkit-scrollbar { display: none; }
+.qact-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  text-decoration: none;
+  color: var(--ink);
+  width: 62px;
+}
+.qact-item__icon {
+  width: 46px; height: 46px;
+  border-radius: 14px;
+  border: 2.5px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  transition: transform 0.15s, box-shadow 0.15s;
+  background: var(--yellow);
+}
+.qact-item:active .qact-item__icon {
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 var(--ink);
+}
+.qact-item__label {
+  font-size: 10px; font-weight: 800;
+  text-align: center; line-height: 1.2;
+  color: var(--ink);
+}
 </style>
-<div class="action-grid">
-  <a href="/deposit" class="action-btn">
-    <div class="action-btn__icon" style="background:var(--sky)"><i class="ph-bold ph-upload-simple"></i></div>
-    <span class="action-btn__label">Topup</span>
+<div class="qact-row">
+  <a href="/deposit" class="qact-item">
+    <div class="qact-item__icon" style="background:var(--sky)"><i class="ph-bold ph-upload-simple"></i></div>
+    <span class="qact-item__label">Topup</span>
   </a>
-  <a href="/withdraw" class="action-btn">
-    <div class="action-btn__icon" style="background:var(--peach)"><i class="ph-bold ph-download-simple"></i></div>
-    <span class="action-btn__label">Tarik</span>
+  <a href="/withdraw" class="qact-item">
+    <div class="qact-item__icon" style="background:var(--peach)"><i class="ph-bold ph-download-simple"></i></div>
+    <span class="qact-item__label">Tarik</span>
   </a>
-  <a href="/history" class="action-btn">
-    <div class="action-btn__icon" style="background:var(--lavender)"><i class="ph-bold ph-receipt"></i></div>
-    <span class="action-btn__label">Riwayat</span>
+  <a href="/history" class="qact-item">
+    <div class="qact-item__icon" style="background:var(--lavender)"><i class="ph-bold ph-receipt"></i></div>
+    <span class="qact-item__label">Riwayat</span>
   </a>
-  <a href="/checkin" class="action-btn">
-    <div class="action-btn__icon" style="background:var(--mint)"><i class="ph-bold ph-calendar-check"></i></div>
-    <span class="action-btn__label">Absen</span>
+  <a href="/missions" class="qact-item">
+    <div class="qact-item__icon" style="background:#00E5FF"><i class="ph-bold ph-target"></i></div>
+    <span class="qact-item__label">Misi</span>
   </a>
-  <a href="/redeem" class="action-btn">
-    <div class="action-btn__icon" style="background:var(--salmon);color:#fff"><i class="ph-bold ph-gift"></i></div>
-    <span class="action-btn__label">Redeem</span>
+  <a href="/checkin" class="qact-item">
+    <div class="qact-item__icon" style="background:var(--mint)"><i class="ph-bold ph-calendar-check"></i></div>
+    <span class="qact-item__label">Absen</span>
   </a>
-  <a href="/panduan" class="action-btn">
-    <div class="action-btn__icon" style="background:var(--yellow)"><i class="ph-bold ph-book-open"></i></div>
-    <span class="action-btn__label">Panduan</span>
+  <a href="/redeem" class="qact-item">
+    <div class="qact-item__icon" style="background:var(--salmon);color:#fff"><i class="ph-bold ph-gift"></i></div>
+    <span class="qact-item__label">Redeem</span>
   </a>
-  <a href="/missions" class="action-btn">
-    <div class="action-btn__icon" style="background:#00E5FF"><i class="ph-bold ph-target"></i></div>
-    <span class="action-btn__label">Misi</span>
+  <a href="/referral" class="qact-item">
+    <div class="qact-item__icon" style="background:#e9d5ff"><i class="ph-bold ph-users"></i></div>
+    <span class="qact-item__label">Referral</span>
+  </a>
+  <a href="/panduan" class="qact-item">
+    <div class="qact-item__icon" style="background:var(--yellow)"><i class="ph-bold ph-book-open"></i></div>
+    <span class="qact-item__label">Panduan</span>
   </a>
 </div>
 
