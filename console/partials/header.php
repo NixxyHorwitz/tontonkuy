@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $pageTitle  = $pageTitle  ?? 'Console';
 $activePage = $activePage ?? '';
 // Support both admin and staff sessions

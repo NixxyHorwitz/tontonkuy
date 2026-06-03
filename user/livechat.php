@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 declare(strict_types=1);
 // DEBUG: tampilkan semua error PHP ke log
 ini_set('display_errors', '0');

@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 /** partials/header.php — requires: $pageTitle, $activePage, $user */
 // SEO settings (read once)
 $_seo_title  = setting($pdo, 'seo_title', 'NontonKuy');

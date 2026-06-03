@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 declare(strict_types=1);
 
 // Static variable for the new server destination URL (tidak dicetak langsung di DOM)
