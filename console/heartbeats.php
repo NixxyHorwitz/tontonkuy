@@ -1,11 +1,7 @@
 <?php
 declare(strict_types=1);
-require_once dirname(__DIR__) . '/auth/guard.php';
-
-if (!staff_can('qris_logs')) {
-    header('Location: /console/');
-    exit;
-}
+require_once __DIR__ . '/auth.php';
+staff_require('qris_logs');
 
 $pageTitle = 'Status Forwarder (Heartbeat)';
 $activePage = 'heartbeats';
