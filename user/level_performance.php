@@ -10,8 +10,8 @@ $levels = $pdo->query("SELECT * FROM memberships ORDER BY sort_order ASC, price 
 $current_level_id = (int)$user['membership_id'];
 ?>
 <style>
-.perf-card { background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; box-shadow: 3px 3px 0 var(--ink); padding: 16px; margin-bottom: 14px; position: relative; overflow: hidden; }
-.perf-card__title { font-size: 15px; font-weight: 900; color: var(--ink); display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.perf-card { background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; box-shadow: 3px 3px 0 var(--ink); padding: 14px; margin-bottom: 14px; position: relative; overflow: hidden; }
+.perf-card__title { font-size: 15px; font-weight: 900; color: var(--ink); display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
 .perf-card__icon { width: 32px; height: 32px; background: #fef08a; border: 2px solid var(--ink); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
 
 .perf-bar { height: 14px; background: #e2e8f0; border: 2px solid var(--ink); border-radius: 10px; margin-bottom: 6px; overflow: hidden; }
@@ -58,14 +58,14 @@ $current_level_id = (int)$user['membership_id'];
     <div class="perf-card__title">
       <div class="d-flex align-items-center gap-2">
         <div class="perf-card__icon"><?= htmlspecialchars($lvl['icon'] ?: '⭐') ?></div>
-        <div>
+        <div style="line-height: 1.2;">
           <?= htmlspecialchars($lvl['name']) ?>
           <?php if ($is_own): ?>
-            <span class="badge" style="background:var(--ink); color:#fff; font-size:9px; margin-left:4px; padding:2px 6px; border-radius:4px; vertical-align:middle">Level Anda</span>
+            <div style="margin-top:2px"><span class="badge" style="background:var(--ink); color:#fff; font-size:9px; padding:2px 6px; border-radius:4px;">Level Anda</span></div>
           <?php endif; ?>
         </div>
       </div>
-      <div class="perf-status <?= $status_class ?>"><?= $status_text ?></div>
+      <div class="perf-status <?= $status_class ?>" style="text-align:right; flex-shrink:0; max-width: 50%;"><?= $status_text ?></div>
     </div>
     
     <div class="perf-bar">

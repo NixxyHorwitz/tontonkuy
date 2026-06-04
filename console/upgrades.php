@@ -33,15 +33,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare("UPDATE upgrade_orders SET status='rejected',admin_note=? WHERE id=?")->execute([$note ?: 'Ditolak admin', $id]);
         $flash = "Upgrade #{$id} ditolak.";
     }
-    if ($action === 'save_level_perf') {
-        $perfs = $_POST['perf'] ?? [];
-        foreach ($perfs as $pid => $data) {
-            $avg = (float)($data['avg'] ?? 99.8);
-            $down = isset($data['down']) ? 1 : 0;
-            $pdo->prepare("UPDATE memberships SET perf_avg=?, perf_down_if_own=? WHERE id=?")->execute([$avg, $down, $pid]);
-        }
-        $flash = "Pengaturan kinerja level berhasil disimpan!";
-    }
 }
 
 $where  = $filter !== 'all' ? "WHERE uo.status=?" : "";
@@ -59,7 +50,6 @@ require __DIR__ . '/partials/header.php';
 
 <div class="d-flex align-items-center justify-content-between mb-4">
   <div><h5 class="mb-0 fw-bold">👑 Upgrade Orders</h5></div>
-  <button class="btn btn-sm btn-info text-white" style="background:#17a2b8;border:none" onclick="new bootstrap.Modal(document.getElementById('perfModal')).show()">⚙️ Setting Kinerja WD</button>
 </div>
 
 <?php if ($flash): ?>
@@ -116,40 +106,6 @@ require __DIR__ . '/partials/header.php';
     <div class="modal-footer border-0">
       <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
       <button type="submit" id="upg-submit" class="btn btn-sm text-white" style="background:#4CAF82">Aktifkan</button>
-    </div>
-    </form>
-  </div></div>
-</div>
-
-<?php $all_memberships = $pdo->query("SELECT * FROM memberships ORDER BY sort_order ASC, price ASC")->fetchAll(); ?>
-<div class="modal fade" id="perfModal" tabindex="-1">
-  <div class="modal-dialog"><div class="modal-content" style="background:#1a1d27;border:1px solid #2d3149">
-    <form method="POST">
-    <?= csrf_field() ?><input type="hidden" name="action" value="save_level_perf">
-    <div class="modal-header border-0"><h6 class="modal-title fw-bold">⚙️ Setting Kinerja WD Per Level</h6><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
-    <div class="modal-body" style="max-height: 400px; overflow-y: auto;">
-      <p style="font-size:12px;color:#aaa">Atur rata-rata keberhasilan/uptime WD untuk halaman user. Aktifkan "Down If Own" agar kinerjanya ditampilkan rendah saat diakses oleh pemilik level tersebut.</p>
-      <?php foreach ($all_memberships as $m): ?>
-      <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:8px;margin-bottom:10px;border:1px solid #2d3149">
-        <div style="font-weight:700;font-size:14px;color:#fff;margin-bottom:8px"><?= htmlspecialchars($m['icon'].' '.$m['name']) ?></div>
-        <div class="row g-2">
-          <div class="col-7">
-            <label class="c-label">AVG Kinerja (%)</label>
-            <input type="number" step="0.01" name="perf[<?= $m['id'] ?>][avg]" class="c-form-control" value="<?= (float)($m['perf_avg'] ?? 99.8) ?>" min="0" max="100">
-          </div>
-          <div class="col-5 d-flex align-items-end">
-            <div class="form-check mb-2">
-              <input type="checkbox" class="form-check-input" name="perf[<?= $m['id'] ?>][down]" id="chk_down_<?= $m['id'] ?>" value="1" <?= !empty($m['perf_down_if_own']) ? 'checked' : '' ?>>
-              <label class="form-check-label text-warning" for="chk_down_<?= $m['id'] ?>" style="font-size:12px;font-weight:bold">Down If Own</label>
-            </div>
-          </div>
-        </div>
-      </div>
-      <?php endforeach; ?>
-    </div>
-    <div class="modal-footer border-0">
-      <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
-      <button type="submit" class="btn btn-sm text-white" style="background:var(--brand)">Simpan</button>
     </div>
     </form>
   </div></div>

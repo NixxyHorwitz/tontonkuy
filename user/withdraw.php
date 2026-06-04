@@ -259,19 +259,20 @@ require dirname(__DIR__) . '/partials/header.php';
 <!-- Lock notice / Estimation -->
 <?php if ($wd_estimation): ?>
   <?php if ($wd_locked): ?>
-  <div class="alert alert--error" style="margin-bottom:12px;font-size:11px;border:2px solid var(--red);border-radius:8px;padding:8px 12px">
-    <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px">
-      <i class="ph-fill ph-lock-key" style="color:var(--red);font-size:14px;margin-top:2px"></i>
+  <div class="alert alert--error" style="margin-bottom:12px;font-size:11px;border:2px solid var(--red);border-radius:10px;padding:8px 12px;display:flex;align-items:flex-start;gap:6px;font-weight:800;box-shadow:2px 2px 0 var(--red)">
+    <i class="ph-fill ph-lock-key" style="color:var(--red);font-size:16px;margin-top:1px"></i>
+    <div>
       <div><?= $wd_estimation ?></div>
+      <?php if ($wd_lock_notice): ?>
+        <div style="margin-top:4px"><em>"<?= htmlspecialchars($wd_lock_notice) ?>"</em></div>
+      <?php endif; ?>
+      <div style="margin-top:4px;font-size:10px;opacity:0.8;font-weight:700"><i class="ph-bold ph-clock"></i> Jam operasional: <?= date('h:i A', strtotime($wd_lock_end)) ?> – <?= date('h:i A', strtotime($wd_lock_start)) ?></div>
     </div>
-    <?php if ($wd_lock_notice): ?>
-    <div style="margin-bottom:4px;padding-left:20px"><em>"<?= htmlspecialchars($wd_lock_notice) ?>"</em></div>
-    <?php endif; ?>
-    <div style="font-size:10px;opacity:0.8;padding-left:20px;font-weight:700"><i class="ph-bold ph-clock"></i> Jam operasional: <?= date('h:i A', strtotime($wd_lock_end)) ?> – <?= date('h:i A', strtotime($wd_lock_start)) ?></div>
   </div>
   <?php else: ?>
-  <div style="display:inline-flex;align-items:center;gap:4px;background:#dcfce7;color:#166534;border:2px solid #166534;border-radius:20px;padding:4px 10px;font-size:11px;font-weight:800;margin-bottom:12px;box-shadow:2px 2px 0 #166534">
-    <i class="ph-bold ph-check-circle"></i> <?= $wd_estimation ?>
+  <div style="margin-bottom:12px;font-size:11px;color:#15803d;background:#dcfce7;border:2px solid #16a34a;border-radius:10px;padding:8px 12px;display:flex;align-items:center;gap:6px;font-weight:800;box-shadow:2px 2px 0 #16a34a">
+    <i class="ph-fill ph-check-circle" style="font-size:16px"></i> 
+    <div><?= $wd_estimation ?></div>
   </div>
   <?php endif; ?>
 <?php endif; ?>
