@@ -13,9 +13,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'save_bank_settings') {
         setting_set($pdo, 'bank_enabled', isset($_POST['bank_enabled']) ? '1' : '0');
-        setting_set($pdo, 'bank_name',    trim($_POST['bank_name'] ?? ''));
-        setting_set($pdo, 'bank_account', trim($_POST['bank_account'] ?? ''));
-        setting_set($pdo, 'bank_holder',  trim($_POST['bank_holder'] ?? ''));
+        setting_set($pdo, 'bank_name',    clean_input($_POST['bank_name'] ?? ''));
+        setting_set($pdo, 'bank_account', clean_input($_POST['bank_account'] ?? ''));
+        setting_set($pdo, 'bank_holder',  clean_input($_POST['bank_holder'] ?? ''));
         $flash = '✅ Pengaturan bank disimpan!';
     }
 
@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'save_deposit_limits') {
-        setting_set($pdo, 'min_deposit', trim($_POST['min_deposit'] ?? '10000'));
+        setting_set($pdo, 'min_deposit', clean_input($_POST['min_deposit'] ?? '10000'));
         $flash = '✅ Limit deposit disimpan!';
     }
 

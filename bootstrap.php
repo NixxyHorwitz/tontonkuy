@@ -70,6 +70,14 @@ try {
 // HELPERS
 // ============================================================
 
+/** 
+ * Clean input strings to prevent XSS. 
+ * Strips HTML tags and encodes special characters.
+ */
+function clean_input(string $data): string {
+    return htmlspecialchars(strip_tags(trim($data)), ENT_QUOTES, 'UTF-8');
+}
+
 /** Read setting from DB with static cache */
 function setting(PDO $pdo, string $key, string $default = ''): string {
     static $cache = [];

@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $id     = (int)($_POST['id'] ?? 0);
 
     if ($action === 'add' || $action === 'edit') {
-        $name         = trim($_POST['name'] ?? '');
+        $name         = clean_input($_POST['name'] ?? '');
         $price        = (float)preg_replace('/[^\d.]/', '', $_POST['price'] ?? '0');
         $roi_percent  = (float)($_POST['roi_percent'] ?? 100);
         $duration     = (int)($_POST['duration_days'] ?? 30);
@@ -48,7 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     
     if ($action === 'delete' && $id) {
         // Safe delete: We check if there are users with active contracts, if so we toggle active=0 instead of hard delete, else hard delete!
-        $has_active = (int)$pdo->query("SELECT COUNT(*) FROM user_investments WHERE package_id={$id} AND status='active'")->fetchColumn();
+        $stmtCheck = $pdo->prepare("SELECT COUNT(*) FROM user_investments WHERE package_id=? AND status='active'");
+        $stmtCheck->execute([$id]);
+        $has_active = (int)$stmtCheck->fetchColumn();
         if ($has_active > 0) {
             $pdo->prepare("UPDATE investment_packages SET is_active=0 WHERE id=?")->execute([$id]);
             $flash = 'Paket memiliki investasi aktif dari user. Paket dinonaktifkan dari toko (tidak dihapus permanen).';
@@ -126,8 +128,13 @@ require __DIR__ . '/partials/header.php';
   
   <?php foreach ($packages as $p): 
       // Count total active investment instances for stats
-      $count_active = (int)$pdo->query("SELECT COUNT(*) FROM user_investments WHERE package_id={$p['id']} AND status='active'")->fetchColumn();
-      $total_invested = (float)$pdo->query("SELECT SUM(amount) FROM user_investments WHERE package_id={$p['id']}")->fetchColumn();
+      $stmtActive = $pdo->prepare("SELECT COUNT(*) FROM user_investments WHERE package_id=? AND status='active'");
+      $stmtActive->execute([$p['id']]);
+      $count_active = (int)$stmtActive->fetchColumn();
+      
+      $stmtInvested = $pdo->prepare("SELECT SUM(amount) FROM user_investments WHERE package_id=?");
+      $stmtInvested->execute([$p['id']]);
+      $total_invested = (float)$stmtInvested->fetchColumn();
   ?>
   <div class="col-md-6 col-xl-4">
     <div class="c-card h-100">

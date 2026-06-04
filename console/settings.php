@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  'depo_unique_code_min','depo_unique_code_max','plinko_buy_rate','plinko_sell_rate',
                  'target_deposit_daily','target_member_daily'];
         foreach ($keys as $k) {
-            if (isset($_POST[$k])) setting_set($pdo, $k, trim($_POST[$k]));
+            if (isset($_POST[$k])) setting_set($pdo, $k, clean_input($_POST[$k]));
         }
         // Toggle checkbox
         setting_set($pdo, 'wd_require_level', isset($_POST['wd_require_level']) ? '1' : '0');
@@ -33,7 +33,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'save_bank') {
         foreach (['bank_name','bank_account','bank_holder'] as $k) {
-            if (isset($_POST[$k])) setting_set($pdo, $k, trim($_POST[$k]));
+            if (isset($_POST[$k])) setting_set($pdo, $k, clean_input($_POST[$k]));
         }
         // QRIS raw
         if (isset($_POST['qris_raw'])) setting_set($pdo, 'qris_raw', trim($_POST['qris_raw']));
@@ -42,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'save_maintenance') {
         setting_set($pdo, 'maintenance_mode', isset($_POST['maintenance_mode']) && $_POST['maintenance_mode'] === '1' ? '1' : '0');
-        setting_set($pdo, 'maintenance_message', trim($_POST['maintenance_message'] ?? 'Sistem sedang dalam perbaikan.'));
+        setting_set($pdo, 'maintenance_message', clean_input($_POST['maintenance_message'] ?? 'Sistem sedang dalam perbaikan.'));
         $flash = 'Pengaturan maintenance disimpan!';
     }
 
@@ -54,8 +54,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'save_telegram') {
-        setting_set($pdo, 'tg_bot_token', trim($_POST['tg_bot_token'] ?? ''));
-        setting_set($pdo, 'tg_chat_id',   trim($_POST['tg_chat_id'] ?? ''));
+        setting_set($pdo, 'tg_bot_token', clean_input($_POST['tg_bot_token'] ?? ''));
+        setting_set($pdo, 'tg_chat_id',   clean_input($_POST['tg_chat_id'] ?? ''));
         $flash = 'Pengaturan Telegram Bot disimpan!';
     }
 
@@ -94,7 +94,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     if ($action === 'save_rtp') {
         if (isset($_POST['plinko_default_rtp'])) {
-            setting_set($pdo, 'plinko_default_rtp', trim($_POST['plinko_default_rtp']));
+            setting_set($pdo, 'plinko_default_rtp', clean_input($_POST['plinko_default_rtp']));
         }
         $flash = 'Pengaturan RTP Plinko berhasil disimpan!';
     }
