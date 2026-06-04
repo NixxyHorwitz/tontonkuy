@@ -100,7 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
             $idx += 4 + $len;
         }
 
-        $msg = "📢 <b>DEPOSIT BARU (QRIS)</b>\n";
+        $fmt_amount = format_rp((float)$amount);
+        $msg = "📢 <b>DEPOSIT BARU ({$fmt_amount})</b>\n";
         $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
         $msg .= "👤 <b>User:</b> <code>" . htmlspecialchars($user['username']) . "</code>\n";
         $msg .= "💵 <b>Amount:</b> <code>" . format_rp((float)$amount) . "</code>\n";
