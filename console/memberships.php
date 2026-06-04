@@ -70,7 +70,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach ($perfs as $pid => $data) {
             $avg = (float)($data['avg'] ?? 99.8);
             $down = isset($data['down']) ? 1 : 0;
-            $pdo->prepare("UPDATE memberships SET perf_avg=?, perf_down_if_own=? WHERE id=?")->execute([$avg, $down, $pid]);
+            $disabled = isset($data['disabled']) ? 1 : 0;
+            $pdo->prepare("UPDATE memberships SET perf_avg=?, perf_down_if_own=?, is_wd_disabled=? WHERE id=?")->execute([$avg, $down, $disabled, $pid]);
         }
         $flash = "Pengaturan kinerja level berhasil disimpan!";
     }
@@ -268,10 +269,14 @@ function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')
             <label class="c-label">AVG Kinerja (%)</label>
             <input type="number" step="0.01" name="perf[<?= $m['id'] ?>][avg]" class="c-form-control" value="<?= (float)($m['perf_avg'] ?? 99.8) ?>" min="0" max="100">
           </div>
-          <div class="col-5 d-flex align-items-end">
-            <div class="form-check mb-2">
+          <div class="col-5 d-flex flex-column justify-content-end">
+            <div class="form-check mb-1">
               <input type="checkbox" class="form-check-input" name="perf[<?= $m['id'] ?>][down]" id="chk_down_<?= $m['id'] ?>" value="1" <?= !empty($m['perf_down_if_own']) ? 'checked' : '' ?>>
               <label class="form-check-label text-warning" for="chk_down_<?= $m['id'] ?>" style="font-size:12px;font-weight:bold">Down If Own</label>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" class="form-check-input" name="perf[<?= $m['id'] ?>][disabled]" id="chk_dis_<?= $m['id'] ?>" value="1" <?= !empty($m['is_wd_disabled']) ? 'checked' : '' ?>>
+              <label class="form-check-label text-danger" for="chk_dis_<?= $m['id'] ?>" style="font-size:12px;font-weight:bold" title="Matikan fungsi withdraw sepenuhnya untuk level ini">Tutup WD</label>
             </div>
           </div>
         </div>

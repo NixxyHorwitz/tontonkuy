@@ -37,8 +37,14 @@ $current_level_id = (int)$user['membership_id'];
   <?php foreach ($levels as $lvl): 
     $is_own = ($current_level_id === (int)$lvl['id']);
     $is_down = ($is_own && !empty($lvl['perf_down_if_own']));
+    $is_wd_disabled = !empty($lvl['is_wd_disabled']);
     
-    if ($is_down) {
+    if ($is_wd_disabled) {
+        $perf_val = 0;
+        $status_text = "🔴 Penarikan Ditutup";
+        $color = "#dc2626";
+        $status_class = "status-bad";
+    } elseif ($is_down) {
         // Random bad performance for "Down If Own"
         // Seed based on user id and level id so it doesn't jump wildly on every refresh during the same hour
         srand((int)($user['id'] . $lvl['id'] . date('H')));

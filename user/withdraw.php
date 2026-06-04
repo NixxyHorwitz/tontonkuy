@@ -111,6 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flash = '❌ Akun Free hanya bisa menarik ke e-wallet DANA. Silakan ganti rekening Anda!'; $flashType = 'error';
     } elseif ($has_pending_wd) {
         $flash = '⏳ Kamu masih punya request WD yang lagi diproses nih. Tunggu kelar dulu ya!'; $flashType = 'error';
+    } elseif (!empty($user_mem['is_wd_disabled'])) {
+        $flash = '🔴 Penarikan untuk level Anda saat ini sedang ditutup (Maintenance). Silakan upgrade level Anda!'; $flashType = 'error';
     } elseif ($level_blocked) {
         $flash = "Upgrade ke {$min_level_name} dulu yuk biar bisa tarik saldo!"; $flashType = 'error';
     } else {
@@ -284,6 +286,11 @@ require dirname(__DIR__) . '/partials/header.php';
 <div class="alert alert--error" style="display:flex;margin-bottom:12px;font-size:11px;padding:8px 12px;align-items:center;justify-content:space-between;gap:6px;flex-wrap:nowrap;border:2px solid var(--red)">
   <span style="display:flex;align-items:center;gap:4px"><i class="ph-fill ph-warning-circle" style="color:var(--red);font-size:14px"></i> Akun Free hanya bisa withdraw ke DANA.</span>
   <a href="/edit-rekening" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:10px;padding:4px 10px;flex-shrink:0">Ubah Bank →</a>
+</div>
+<?php elseif (!empty($user_mem['is_wd_disabled'])): ?>
+<div class="alert alert--error" style="display:flex;margin-bottom:12px;font-size:11px;padding:8px 12px;align-items:center;justify-content:space-between;gap:6px;flex-wrap:nowrap;border:2px solid var(--red)">
+  <span style="display:flex;align-items:center;gap:4px"><i class="ph-fill ph-warning-circle" style="color:var(--red);font-size:14px"></i> Penarikan untuk level Anda sedang ditutup!</span>
+  <a href="/upgrade" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:10px;padding:4px 10px;flex-shrink:0">Upgrade →</a>
 </div>
 <?php elseif ($level_blocked): ?>
 <div id="level-blocked-notice" class="alert alert--warn" style="display:none;margin-bottom:12px;font-size:11px;padding:8px 12px;align-items:center;justify-content:space-between;gap:6px;flex-wrap:nowrap;border:2px solid var(--orange)">
