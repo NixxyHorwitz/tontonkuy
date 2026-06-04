@@ -73,7 +73,13 @@ $has_pending_wd = (bool)$pending_wd->fetchColumn();
 // Cek batas WD untuk akun free
 $is_free_level = !$membership_active;
 $free_wd_limit_reached = false;
+$free_wrong_bank = false;
+
 if ($is_free_level) {
+    if ($has_bank && strtolower(trim($user['bank_name'])) !== 'dana') {
+        $free_wrong_bank = true;
+    }
+    
     $wd_cnt = $pdo->prepare("SELECT COUNT(*) FROM withdrawals WHERE user_id=? AND status='approved'");
     $wd_cnt->execute([$user['id']]);
     if ($wd_cnt->fetchColumn() >= 1) {
@@ -101,6 +107,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flash = '⏰ ' . $wd_lock_notice; $flashType = 'error';
     } elseif ($free_wd_limit_reached) {
         $flash = '❌ Akun Free maksimal WD 1 kali. Yuk upgrade level buat tarik dana sepuasnya!'; $flashType = 'error';
+    } elseif ($free_wrong_bank) {
+        $flash = '❌ Akun Free hanya bisa menarik ke e-wallet DANA. Silakan ganti rekening Anda!'; $flashType = 'error';
     } elseif ($has_pending_wd) {
         $flash = '⏳ Kamu masih punya request WD yang lagi diproses nih. Tunggu kelar dulu ya!'; $flashType = 'error';
     } elseif ($level_blocked) {
@@ -114,6 +122,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         if (!in_array((int)$amount, $available_amounts, true)) {
             $flash = 'Nominal penarikan gak valid nih. Harus pilih dari daftar ya!'; $flashType = 'error';
+        } elseif ($is_free_level && strtolower($bank) !== 'dana') {
+            $flash = 'Akun Free hanya bisa menggunakan e-wallet DANA.'; $flashType = 'error';
         } elseif ($amount < $min_withdraw) {
             $flash = 'Minimal withdraw ' . format_rp($min_withdraw) . ' ya.'; $flashType = 'error';
         } elseif ($max_withdraw > 0 && $amount > $max_withdraw) {
@@ -268,6 +278,11 @@ require dirname(__DIR__) . '/partials/header.php';
   <span style="display:flex;align-items:center;gap:4px"><i class="ph-fill ph-prohibit" style="color:var(--red);font-size:14px"></i> Akun Free maksimal 1x penarikan. Upgrade untuk tarik dana lagi!</span>
   <a href="/upgrade" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:10px;padding:4px 10px;flex-shrink:0">Upgrade →</a>
 </div>
+<?php elseif ($free_wrong_bank): ?>
+<div class="alert alert--error" style="display:flex;margin-bottom:12px;font-size:11px;padding:8px 12px;align-items:center;justify-content:space-between;gap:6px;flex-wrap:nowrap;border:2px solid var(--red)">
+  <span style="display:flex;align-items:center;gap:4px"><i class="ph-fill ph-warning-circle" style="color:var(--red);font-size:14px"></i> Akun Free hanya bisa withdraw ke DANA.</span>
+  <a href="/edit-rekening" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:10px;padding:4px 10px;flex-shrink:0">Ubah Bank →</a>
+</div>
 <?php elseif ($level_blocked): ?>
 <div id="level-blocked-notice" class="alert alert--warn" style="display:none;margin-bottom:12px;font-size:11px;padding:8px 12px;align-items:center;justify-content:space-between;gap:6px;flex-wrap:nowrap;border:2px solid var(--orange)">
   <span style="display:flex;align-items:center;gap:4px"><i class="ph-fill ph-lock-key" style="color:var(--orange);font-size:14px"></i> Kamu perlu upgrade ke <strong><?= htmlspecialchars($min_level_name) ?></strong>.</span>
@@ -316,12 +331,20 @@ require dirname(__DIR__) . '/partials/header.php';
 
       <?php if (!$has_bank): ?>
       <div class="alert alert--warn" style="margin-bottom:12px;font-size:12px">⚠️ Harap isi data rekening bankmu ya. Data ini gak bisa diubah lagi setelah disimpan!</div>
+      
+      <?php if ($is_free_level): ?>
+      <div class="form-group" style="margin-bottom:8px">
+        <label class="form-label" style="font-size:12px">Nama Bank / E-Wallet (Khusus Akun Free)</label>
+        <input class="form-control" type="text" name="bank_name" value="DANA" readonly style="background:#f1f5f9;cursor:not-allowed">
+      </div>
+      <?php else: ?>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Nama Bank / E-Wallet</label>
         <input class="form-control" type="text" name="bank_name"
                value="<?= htmlspecialchars($_POST['bank_name'] ?? '') ?>"
                placeholder="BCA, GoPay, OVO, Dana..." required>
       </div>
+      <?php endif; ?>
       <div class="form-group" style="margin-bottom:8px">
         <label class="form-label" style="font-size:12px">Nomor Rekening / Akun</label>
         <input class="form-control" type="text" name="account_number"
@@ -338,6 +361,8 @@ require dirname(__DIR__) . '/partials/header.php';
 
       <?php if ($free_wd_limit_reached): ?>
         <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px;height:42px"><i class="ph-bold ph-prohibit"></i> Limit Free Tercapai</button>
+      <?php elseif ($free_wrong_bank): ?>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px;height:42px"><i class="ph-bold ph-prohibit"></i> Hanya Bisa ke DANA</button>
       <?php elseif ($has_pending_wd): ?>
         <div class="alert alert--warn" style="margin-bottom:10px;font-size:11px;border:2px solid var(--orange);padding:8px">
           <i class="ph-bold ph-hourglass" style="color:var(--orange)"></i> <strong>Ada penarikan pending.</strong> Tunggu kelar diproses dulu ya.
