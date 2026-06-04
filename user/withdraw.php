@@ -70,6 +70,17 @@ $pending_wd = $pdo->prepare("SELECT id FROM withdrawals WHERE user_id=? AND stat
 $pending_wd->execute([$user['id']]);
 $has_pending_wd = (bool)$pending_wd->fetchColumn();
 
+// Cek batas WD untuk akun free
+$is_free_level = !$membership_active;
+$free_wd_limit_reached = false;
+if ($is_free_level) {
+    $wd_cnt = $pdo->prepare("SELECT COUNT(*) FROM withdrawals WHERE user_id=? AND status='approved'");
+    $wd_cnt->execute([$user['id']]);
+    if ($wd_cnt->fetchColumn() >= 1) {
+        $free_wd_limit_reached = true;
+    }
+}
+
 // ── Double-submit prevention ──────────────────────────────────────────────
 $_ftk_wd = 'wd_form_token';
 if (empty($_SESSION[$_ftk_wd])) $_SESSION[$_ftk_wd] = bin2hex(random_bytes(16));
@@ -88,6 +99,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flash = '❌ Akses withdraw kamu dibatasi nih. Hubungi admin yuk buat info lebih lanjut!'; $flashType = 'error';
     } elseif ($wd_locked) {
         $flash = '⏰ ' . $wd_lock_notice; $flashType = 'error';
+    } elseif ($free_wd_limit_reached) {
+        $flash = '❌ Akun Free maksimal WD 1 kali. Yuk upgrade level buat tarik dana sepuasnya!'; $flashType = 'error';
     } elseif ($has_pending_wd) {
         $flash = '⏳ Kamu masih punya request WD yang lagi diproses nih. Tunggu kelar dulu ya!'; $flashType = 'error';
     } elseif ($level_blocked) {
@@ -250,7 +263,12 @@ require dirname(__DIR__) . '/partials/header.php';
 <?php endif; ?>
 
 <!-- Level block notice -->
-<?php if ($level_blocked): ?>
+<?php if ($free_wd_limit_reached): ?>
+<div class="alert alert--error" style="display:flex;margin-bottom:12px;font-size:11px;padding:8px 12px;align-items:center;justify-content:space-between;gap:6px;flex-wrap:nowrap;border:2px solid var(--red)">
+  <span style="display:flex;align-items:center;gap:4px"><i class="ph-fill ph-prohibit" style="color:var(--red);font-size:14px"></i> Akun Free maksimal 1x penarikan. Upgrade untuk tarik dana lagi!</span>
+  <a href="/upgrade" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:10px;padding:4px 10px;flex-shrink:0">Upgrade →</a>
+</div>
+<?php elseif ($level_blocked): ?>
 <div id="level-blocked-notice" class="alert alert--warn" style="display:none;margin-bottom:12px;font-size:11px;padding:8px 12px;align-items:center;justify-content:space-between;gap:6px;flex-wrap:nowrap;border:2px solid var(--orange)">
   <span style="display:flex;align-items:center;gap:4px"><i class="ph-fill ph-lock-key" style="color:var(--orange);font-size:14px"></i> Kamu perlu upgrade ke <strong><?= htmlspecialchars($min_level_name) ?></strong>.</span>
   <a href="/upgrade" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:10px;padding:4px 10px;flex-shrink:0">Upgrade →</a>
@@ -318,7 +336,9 @@ require dirname(__DIR__) . '/partials/header.php';
       </div>
       <?php endif; ?>
 
-      <?php if ($has_pending_wd): ?>
+      <?php if ($free_wd_limit_reached): ?>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px;height:42px"><i class="ph-bold ph-prohibit"></i> Limit Free Tercapai</button>
+      <?php elseif ($has_pending_wd): ?>
         <div class="alert alert--warn" style="margin-bottom:10px;font-size:11px;border:2px solid var(--orange);padding:8px">
           <i class="ph-bold ph-hourglass" style="color:var(--orange)"></i> <strong>Ada penarikan pending.</strong> Tunggu kelar diproses dulu ya.
         </div>
