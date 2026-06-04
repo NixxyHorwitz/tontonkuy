@@ -70,6 +70,44 @@ $_fsvg = [
 <?php endif; ?>
 
 <script src="/assets/js/toast.js"></script>
+<?php
+// Fitur Global WD Notifs (6 Jam Terakhir)
+try {
+    $wd_notif_stmt = $pdo->query("SELECT u.username, w.amount FROM withdrawals w JOIN users u ON u.id = w.user_id WHERE w.created_at >= DATE_SUB(NOW(), INTERVAL 6 HOUR) ORDER BY w.id DESC LIMIT 15");
+    $recent_wd_list = $wd_notif_stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (\Throwable $th) {
+    $recent_wd_list = [];
+}
+?>
+<script>
+(function() {
+  const wdNotifs = <?= json_encode($recent_wd_list ?: []) ?>;
+  if (wdNotifs && wdNotifs.length > 0) {
+    function showRandomWD() {
+      const idx = Math.floor(Math.random() * wdNotifs.length);
+      const wd = wdNotifs[idx];
+      const amtStr = 'Rp ' + parseFloat(wd.amount).toLocaleString('id-ID');
+      
+      // Mask username (e.g. Budi -> Bud***)
+      let uname = wd.username;
+      if (uname.length > 3) {
+          uname = uname.substring(0, 3) + '***';
+      } else {
+          uname = uname + '***';
+      }
+
+      if (typeof window.nToast === 'function') {
+        window.nToast(`💸 <b>${uname}</b> baru saja menarik <b>${amtStr}</b>`, 'success', 4000);
+      }
+      
+      const nextDelay = Math.floor(Math.random() * (40000 - 15000 + 1)) + 15000;
+      setTimeout(showRandomWD, nextDelay);
+    }
+    
+    setTimeout(showRandomWD, Math.floor(Math.random() * 6000) + 3000);
+  }
+})();
+</script>
 </body>
 </html>
 
