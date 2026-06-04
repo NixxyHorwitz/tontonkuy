@@ -169,10 +169,11 @@ require __DIR__ . '/partials/header.php';
               <label class="col-sm-7 text-white-50 mb-0" style="font-size:12.5px;font-weight:600">
                 <?= htmlspecialchars($m['name']) ?> 
                 <span class="d-block text-muted" style="font-size:11px;font-weight:400">Harga: <?= format_rp((float)$m['price']) ?></span>
+                <span class="d-block text-success mt-1" id="calc_<?= $m['id'] ?>" style="font-size:11px;font-weight:700;display:none;"></span>
               </label>
               <div class="col-sm-5">
                 <div class="input-group input-group-sm">
-                  <input type="number" name="discount_level[<?= $m['id'] ?>]" class="c-form-control py-1 px-2" min="0" max="100" placeholder="0" value="0" style="text-align:right">
+                  <input type="number" name="discount_level[<?= $m['id'] ?>]" data-price="<?= (float)$m['price'] ?>" data-target="calc_<?= $m['id'] ?>" class="c-form-control py-1 px-2 disc-input" min="0" max="100" placeholder="0" value="0" style="text-align:right">
                   <span class="input-group-text bg-dark border-secondary text-white" style="font-size:11px">%</span>
                 </div>
               </div>
@@ -203,5 +204,30 @@ require __DIR__ . '/partials/header.php';
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.disc-input').forEach(input => {
+        input.addEventListener('input', function() {
+            let pct = parseFloat(this.value) || 0;
+            if (pct > 100) { pct = 100; this.value = 100; }
+            if (pct < 0) { pct = 0; this.value = 0; }
+            let price = parseFloat(this.getAttribute('data-price')) || 0;
+            let targetId = this.getAttribute('data-target');
+            let targetEl = document.getElementById(targetId);
+            
+            if (pct > 0) {
+                let discAmt = price * (pct / 100);
+                let finalPrice = price - discAmt;
+                
+                let formatRp = (num) => 'Rp ' + Math.round(num).toLocaleString('id-ID');
+                
+                targetEl.innerHTML = `Diskon: -${formatRp(discAmt)} <br> Jadi: <span style="color:#fff">${formatRp(finalPrice)}</span>`;
+                targetEl.style.display = 'block';
+            } else {
+                targetEl.style.display = 'none';
+            }
+        });
+    });
+});
+</script>
 <?php require __DIR__ . '/partials/footer.php'; ?>
