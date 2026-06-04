@@ -587,6 +587,7 @@ let startMode    = 'ai';
 let lastMsgId    = 0;
 let pollTimer    = null;
 let sessionStatus = 'open';
+let isPolling    = false;
 
 // ── DEBUG PANEL ──────────────────────────────────────────
 const _debugEl = document.getElementById('lc-debug');
@@ -916,11 +917,15 @@ document.addEventListener('visibilitychange', () => {
 });
 
 async function pollMessages() {
-  if (!sessionKey || sessionStatus === 'closed') return;
+  if (!sessionKey || sessionStatus === 'closed' || isPolling) return;
+  isPolling = true;
   try {
     const res  = await fetch(`/chat_action?action=poll&session_key=${sessionKey}&after_id=${lastMsgId}`, { credentials:'include' });
     const data = await res.json();
-    if (!data.ok) return;
+    if (!data.ok) {
+        isPolling = false;
+        return;
+    }
 
     (data.messages || []).forEach(m => {
       if (parseInt(m.id) > lastMsgId) {
@@ -937,7 +942,10 @@ async function pollMessages() {
       currentMode = data.mode;
       updateModeUI(currentMode);
     }
-  } catch {}
+  } catch (e) {
+    dbg('Poll fetch error', e.message);
+  }
+  isPolling = false;
 }
 
 function onSessionClosed() {

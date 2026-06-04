@@ -127,6 +127,8 @@ function cleanup_inactive_sessions(PDO $pdo): void {
 
 try {
 $user_check = auth_user($pdo);
+session_write_close(); // Unlock session immediately so long polling/uploads don't block other requests!
+
 if ($user_check && isset($user_check['can_chat']) && $user_check['can_chat'] == 0) {
     if (in_array($action, ['start', 'send', 'switch_mode'])) {
         json_err('Akses LiveChat Anda telah dibatasi oleh Administrator.');
