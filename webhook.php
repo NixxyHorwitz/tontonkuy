@@ -141,6 +141,7 @@ if (isset($update['callback_query'])) {
     $orig    = $cb['message']['text'] ?? '';
 
     if ((string)$chat_id !== (string)$admin_chat_id) {
+        answer_cb($token, $cb_id, "⚠️ Akses Ditolak! Chat ID anda ({$chat_id}) tidak cocok dengan ID Admin di pengaturan.");
         http_response_code(200); exit;
     }
 
@@ -410,7 +411,7 @@ if (isset($update['callback_query'])) {
     }
 
     // ── EDIT REFUND CUT ──────────────────────────────────────────────────────
-    if (preg_match('/^refund_cut_(\d+)$/', $data, $m)) {
+    if (preg_match('/^edit_refcut_(\d+)$/', $data, $m)) {
         $uid = (int)$m[1];
         answer_cb($token, $cb_id, "📝 Ketik persentase potongan baru (contoh: 25)...");
         $prompt_msg_id = send_msg($token, $chat_id, "📝 <b>Ketik angka persentase potongan refund baru</b> (0 - 100) untuk User ID: <b>{$uid}</b> lalu kirim sebagai pesan.", []);
@@ -420,7 +421,7 @@ if (isset($update['callback_query'])) {
     }
 
     // ── TOGGLE REFUND ACCESS ────────────────────────────────────────────────
-    if (preg_match('/^refund_revoke_(\d+)$/', $data, $m)) {
+    if (preg_match('/^toggle_ref_(\d+)$/', $data, $m)) {
         $uid = (int)$m[1];
         $s = $pdo->prepare("SELECT is_refund_enabled FROM users WHERE id=?");
         $s->execute([$uid]);
