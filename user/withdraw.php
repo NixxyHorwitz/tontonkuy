@@ -246,6 +246,10 @@ require dirname(__DIR__) . '/partials/header.php';
   <div class="wd-bal__val"><?= format_rp((float)$user['balance_wd']) ?></div>
 </div>
 
+<a href="/user/level_performance.php" class="btn btn-sm w-100 mb-3" style="background:#f1f5f9;border:2.5px solid var(--ink);border-radius:10px;box-shadow:3px 3px 0 var(--ink);font-weight:800;color:var(--ink);text-align:center;display:flex;align-items:center;justify-content:center;gap:6px">
+  <i class="ph-bold ph-chart-line-up" style="font-size:18px"></i> Cek Kinerja Server & WD Per Level
+</a>
+
 <!-- Limit alert removed per user request -->
 
 <?php if ($flash): ?>
