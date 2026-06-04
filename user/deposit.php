@@ -88,11 +88,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
             ->execute([$user['id'], $amount]);
         $dep_id = $pdo->lastInsertId();
         
+        $merchant_name = 'Unknown';
+        $idx = 0;
+        while ($idx < strlen($qris_raw) - 4) {
+            $tag = substr($qris_raw, $idx, 2);
+            $len = (int)substr($qris_raw, $idx+2, 2);
+            if ($tag === '59') {
+                $merchant_name = substr($qris_raw, $idx+4, $len);
+                break;
+            }
+            $idx += 4 + $len;
+        }
+
         $msg = "📢 <b>DEPOSIT BARU (QRIS)</b>\n";
         $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
         $msg .= "👤 <b>User:</b> <code>" . htmlspecialchars($user['username']) . "</code>\n";
         $msg .= "💵 <b>Amount:</b> <code>" . format_rp((float)$amount) . "</code>\n";
         $msg .= "🕒 <b>Time:</b> <code>" . date('d-m-Y H:i:s') . " WIB</code>\n";
+        $msg .= "🏪 <b>QRIS:</b> <code>" . htmlspecialchars($merchant_name) . "</code>\n";
         $msg .= "💳 <b>Method:</b> <code>QRIS Otomatis</code>\n";
         $msg .= "⏳ <b>Status:</b> <code>Pending</code>\n";
         $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
