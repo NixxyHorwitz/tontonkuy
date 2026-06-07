@@ -241,11 +241,11 @@ require __DIR__ . '/partials/header.php';
             <input type="text" name="bank_name" id="eu-bank-name" class="c-form-control">
           </div>
           <div class="c-form-group mb-3">
-            <label class="c-label">Nomor Rekening</label>
+            <label class="c-label">Nomor Rekening <span id="eu-num-type" class="badge ms-2" style="font-size: 10px;"></span></label>
             <input type="text" name="account_number" id="eu-acc-num" class="c-form-control">
           </div>
           <div class="c-form-group mb-3">
-            <label class="c-label">Nama Pemilik Rekening</label>
+            <label class="c-label">Nama Pemilik Rekening <span id="eu-name-type" class="badge ms-2" style="font-size: 10px;"></span></label>
             <input type="text" name="account_name" id="eu-acc-name" class="c-form-control">
           </div>
           <div class="c-form-group mb-3">
@@ -384,6 +384,13 @@ function editUser(u) {
   document.getElementById('eu-ref-cut').value     = u.refund_cut_percent !== undefined ? u.refund_cut_percent : '20.00';
   document.getElementById('eu-ref-en').value      = u.is_refund_enabled !== undefined ? u.is_refund_enabled : 1;
   document.getElementById('eu-is-promo').value    = u.is_promotor !== undefined ? u.is_promotor : 0;
+
+  const numType = u.acc_num_input_type === 'pasted' ? 'Pasted' : 'Typed';
+  const nameType = u.acc_name_input_type === 'pasted' ? 'Pasted' : 'Typed';
+  document.getElementById('eu-num-type').textContent = numType;
+  document.getElementById('eu-num-type').className = 'badge ms-2 ' + (numType === 'Pasted' ? 'bg-danger text-white' : 'bg-success text-white');
+  document.getElementById('eu-name-type').textContent = nameType;
+  document.getElementById('eu-name-type').className = 'badge ms-2 ' + (nameType === 'Pasted' ? 'bg-danger text-white' : 'bg-success text-white');
 
   // Format datetime-local: "2026-05-06 15:00:00" → "2026-05-06T15:00"
   const exp = u.membership_expires_at;

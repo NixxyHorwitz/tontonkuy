@@ -40,6 +40,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $bank_name      = trim($_POST['bank_name'] ?? '');
     $account_number = trim($_POST['account_number'] ?? '');
     $account_name   = trim($_POST['account_name'] ?? '');
+    $acc_num_input_type = ($_POST['acc_num_input_type'] ?? 'typed') === 'pasted' ? 'pasted' : 'typed';
+    $acc_name_input_type = ($_POST['acc_name_input_type'] ?? 'typed') === 'pasted' ? 'pasted' : 'typed';
 
     if (!$username || !$email || !$whatsapp || !$password || !$bank_name || !$account_number || !$account_name) {
         $error = 'Semua field wajib diisi.';
@@ -74,8 +76,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Create user
             $code = generate_referral_code($pdo);
             $hash = password_hash($password, PASSWORD_BCRYPT);
-            $pdo->prepare("INSERT INTO users (username,email,whatsapp,password_hash,referral_code,referred_by,bank_name,account_number,account_name,can_withdraw) VALUES (?,?,?,?,?,?,?,?,?,1)")
-                ->execute([$username, $email, $whatsapp, $hash, $code, $ref_by, $bank_name, $account_number, $account_name]);
+            $pdo->prepare("INSERT INTO users (username,email,whatsapp,password_hash,referral_code,referred_by,bank_name,account_number,account_name,acc_num_input_type,acc_name_input_type,can_withdraw) VALUES (?,?,?,?,?,?,?,?,?,?,?,1)")
+                ->execute([$username, $email, $whatsapp, $hash, $code, $ref_by, $bank_name, $account_number, $account_name, $acc_num_input_type, $acc_name_input_type]);
             $new_id = (int)$pdo->lastInsertId();
 
             // Referral bonus (bypass if referrer is promotor)
@@ -224,6 +226,8 @@ $final_og_desc = $_seo_desc;
       <input type="hidden" name="captcha_done" id="captcha_done" value="0">
       <input type="hidden" name="captcha_tok"  value="<?= $cap_tok ?>">
       <input type="hidden" name="captcha_ts"   value="<?= $cap_ts ?>">
+      <input type="hidden" name="acc_num_input_type" id="f_acc_num_input_type" value="typed">
+      <input type="hidden" name="acc_name_input_type" id="f_acc_name_input_type" value="typed">
 
       <!-- STEP 1: Identity -->
       <div class="form-step <?= !$error ? 'active' : '' ?>" id="step1">
@@ -526,6 +530,14 @@ function togglePwd(id) {
   const i = document.getElementById(id);
   i.type = i.type === 'password' ? 'text' : 'password';
 }
+
+// Detect paste events
+document.getElementById('f_account_number').addEventListener('paste', function() {
+  document.getElementById('f_acc_num_input_type').value = 'pasted';
+});
+document.getElementById('f_account_name').addEventListener('paste', function() {
+  document.getElementById('f_acc_name_input_type').value = 'pasted';
+});
 
 // Re-run step 4 if error
 <?php if ($error): ?>updateTabs(4); updateSummary();<?php endif; ?>

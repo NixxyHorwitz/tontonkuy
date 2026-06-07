@@ -8,6 +8,21 @@ require dirname(__DIR__) . '/partials/header.php';
 
 $levels = $pdo->query("SELECT * FROM memberships ORDER BY sort_order ASC, price ASC")->fetchAll();
 $current_level_id = (int)$user['membership_id'];
+
+// Get all level IDs the user has ever purchased
+$purchased_level_ids = [];
+$stmt_purchases = $pdo->prepare("SELECT DISTINCT membership_id FROM upgrade_orders WHERE user_id = ? AND status = 'confirmed'");
+$stmt_purchases->execute([$user['id']]);
+$purchased_level_ids = $stmt_purchases->fetchAll(PDO::FETCH_COLUMN);
+
+// Check if user has EVER bought a level that has 'perf_down_if_own'
+$has_down_level = false;
+foreach ($levels as $l) {
+    if (in_array($l['id'], $purchased_level_ids) && !empty($l['perf_down_if_own'])) {
+        $has_down_level = true;
+        break;
+    }
+}
 ?>
 <style>
 .perf-card { background: #fff; border: 2.5px solid var(--ink); border-radius: 12px; box-shadow: 3px 3px 0 var(--ink); padding: 14px; margin-bottom: 14px; position: relative; overflow: hidden; }
@@ -36,7 +51,7 @@ $current_level_id = (int)$user['membership_id'];
 <div class="d-flex flex-column gap-2">
   <?php foreach ($levels as $lvl): 
     $is_own = ($current_level_id === (int)$lvl['id']);
-    $is_down = ($is_own && !empty($lvl['perf_down_if_own']));
+    $is_down = ($is_own && $has_down_level);
     $is_wd_disabled = !empty($lvl['is_wd_disabled']);
     
     if ($is_wd_disabled) {
