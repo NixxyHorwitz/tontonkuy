@@ -106,7 +106,7 @@ function tg_escape(string $text): string {
 // ─── Helper: Cleanup Inactive Sessions ────────────────────────
 function cleanup_inactive_sessions(PDO $pdo): void {
     try {
-        $stale = $pdo->query("SELECT id, tg_thread_id FROM chat_sessions WHERE status='open' AND last_message_at < DATE_SUB(NOW(), INTERVAL 3 HOUR)")->fetchAll();
+        $stale = $pdo->query("SELECT id, tg_thread_id FROM chat_sessions WHERE status='open' AND is_kept=0 AND last_message_at < DATE_SUB(NOW(), INTERVAL 3 HOUR)")->fetchAll();
         if (!$stale) return;
         $chatId = setting($pdo, 'lc_tg_chat_id', '');
         foreach ($stale as $st) {
@@ -805,12 +805,12 @@ switch ($action) {
                         }
                     } elseif ($cbAction === 'keep_sess') {
                         if ($csRow['status'] === 'open') {
-                            $pdo->prepare("UPDATE chat_sessions SET last_message_at=NOW() WHERE id=?")->execute([$cbSessId]);
-                            $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','Sesi chat di-keep (diperpanjang) oleh Admin.')")->execute([$cbSessId]);
+                            $pdo->prepare("UPDATE chat_sessions SET is_kept=1, last_message_at=NOW() WHERE id=?")->execute([$cbSessId]);
+                            $pdo->prepare("INSERT INTO chat_messages (session_id,sender,message) VALUES (?,'system','Sesi chat di-keep (permanen) oleh Admin.')")->execute([$cbSessId]);
                             if ($tgChatId) {
                                 $tgParams = [
                                     'chat_id' => $tgChatId,
-                                    'text'    => "📌 Sesi chat di-keep (diperpanjang 3 jam lagi) oleh Admin.",
+                                    'text'    => "📌 Sesi chat ini di-keep (ditandai penting) oleh Admin dan tidak akan dihapus otomatis.",
                                 ];
                                 if ($csRow['tg_thread_id']) {
                                     $tgParams['message_thread_id'] = (int)$csRow['tg_thread_id'];
