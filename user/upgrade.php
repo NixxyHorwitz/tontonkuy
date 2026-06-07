@@ -84,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmtPending->fetchColumn()) {
             $flash = '❌ Permintaan pengembalian dana kamu sebelumnya masih dalam proses verifikasi otomatis.'; $flashType = 'error';
         } else {
-            $s = $pdo->prepare("SELECT m.name, u.refund_cut_percent, u.is_refund_enabled FROM users u LEFT JOIN memberships m ON u.membership_id = m.id WHERE u.id=?");
+            $s = $pdo->prepare("SELECT m.id as membership_id, m.name, m.price, u.refund_cut_percent, u.is_refund_enabled FROM users u LEFT JOIN memberships m ON u.membership_id = m.id WHERE u.id=?");
             $s->execute([$user['id']]);
             $uInfo = $s->fetch();
             $mName = $uInfo['name'] ?? null;
@@ -97,10 +97,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare("INSERT INTO admin_requests (user_id, type) VALUES (?, 'refund_level')")->execute([$user['id']]);
                 $req_id = $pdo->lastInsertId();
                 
+                $oStmt = $pdo->prepare("SELECT amount FROM upgrade_orders WHERE user_id=? AND membership_id=? AND status='confirmed' ORDER BY id DESC LIMIT 1");
+                $oStmt->execute([$user['id'], $uInfo['membership_id']]);
+                $basePrice = (float)$oStmt->fetchColumn();
+                if (!$basePrice) $basePrice = (float)$uInfo['price'];
+                
                 $pct = (float)$uInfo['refund_cut_percent'];
+                $cutAmount = ($basePrice * $pct) / 100;
+                $afterCut = $basePrice - $cutAmount;
+                
                 $msg  = "💰 <b>REQUEST REFUND LEVEL</b>\n\n";
                 $msg .= "👤 User: <code>{$user['username']}</code>\n";
                 $msg .= "🏆 Level: <b>{$mName}</b>\n";
+                $msg .= "💵 Harga Awal: <b>" . format_rp($basePrice) . "</b>\n";
+                $msg .= "✂️ Setelah Dipotong ({$pct}%): <b>" . format_rp($afterCut) . "</b>\n\n";
                 $msg .= "⚠️ <i>Refund ini akan membatalkan level user dan mengembalikan saldo dengan potongan {$pct}% (jika di-Approve).</i>\n";
                 $kb = [
                     [['text'=>'✅ Approve Refund', 'callback_data'=>'req_approve_'.$req_id], ['text'=>'❌ Reject', 'callback_data'=>'req_reject_'.$req_id]],
