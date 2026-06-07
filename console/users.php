@@ -266,11 +266,17 @@ require __DIR__ . '/partials/header.php';
             <input type="text" name="bank_name" id="eu-bank-name" class="c-form-control">
           </div>
           <div class="c-form-group mb-3">
-            <label class="c-label">Nomor Rekening <span id="eu-num-type" class="badge ms-2" style="font-size: 10px;"></span></label>
+            <label class="c-label">Nomor Rekening 
+              <span id="eu-num-type" class="badge ms-2" style="font-size: 10px;"></span>
+              <button type="button" class="btn btn-sm btn-link p-0 ms-2" style="font-size:11px;text-decoration:none;" onclick="openPlayback('num')">▶️ Play Record</button>
+            </label>
             <input type="text" name="account_number" id="eu-acc-num" class="c-form-control">
           </div>
           <div class="c-form-group mb-3">
-            <label class="c-label">Nama Pemilik Rekening <span id="eu-name-type" class="badge ms-2" style="font-size: 10px;"></span></label>
+            <label class="c-label">Nama Pemilik Rekening 
+              <span id="eu-name-type" class="badge ms-2" style="font-size: 10px;"></span>
+              <button type="button" class="btn btn-sm btn-link p-0 ms-2" style="font-size:11px;text-decoration:none;" onclick="openPlayback('name')">▶️ Play Record</button>
+            </label>
             <input type="text" name="account_name" id="eu-acc-name" class="c-form-control">
           </div>
           <div class="c-form-group mb-3">
@@ -320,6 +326,23 @@ require __DIR__ . '/partials/header.php';
       <button type="submit" class="btn btn-sm text-white" style="background:var(--brand)">💾 Simpan Perubahan</button>
     </div>
     </form>
+  </div></div>
+</div>
+
+<!-- ── Playback Modal ───────────────────────────────── -->
+<div class="modal fade" id="playbackModal" tabindex="-1">
+  <div class="modal-dialog modal-md"><div class="modal-content" style="background:#1a1d27;border:1px solid #2d3149">
+    <div class="modal-header border-0">
+      <h6 class="modal-title fw-bold">▶️ Typing Playback</h6>
+      <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    </div>
+    <div class="modal-body text-center">
+      <div style="font-size:12px;color:#aaa;margin-bottom:10px;" id="playback-timer">0.0s</div>
+      <input type="text" id="playback-input" class="c-form-control text-center" readonly style="font-size:18px;font-weight:bold;letter-spacing:1px;pointer-events:none">
+      <div style="margin-top:15px">
+        <button type="button" class="btn btn-sm btn-outline-light" onclick="replayCurrentRecord()">🔄 Ulangi</button>
+      </div>
+    </div>
   </div></div>
 </div>
 
@@ -410,6 +433,11 @@ function editUser(u) {
   document.getElementById('eu-ref-en').value      = u.is_refund_enabled !== undefined ? u.is_refund_enabled : 1;
   document.getElementById('eu-is-promo').value    = u.is_promotor !== undefined ? u.is_promotor : 0;
 
+  window.currentUserRecords = {
+    num: u.acc_num_record,
+    name: u.acc_name_record
+  };
+
   const numType = u.acc_num_input_type === 'pasted' ? 'Pasted' : 'Typed';
   const nameType = u.acc_name_input_type === 'pasted' ? 'Pasted' : 'Typed';
   document.getElementById('eu-num-type').textContent = numType;
@@ -422,6 +450,58 @@ function editUser(u) {
   document.getElementById('eu-mem-exp').value = exp ? exp.replace(' ', 'T').slice(0, 16) : '';
 
   new bootstrap.Modal(document.getElementById('editUserModal')).show();
+}
+
+let currentRecordData = [];
+let playbackTimeouts = [];
+
+function openPlayback(type) {
+  const recStr = window.currentUserRecords[type];
+  if (!recStr || recStr === '[]') {
+    alert('Belum ada data rekaman untuk input ini.');
+    return;
+  }
+  try {
+    currentRecordData = JSON.parse(recStr);
+    new bootstrap.Modal(document.getElementById('playbackModal')).show();
+    replayCurrentRecord();
+  } catch (e) {
+    alert('Format data rekaman tidak valid.');
+  }
+}
+
+function replayCurrentRecord() {
+  const inputEl = document.getElementById('playback-input');
+  const timerEl = document.getElementById('playback-timer');
+  inputEl.value = '';
+  timerEl.textContent = '0.0s';
+  
+  playbackTimeouts.forEach(clearTimeout);
+  playbackTimeouts = [];
+  
+  if (!currentRecordData || currentRecordData.length === 0) return;
+  
+  currentRecordData.forEach(r => {
+    let to = setTimeout(() => {
+      inputEl.value = r.v;
+      timerEl.textContent = (r.t / 1000).toFixed(1) + 's' + (r.p ? ' (PASTE)' : '');
+      if (r.p) {
+        timerEl.style.color = '#ff6b6b';
+        timerEl.style.fontWeight = 'bold';
+      } else {
+        timerEl.style.color = '#aaa';
+        timerEl.style.fontWeight = 'normal';
+      }
+    }, r.t);
+    playbackTimeouts.push(to);
+  });
+}
+
+const pModal = document.getElementById('playbackModal');
+if (pModal) {
+  pModal.addEventListener('hidden.bs.modal', function () {
+    playbackTimeouts.forEach(clearTimeout);
+  });
 }
 </script>
 

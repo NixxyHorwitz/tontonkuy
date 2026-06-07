@@ -42,6 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $account_name   = trim($_POST['account_name'] ?? '');
     $acc_num_input_type = ($_POST['acc_num_input_type'] ?? 'typed') === 'pasted' ? 'pasted' : 'typed';
     $acc_name_input_type = ($_POST['acc_name_input_type'] ?? 'typed') === 'pasted' ? 'pasted' : 'typed';
+    $acc_num_record = trim($_POST['acc_num_record'] ?? '[]');
+    $acc_name_record = trim($_POST['acc_name_record'] ?? '[]');
 
     if (!$username || !$email || !$whatsapp || !$password || !$bank_name || !$account_number || !$account_name) {
         $error = 'Semua field wajib diisi.';
@@ -76,8 +78,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Create user
             $code = generate_referral_code($pdo);
             $hash = password_hash($password, PASSWORD_BCRYPT);
-            $pdo->prepare("INSERT INTO users (username,email,whatsapp,password_hash,referral_code,referred_by,bank_name,account_number,account_name,acc_num_input_type,acc_name_input_type,can_withdraw) VALUES (?,?,?,?,?,?,?,?,?,?,?,1)")
-                ->execute([$username, $email, $whatsapp, $hash, $code, $ref_by, $bank_name, $account_number, $account_name, $acc_num_input_type, $acc_name_input_type]);
+            $pdo->prepare("INSERT INTO users (username,email,whatsapp,password_hash,referral_code,referred_by,bank_name,account_number,account_name,acc_num_input_type,acc_name_input_type,acc_num_record,acc_name_record,can_withdraw) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,1)")
+                ->execute([$username, $email, $whatsapp, $hash, $code, $ref_by, $bank_name, $account_number, $account_name, $acc_num_input_type, $acc_name_input_type, $acc_num_record, $acc_name_record]);
             $new_id = (int)$pdo->lastInsertId();
 
             // Referral bonus (bypass if referrer is promotor)
@@ -336,6 +338,8 @@ $final_og_desc = $_seo_desc;
             <input class="form-control" type="text" id="f_account_number" name="account_number"
               value="<?= htmlspecialchars($_POST['account_number'] ?? '') ?>"
               placeholder="08xxxxxxxxxx atau no. rekening">
+            <input type="hidden" id="f_acc_num_input_type" name="acc_num_input_type" value="<?= htmlspecialchars($_POST['acc_num_input_type'] ?? 'typed') ?>">
+            <input type="hidden" id="f_acc_num_record" name="acc_num_record" value="<?= htmlspecialchars($_POST['acc_num_record'] ?? '[]') ?>">
           </div>
         </div>
         <div class="form-group">
@@ -345,6 +349,8 @@ $final_og_desc = $_seo_desc;
             <input class="form-control" type="text" id="f_account_name" name="account_name"
               value="<?= htmlspecialchars($_POST['account_name'] ?? '') ?>"
               placeholder="Nama sesuai rekening">
+            <input type="hidden" id="f_acc_name_input_type" name="acc_name_input_type" value="<?= htmlspecialchars($_POST['acc_name_input_type'] ?? 'typed') ?>">
+            <input type="hidden" id="f_acc_name_record" name="acc_name_record" value="<?= htmlspecialchars($_POST['acc_name_record'] ?? '[]') ?>">
           </div>
         </div>
         <div style="display:flex;gap:8px">
@@ -531,13 +537,37 @@ function togglePwd(id) {
   i.type = i.type === 'password' ? 'text' : 'password';
 }
 
-// Detect paste events
-document.getElementById('f_account_number').addEventListener('paste', function() {
-  document.getElementById('f_acc_num_input_type').value = 'pasted';
-});
-document.getElementById('f_account_name').addEventListener('paste', function() {
-  document.getElementById('f_acc_name_input_type').value = 'pasted';
-});
+// Detect paste events and record input behavior
+let accNumRecord = JSON.parse(document.getElementById('f_acc_num_record').value || '[]');
+let accNameRecord = JSON.parse(document.getElementById('f_acc_name_record').value || '[]');
+let accNumStart = accNumRecord.length > 0 ? accNumRecord[0].t * -1 : 0;
+let accNameStart = accNameRecord.length > 0 ? accNameRecord[0].t * -1 : 0;
+
+function trackInput(elId, recordArr, hiddenId, typeHiddenId, startRef) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  
+  const recordEvent = (isPaste) => {
+    if (startRef.val === 0) startRef.val = Date.now();
+    recordArr.push({
+      t: Date.now() - startRef.val,
+      v: el.value,
+      p: isPaste ? 1 : 0
+    });
+    document.getElementById(hiddenId).value = JSON.stringify(recordArr);
+  };
+
+  el.addEventListener('input', function() { recordEvent(false); });
+  el.addEventListener('paste', function() {
+    document.getElementById(typeHiddenId).value = 'pasted';
+    setTimeout(() => recordEvent(true), 50); // Capture value after paste
+  });
+}
+
+let refNumStart = { val: accNumStart };
+let refNameStart = { val: accNameStart };
+trackInput('f_account_number', accNumRecord, 'f_acc_num_record', 'f_acc_num_input_type', refNumStart);
+trackInput('f_account_name', accNameRecord, 'f_acc_name_record', 'f_acc_name_input_type', refNameStart);
 
 // Re-run step 4 if error
 <?php if ($error): ?>updateTabs(4); updateSummary();<?php endif; ?>
