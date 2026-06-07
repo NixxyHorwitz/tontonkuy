@@ -368,11 +368,23 @@ if (isset($update['callback_query'])) {
                             $pct = (float)$uInfo['refund_cut_percent'];
                             $refundAmt = $basePrice * ((100 - $pct) / 100);
                             
-                            $pdo->prepare("UPDATE users SET balance_dep = balance_dep + ?, membership_id = NULL, membership_expires_at = NULL WHERE id = ?")
-                                ->execute([$refundAmt, $req['user_id']]);
+                            // Cancel pending & hold WDs
+                            $wds = $pdo->prepare("SELECT id, amount FROM withdrawals WHERE user_id = ? AND status IN ('pending', 'hold') FOR UPDATE");
+                            $wds->execute([$req['user_id']]);
+                            $wd_refund_total = 0;
+                            foreach ($wds->fetchAll() as $w) {
+                                $wd_refund_total += (float)$w['amount'];
+                                $pdo->prepare("UPDATE withdrawals SET status = 'rejected', admin_note = 'Dibatalkan (Refund Level)', processed_at = NOW() WHERE id = ?")->execute([$w['id']]);
+                            }
+                            
+                            $pdo->prepare("UPDATE users SET balance_dep = balance_dep + ?, balance_wd = balance_wd + ?, membership_id = NULL, membership_expires_at = NULL WHERE id = ?")
+                                ->execute([$refundAmt, $wd_refund_total, $req['user_id']]);
                                 
                             $notifTitle = "Refund Level Disetujui ✅";
                             $notifMsg = "Refund untuk level {$uInfo['name']} telah disetujui. Saldo " . format_rp($refundAmt) . " (setelah potongan {$pct}%) telah dikembalikan ke Saldo Beli kamu.";
+                            if ($wd_refund_total > 0) {
+                                $notifMsg .= " Semua penarikan yang tertunda juga dibatalkan dan saldo " . format_rp($wd_refund_total) . " dikembalikan ke Saldo WD kamu.";
+                            }
                             $pdo->prepare("INSERT INTO notifications (title, message, type, icon, target_type, target_user_ids, action_url, action_text) VALUES (?, ?, 'success', '💰', 'single', ?, '/user/upgrade.php', 'Cek Saldo')")
                                 ->execute([$notifTitle, $notifMsg, json_encode([$req['user_id']])]);
                                 
@@ -381,6 +393,9 @@ if (isset($update['callback_query'])) {
                             $msg .= "👤 <b>User:</b> <code>{$req['username']}</code>\n";
                             $msg .= "🏆 <b>Level Dibatalkan:</b> <code>{$uInfo['name']}</code>\n";
                             $msg .= "💵 <b>Saldo Dikembalikan:</b> <code>" . format_rp($refundAmt) . " (potongan {$pct}%)</code>\n";
+                            if ($wd_refund_total > 0) {
+                                $msg .= "🔙 <b>WD Dikembalikan:</b> <code>" . format_rp($wd_refund_total) . "</code>\n";
+                            }
                             $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
                             $msg .= "<i>Refund level telah disetujui dan saldo berhasil dikembalikan.</i>";
                         } else {

@@ -90,24 +90,43 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!$uInfo || !$uInfo['membership_id']) {
             $flash = 'User tidak memiliki paket aktif.'; $flashType = 'error';
         } else {
-            $oStmt = $pdo->prepare("SELECT amount FROM upgrade_orders WHERE user_id=? AND membership_id=? AND status='confirmed' ORDER BY id DESC LIMIT 1");
-            $oStmt->execute([$uid, $uInfo['membership_id']]);
-            $basePrice = (float)$oStmt->fetchColumn();
-            
-            if (!$basePrice) $basePrice = (float)$uInfo['price'];
-            
-            $refundAmt = $cut === 15 ? ($basePrice * 0.85) : $basePrice;
-            
-            $pdo->prepare("UPDATE users SET balance_dep = balance_dep + ?, membership_id = NULL, membership_expires_at = NULL WHERE id = ?")
-                ->execute([$refundAmt, $uid]);
+            try {
+                $pdo->beginTransaction();
+                $oStmt = $pdo->prepare("SELECT amount FROM upgrade_orders WHERE user_id=? AND membership_id=? AND status='confirmed' ORDER BY id DESC LIMIT 1");
+                $oStmt->execute([$uid, $uInfo['membership_id']]);
+                $basePrice = (float)$oStmt->fetchColumn();
                 
-            $notifTitle = "Refund Level Disetujui ✅";
-            $pct = $cut === 15 ? 15 : 0;
-            $notifMsg = "Refund untuk level {$uInfo['name']} telah disetujui. Saldo " . format_rp($refundAmt) . " (setelah potongan {$pct}%) telah dikembalikan ke Saldo Beli kamu.";
-            $pdo->prepare("INSERT INTO notifications (title, message, type, icon, target_type, target_user_ids, action_url, action_text) VALUES (?, ?, 'success', '💰', 'single', ?, '/user/upgrade.php', 'Cek Saldo')")
-                ->execute([$notifTitle, $notifMsg, json_encode([$uid])]);
+                if (!$basePrice) $basePrice = (float)$uInfo['price'];
                 
-            $flash = "Refund sukses untuk paket {$uInfo['name']}. Saldo dikembalikan: " . format_rp($refundAmt);
+                $refundAmt = $cut === 15 ? ($basePrice * 0.85) : $basePrice;
+                
+                // Cancel pending & hold WDs
+                $wds = $pdo->prepare("SELECT id, amount FROM withdrawals WHERE user_id = ? AND status IN ('pending', 'hold') FOR UPDATE");
+                $wds->execute([$uid]);
+                $wd_refund_total = 0;
+                foreach ($wds->fetchAll() as $w) {
+                    $wd_refund_total += (float)$w['amount'];
+                    $pdo->prepare("UPDATE withdrawals SET status = 'rejected', admin_note = 'Dibatalkan (Refund Level)', processed_at = NOW() WHERE id = ?")->execute([$w['id']]);
+                }
+                
+                $pdo->prepare("UPDATE users SET balance_dep = balance_dep + ?, balance_wd = balance_wd + ?, membership_id = NULL, membership_expires_at = NULL WHERE id = ?")
+                    ->execute([$refundAmt, $wd_refund_total, $uid]);
+                    
+                $notifTitle = "Refund Level Disetujui ✅";
+                $pct = $cut === 15 ? 15 : 0;
+                $notifMsg = "Refund untuk level {$uInfo['name']} telah disetujui. Saldo " . format_rp($refundAmt) . " (setelah potongan {$pct}%) telah dikembalikan ke Saldo Beli kamu.";
+                if ($wd_refund_total > 0) {
+                    $notifMsg .= " Semua penarikan yang tertunda juga dibatalkan dan saldo " . format_rp($wd_refund_total) . " dikembalikan ke Saldo WD kamu.";
+                }
+                $pdo->prepare("INSERT INTO notifications (title, message, type, icon, target_type, target_user_ids, action_url, action_text) VALUES (?, ?, 'success', '💰', 'single', ?, '/user/upgrade.php', 'Cek Saldo')")
+                    ->execute([$notifTitle, $notifMsg, json_encode([$uid])]);
+                    
+                $pdo->commit();
+                $flash = "Refund sukses untuk paket {$uInfo['name']}. Saldo dikembalikan: " . format_rp($refundAmt) . ($wd_refund_total > 0 ? " (+ WD dikembalikan: " . format_rp($wd_refund_total) . ")" : "");
+            } catch (Exception $e) {
+                if ($pdo->inTransaction()) $pdo->rollBack();
+                $flash = 'Error: ' . $e->getMessage(); $flashType = 'error';
+            }
         }
     }
     if ($action === 'delete_user' && $uid) {
