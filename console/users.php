@@ -339,8 +339,10 @@ require __DIR__ . '/partials/header.php';
     <div class="modal-body text-center">
       <div style="font-size:12px;color:#aaa;margin-bottom:10px;" id="playback-timer">0.0s</div>
       <input type="text" id="playback-input" class="c-form-control text-center" readonly style="font-size:18px;font-weight:bold;letter-spacing:1px;pointer-events:none">
-      <div style="margin-top:15px">
-        <button type="button" class="btn btn-sm btn-outline-light" onclick="replayCurrentRecord()">🔄 Ulangi</button>
+      <div style="margin-top:15px; display:flex; justify-content:center; gap:8px;">
+        <button type="button" class="btn btn-sm btn-outline-info" onclick="playbackStep(-1)">⏮️ Mundur</button>
+        <button type="button" class="btn btn-sm btn-outline-light" onclick="replayCurrentRecord()">▶️ Putar Ulang</button>
+        <button type="button" class="btn btn-sm btn-outline-info" onclick="playbackStep(1)">Maju ⏭️</button>
       </div>
     </div>
   </div></div>
@@ -454,6 +456,7 @@ function editUser(u) {
 
 let currentRecordData = [];
 let playbackTimeouts = [];
+let currentPlaybackStepIndex = -1;
 
 function openPlayback(type) {
   const recStr = window.currentUserRecords[type];
@@ -463,6 +466,7 @@ function openPlayback(type) {
   }
   try {
     currentRecordData = JSON.parse(recStr);
+    currentPlaybackStepIndex = -1;
     new bootstrap.Modal(document.getElementById('playbackModal')).show();
     replayCurrentRecord();
   } catch (e) {
@@ -470,38 +474,73 @@ function openPlayback(type) {
   }
 }
 
+function stopPlayback() {
+  playbackTimeouts.forEach(clearTimeout);
+  playbackTimeouts = [];
+}
+
 function replayCurrentRecord() {
+  stopPlayback();
+  currentPlaybackStepIndex = -1;
   const inputEl = document.getElementById('playback-input');
   const timerEl = document.getElementById('playback-timer');
   inputEl.value = '';
   timerEl.textContent = '0.0s';
-  
-  playbackTimeouts.forEach(clearTimeout);
-  playbackTimeouts = [];
+  timerEl.style.color = '#aaa';
+  timerEl.style.fontWeight = 'normal';
   
   if (!currentRecordData || currentRecordData.length === 0) return;
   
-  currentRecordData.forEach(r => {
+  currentRecordData.forEach((r, idx) => {
     let to = setTimeout(() => {
-      inputEl.value = r.v;
-      timerEl.textContent = (r.t / 1000).toFixed(1) + 's' + (r.p ? ' (PASTE)' : '');
-      if (r.p) {
-        timerEl.style.color = '#ff6b6b';
-        timerEl.style.fontWeight = 'bold';
-      } else {
-        timerEl.style.color = '#aaa';
-        timerEl.style.fontWeight = 'normal';
-      }
+      currentPlaybackStepIndex = idx;
+      renderPlaybackState(r);
     }, r.t);
     playbackTimeouts.push(to);
   });
 }
 
+function playbackStep(dir) {
+  stopPlayback(); // Stop auto-play if running
+  if (!currentRecordData || currentRecordData.length === 0) return;
+  
+  let newIdx = currentPlaybackStepIndex + dir;
+  if (newIdx < 0) {
+    newIdx = -1;
+    document.getElementById('playback-input').value = '';
+    document.getElementById('playback-timer').textContent = '0.0s';
+    document.getElementById('playback-timer').style.color = '#aaa';
+    document.getElementById('playback-timer').style.fontWeight = 'normal';
+    currentPlaybackStepIndex = newIdx;
+    return;
+  }
+  
+  if (newIdx >= currentRecordData.length) {
+    newIdx = currentRecordData.length - 1;
+  }
+  
+  currentPlaybackStepIndex = newIdx;
+  renderPlaybackState(currentRecordData[newIdx]);
+}
+
+function renderPlaybackState(r) {
+  const inputEl = document.getElementById('playback-input');
+  const timerEl = document.getElementById('playback-timer');
+  
+  inputEl.value = r.v;
+  timerEl.textContent = (r.t / 1000).toFixed(1) + 's' + (r.p ? ' (PASTE)' : '');
+  if (r.p) {
+    timerEl.style.color = '#ff6b6b';
+    timerEl.style.fontWeight = 'bold';
+  } else {
+    timerEl.style.color = '#aaa';
+    timerEl.style.fontWeight = 'normal';
+  }
+}
+
 const pModal = document.getElementById('playbackModal');
 if (pModal) {
-  pModal.addEventListener('hidden.bs.modal', function () {
-    playbackTimeouts.forEach(clearTimeout);
-  });
+  pModal.addEventListener('hidden.bs.modal', stopPlayback);
 }
 </script>
 
