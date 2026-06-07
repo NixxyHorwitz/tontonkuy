@@ -371,6 +371,11 @@ if (isset($update['callback_query'])) {
                             $pdo->prepare("UPDATE users SET balance_dep = balance_dep + ?, membership_id = NULL, membership_expires_at = NULL WHERE id = ?")
                                 ->execute([$refundAmt, $req['user_id']]);
                                 
+                            $notifTitle = "Refund Level Disetujui ✅";
+                            $notifMsg = "Refund untuk level {$uInfo['name']} telah disetujui. Saldo " . format_rp($refundAmt) . " (setelah potongan {$pct}%) telah dikembalikan ke Saldo Beli kamu.";
+                            $pdo->prepare("INSERT INTO notifications (title, message, type, icon, target_type, target_user_ids, action_url, action_text) VALUES (?, ?, 'success', '💰', 'single', ?, '/user/upgrade.php', 'Cek Saldo')")
+                                ->execute([$notifTitle, $notifMsg, json_encode([$req['user_id']])]);
+                                
                             $msg = "✅ <b>REQUEST REFUND LEVEL (APPROVED)</b>\n";
                             $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
                             $msg .= "👤 <b>User:</b> <code>{$req['username']}</code>\n";
