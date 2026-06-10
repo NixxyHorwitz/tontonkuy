@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check
 
 // ── PHP Proxy: download QR image (avoid exposing external URL to browser) ──
 if (($_GET['action'] ?? '') === 'dl_qr') {
-    $qris_raw_dl = '00020101021126610014COM.GO-JEK.WWW01189360091439543369860210G9543369860303UMI51440014ID.CO.QRIS.WWW0215ID10265064130650303UMI5204504553033605802ID5924NX DIGISTORE, Komputer &6006BEKASI61051721462070703A0163042266';
+    $qris_raw_dl = '00020101021126610014COM.GO-JEK.WWW01189360091439543369860210G9543369860303UMI51440014ID.CO.QRIS.WWW0215ID10265064130650303UMI5204581653033605802ID5913TOKUY DIGITAL6013JAKARTA TIMUR61051341062070703A016304AC50';
     $qris_str_dl = !empty($qris_raw_dl) ? qris_with_amount($qris_raw_dl, (int)(float)$dep['amount']) : '';
     if (!$qris_str_dl) { http_response_code(404); exit('QR not available'); }
     $remote = 'https://api.qrserver.com/v1/create-qr-code/?size=400x400&data=' . urlencode($qris_str_dl);
@@ -39,7 +39,7 @@ if (($_GET['action'] ?? '') === 'dl_qr') {
 
 if ($dep['status'] === 'confirmed') redirect('/history');
 
-$qris_raw     = '00020101021126610014COM.GO-JEK.WWW01189360091439543369860210G9543369860303UMI51440014ID.CO.QRIS.WWW0215ID10265064130650303UMI5204504553033605802ID5924NX DIGISTORE, Komputer &6006BEKASI61051721462070703A0163042266';
+$qris_raw     = '00020101021126610014COM.GO-JEK.WWW01189360091439543369860210G9543369860303UMI51440014ID.CO.QRIS.WWW0215ID10265064130650303UMI5204581653033605802ID5913TOKUY DIGITAL6013JAKARTA TIMUR61051341062070703A016304AC50';
 $confirm_mode = setting($pdo, 'deposit_confirm_mode', 'manual');
 $amount       = (float)$dep['amount'];
 $qris_str     = !empty($qris_raw) ? qris_with_amount($qris_raw, (int)$amount) : '';

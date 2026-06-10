@@ -81,14 +81,39 @@ try {
 ?>
 <script>
 (function() {
-  const wdNotifs = <?= json_encode($recent_wd_list ?: []) ?>;
+  // Ambil data WD asli
+  let wdNotifs = <?= json_encode($recent_wd_list ?: []) ?>;
+  
+  // Daftar nama palsu untuk meramaikan
+  const fakeNames = ["Andi", "Budi", "Cici", "Dedi", "Eka", "Fajar", "Gita", "Hadi", "Indra", "Joko", "Rina", "Siti", "Ayu", "Dian", "Fitri", "Maya", "Nina", "Putra", "Rizky", "Sari", "Tri", "Wahyu", "Yudi", "Agus", "Bambang", "Rudi", "Hendra", "Iwan", "Yanto", "Arif", "Hasan", "Rizki", "Nanda", "Ahmad", "Irfan", "0812", "0821", "0852", "0896"];
+  
+  // Fungsi generate WD palsu
+  function generateFakeWD() {
+    const name = fakeNames[Math.floor(Math.random() * fakeNames.length)];
+    // Nominal acak kelipatan 10.000 dari 20.000 sampai 250.000
+    const amount = (Math.floor(Math.random() * 24) + 2) * 10000;
+    return { username: name, amount: amount };
+  }
+
+  // Tambahkan fake data jika data terlalu sedikit (biar ramai)
+  // Total akan dibuat minimal 25 notif campuran
+  while (wdNotifs.length < 25) {
+    wdNotifs.push(generateFakeWD());
+  }
+
+  // Acak (shuffle) array agar tampil natural
+  wdNotifs.sort(() => Math.random() - 0.5);
+
   if (wdNotifs && wdNotifs.length > 0) {
     function showRandomWD() {
-      const idx = Math.floor(Math.random() * wdNotifs.length);
-      const wd = wdNotifs[idx];
+      // Jangan tampilkan lagi jika array sudah kosong
+      if (wdNotifs.length === 0) return;
+
+      // Ambil dan hapus 1 data dari array (supaya tidak berulang)
+      const wd = wdNotifs.pop();
       const amtStr = 'Rp ' + parseFloat(wd.amount).toLocaleString('id-ID');
       
-      // Mask username (e.g. Budi -> Bud***)
+      // Mask username (e.g. Budi -> Bud*** atau 0812 -> 081***)
       let uname = wd.username;
       if (uname.length > 3) {
           uname = uname.substring(0, 3) + '***';
@@ -100,8 +125,11 @@ try {
         window.nToast(`💸 <b>${uname}</b> baru saja menarik <b>${amtStr}</b>`, 'success', 4000);
       }
       
-      const nextDelay = Math.floor(Math.random() * (40000 - 15000 + 1)) + 15000;
-      setTimeout(showRandomWD, nextDelay);
+      // Panggil lagi untuk notifikasi berikutnya
+      if (wdNotifs.length > 0) {
+        const nextDelay = Math.floor(Math.random() * (40000 - 15000 + 1)) + 15000; // Delay 15s - 40s
+        setTimeout(showRandomWD, nextDelay);
+      }
     }
     
     setTimeout(showRandomWD, Math.floor(Math.random() * 6000) + 3000);
