@@ -72,13 +72,24 @@ $_fsvg = [
 <script src="/assets/js/toast.js"></script>
 <?php
 // Fitur Global WD Notifs (6 Jam Terakhir)
-try {
-    $wd_notif_stmt = $pdo->query("SELECT u.username, w.amount FROM withdrawals w JOIN users u ON u.id = w.user_id WHERE w.created_at >= DATE_SUB(NOW(), INTERVAL 6 HOUR) ORDER BY w.id DESC LIMIT 15");
-    $recent_wd_list = $wd_notif_stmt->fetchAll(PDO::FETCH_ASSOC);
-} catch (\Throwable $th) {
-    $recent_wd_list = [];
+$show_wd_notif = true;
+if (function_exists('is_wd_locked') && isset($pdo)) {
+    if (is_wd_locked($pdo)) {
+        $show_wd_notif = false;
+    }
+}
+
+$recent_wd_list = [];
+if ($show_wd_notif) {
+    try {
+        $wd_notif_stmt = $pdo->query("SELECT u.username, w.amount FROM withdrawals w JOIN users u ON u.id = w.user_id WHERE w.created_at >= DATE_SUB(NOW(), INTERVAL 6 HOUR) ORDER BY w.id DESC LIMIT 15");
+        $recent_wd_list = $wd_notif_stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (\Throwable $th) {
+        $recent_wd_list = [];
+    }
 }
 ?>
+<?php if ($show_wd_notif): ?>
 <script>
 (function() {
   // Ambil data WD asli
@@ -136,6 +147,7 @@ try {
   }
 })();
 </script>
+<?php endif; ?>
 </body>
 </html>
 
