@@ -293,9 +293,15 @@ require dirname(__DIR__) . '/partials/header.php';
   <a href="/upgrade" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:10px;padding:4px 10px;flex-shrink:0">Upgrade →</a>
 </div>
 <?php elseif ($level_blocked): ?>
-<div id="level-blocked-notice" class="alert alert--warn" style="display:none;margin-bottom:12px;font-size:11px;padding:8px 12px;align-items:center;justify-content:space-between;gap:6px;flex-wrap:nowrap;border:2px solid var(--orange)">
-  <span style="display:flex;align-items:center;gap:4px"><i class="ph-fill ph-lock-key" style="color:var(--orange);font-size:14px"></i> Kamu perlu upgrade ke <strong><?= htmlspecialchars($min_level_name) ?></strong>.</span>
-  <a href="/upgrade" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:10px;padding:4px 10px;flex-shrink:0">Upgrade →</a>
+<div id="level-blocked-notice" class="alert alert--warn" style="display:flex;margin-bottom:12px;font-size:12px;padding:12px;align-items:center;justify-content:space-between;gap:10px;border:2.5px solid var(--orange);background:#fffbeb;box-shadow:3px 3px 0 var(--orange);border-radius:12px;">
+  <div style="display:flex;align-items:flex-start;gap:8px">
+    <i class="ph-fill ph-lock-key" style="color:var(--orange);font-size:24px;margin-top:2px"></i>
+    <div>
+      <div style="font-weight:900;color:var(--ink);margin-bottom:4px">Penarikan Terkunci!</div>
+      <div style="font-size:11px;color:#666;line-height:1.4">Kamu perlu upgrade ke minimal <strong><?= htmlspecialchars($min_level_name) ?></strong> untuk membuka akses penarikan.</div>
+    </div>
+  </div>
+  <a href="/upgrade" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:11px;padding:6px 12px;flex-shrink:0;box-shadow:2px 2px 0 var(--ink);border:2px solid var(--ink);border-radius:8px;font-weight:900">Upgrade →</a>
 </div>
 <?php endif; ?>
 
@@ -385,6 +391,8 @@ require dirname(__DIR__) . '/partials/header.php';
         <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px;height:42px"><i class="ph-bold ph-wallet"></i> Saldo Kurang Dikit!</button>
       <?php elseif ($wd_locked): ?>
         <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px;height:42px"><i class="ph-bold ph-clock"></i> Lagi Tutup Nih</button>
+      <?php elseif ($level_blocked): ?>
+        <button type="button" class="btn btn--primary btn--full" disabled style="font-size:13px;height:42px;background:#e2e8f0;color:#64748b;border:2px solid #cbd5e1;cursor:not-allowed"><i class="ph-bold ph-lock-key"></i> Upgrade Level Dulu!</button>
       <?php else: ?>
         <button type="submit" id="wd-submit-btn" class="btn btn--primary btn--full no-dbl-submit" style="font-size:13px;height:42px;background:var(--yellow);color:var(--ink);border:2.5px solid var(--ink);box-shadow:3px 3px 0 var(--ink)"><i class="ph-bold ph-paper-plane-right"></i> Tarik Saldo Sekarang</button>
       <?php endif; ?>
@@ -448,10 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
       return;
     }
 
-    // Show level-blocked notice only when user has enough balance and tries to submit
-    if (levelBlocked && balWd >= minWd) {
+    if (levelBlocked) {
       e.preventDefault();
-      if (notice) { notice.style.display = 'flex'; notice.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
       return;
     }
 

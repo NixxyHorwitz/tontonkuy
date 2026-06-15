@@ -98,6 +98,17 @@ if ($user['membership_id'] && $user['membership_expires_at'] && strtotime($user[
     $membership_name = $ms->fetchColumn() ?: 'Free';
 }
 
+$wd_require_level = setting($pdo, 'wd_require_level', '0') === '1';
+$wd_min_level  = (int) setting($pdo, 'wd_min_level', '0');
+$user_level    = user_membership_level($pdo, $user);
+$level_blocked = $wd_require_level && $wd_min_level > 0 && $user_level < $wd_min_level;
+$min_level_name = '';
+if ($wd_require_level && $wd_min_level > 0) {
+    $lv = $pdo->prepare("SELECT name FROM memberships WHERE sort_order=? AND is_active=1 LIMIT 1");
+    $lv->execute([$wd_min_level]);
+    $min_level_name = $lv->fetchColumn() ?: "Level {$wd_min_level}";
+}
+
 $pageTitle  = 'Beranda — NontonKuy';
 $activePage = 'home';
 require dirname(__DIR__) . '/partials/header.php';
@@ -167,6 +178,19 @@ if ($is_newcomer):
     <div style="font-size:10px;font-weight:700;color:#666">Yuk baca panduan dulu supaya paham cara dapetin duitnya!</div>
   </div>
   <a href="/panduan" class="btn btn--primary btn--sm" style="font-size:10px;padding:6px 10px;white-space:nowrap;border:2px solid var(--ink);box-shadow:2px 2px 0 var(--ink)">Baca Panduan</a>
+</div>
+<?php endif; ?>
+
+<?php if ($level_blocked): ?>
+<div style="background:#fefce8;border:2.5px solid #ca8a04;border-radius:12px;padding:12px;margin-bottom:16px;box-shadow:3px 3px 0 #ca8a04;display:flex;align-items:center;gap:12px">
+  <div style="background:#fff;border:2px solid #ca8a04;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:2px 2px 0 #ca8a04">
+    <i class="ph-bold ph-lock-key" style="font-size:20px;color:#ca8a04"></i>
+  </div>
+  <div style="flex:1">
+    <div style="font-size:12px;font-weight:900;color:var(--ink);margin-bottom:2px">Akses Withdraw Terkunci</div>
+    <div style="font-size:10px;font-weight:700;color:#666">Kamu harus upgrade ke minimal <strong><?= htmlspecialchars($min_level_name) ?></strong> agar bisa withdraw.</div>
+  </div>
+  <a href="/upgrade" class="btn" style="background:#ca8a04;color:#fff;font-size:10px;padding:6px 10px;white-space:nowrap;border:2px solid #854d0e;border-radius:8px;font-weight:800;box-shadow:2px 2px 0 #854d0e">Upgrade →</a>
 </div>
 <?php endif; ?>
 
