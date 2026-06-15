@@ -41,13 +41,6 @@ if ($max_withdraw > 0 && !in_array((int)$max_withdraw, $predefined_amounts, true
 
 sort($predefined_amounts);
 
-$available_amounts = [];
-foreach ($predefined_amounts as $amt) {
-    if ($amt >= $min_withdraw && ($max_withdraw == 0 || $amt <= $max_withdraw)) {
-        $available_amounts[] = $amt;
-    }
-}
-
 $has_bank = !empty($user['bank_name']) && !empty($user['account_number']) && !empty($user['account_name']);
 
 $wd_locked = is_wd_locked($pdo);
@@ -57,6 +50,20 @@ $wd_require_level = setting($pdo, 'wd_require_level', '0') === '1';
 $wd_min_level  = (int) setting($pdo, 'wd_min_level', '0');
 $user_level    = user_membership_level($pdo, $user);
 $level_blocked = $wd_require_level && $wd_min_level > 0 && $user_level < $wd_min_level;
+
+$available_amounts = [];
+foreach ($predefined_amounts as $amt) {
+    if ($level_blocked) {
+        // Jika terblokir karena butuh upgrade, pamerkan opsi s/d 500rb
+        if ($amt <= 500000) {
+            $available_amounts[] = $amt;
+        }
+    } else {
+        if ($amt >= $min_withdraw && ($max_withdraw == 0 || $amt <= $max_withdraw)) {
+            $available_amounts[] = $amt;
+        }
+    }
+}
 
 $min_level_name = '';
 if ($wd_require_level && $wd_min_level > 0) {
