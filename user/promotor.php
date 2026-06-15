@@ -131,7 +131,8 @@ for ($i = $chart_days - 1; $i >= 0; $i--) {
 $downline_stmt = $pdo->prepare("
     SELECT 
         u.id, u.username, u.created_at, u.balance_wd,
-        (SELECT name FROM memberships WHERE id = u.membership_id) as membership_name
+        (SELECT name FROM memberships WHERE id = u.membership_id) as membership_name,
+        (SELECT COUNT(*) FROM deposits d WHERE d.user_id = u.id AND d.status = 'confirmed') as dep_count
     FROM users u
     WHERE u.referred_by = ?
     ORDER BY u.created_at DESC
@@ -347,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
         <div class="list-item__right" style="text-align:right">
           <div style="font-size:13px;font-weight:900;color:var(--brand)">
-            <?= format_rp((float)$dl['balance_wd']) ?>
+            <?= (int)$dl['dep_count'] ?>x Deposit
           </div>
           <div style="font-size:10px;font-weight:800;color:#666;margin-top:2px">
             <?= htmlspecialchars($dl['membership_name'] ?: 'Free') ?>
