@@ -181,18 +181,7 @@ if ($is_newcomer):
 </div>
 <?php endif; ?>
 
-<?php if ($level_blocked): ?>
-<div style="background:#fefce8;border:2.5px solid #ca8a04;border-radius:12px;padding:12px;margin-bottom:16px;box-shadow:3px 3px 0 #ca8a04;display:flex;align-items:center;gap:12px">
-  <div style="background:#fff;border:2px solid #ca8a04;border-radius:50%;width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:2px 2px 0 #ca8a04">
-    <i class="ph-bold ph-lock-key" style="font-size:20px;color:#ca8a04"></i>
-  </div>
-  <div style="flex:1">
-    <div style="font-size:12px;font-weight:900;color:var(--ink);margin-bottom:2px">Akses Withdraw Terkunci</div>
-    <div style="font-size:10px;font-weight:700;color:#666">Kamu harus upgrade ke minimal <strong><?= htmlspecialchars($min_level_name) ?></strong> agar bisa withdraw.</div>
-  </div>
-  <a href="/upgrade" class="btn" style="background:#ca8a04;color:#fff;font-size:10px;padding:6px 10px;white-space:nowrap;border:2px solid #854d0e;border-radius:8px;font-weight:800;box-shadow:2px 2px 0 #854d0e">Upgrade →</a>
-</div>
-<?php endif; ?>
+
 
 <!-- Dual Balance Cards -->
 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">

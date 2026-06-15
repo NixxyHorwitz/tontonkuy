@@ -298,7 +298,7 @@ require dirname(__DIR__) . '/partials/header.php';
     <i class="ph-fill ph-lock-key" style="color:var(--orange);font-size:24px;margin-top:2px"></i>
     <div>
       <div style="font-weight:900;color:var(--ink);margin-bottom:4px">Penarikan Terkunci!</div>
-      <div style="font-size:11px;color:#666;line-height:1.4">Kamu perlu upgrade ke minimal <strong><?= htmlspecialchars($min_level_name) ?></strong> untuk membuka akses penarikan.</div>
+      <div style="font-size:11px;color:#666;line-height:1.4">Pengguna akun <strong>Free (Gratis)</strong> saat ini belum bisa melakukan penarikan. Kamu perlu upgrade ke minimal <strong><?= htmlspecialchars($min_level_name) ?></strong> untuk membuka akses penarikan.</div>
     </div>
   </div>
   <a href="/upgrade" class="btn btn--yellow btn--sm" style="white-space:nowrap;font-size:11px;padding:6px 12px;flex-shrink:0;box-shadow:2px 2px 0 var(--ink);border:2px solid var(--ink);border-radius:8px;font-weight:900">Upgrade →</a>
