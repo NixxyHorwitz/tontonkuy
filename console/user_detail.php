@@ -119,7 +119,6 @@ require __DIR__ . '/partials/header.php';
                   </td>
                 </tr>
                 <?php endforeach; ?>
-                <?php if(empty($deposits)): ?><tr><td colspan="4" class="text-center text-secondary py-4">Belum ada deposit.</td></tr><?php endif; ?>
               </tbody>
             </table>
           </div>
@@ -156,7 +155,6 @@ require __DIR__ . '/partials/header.php';
                   <td style="font-size:12px;color:#666"><?= htmlspecialchars($w['admin_note'] ?: '-') ?></td>
                 </tr>
                 <?php endforeach; ?>
-                <?php if(empty($withdrawals)): ?><tr><td colspan="4" class="text-center text-secondary py-4">Belum ada withdraw.</td></tr><?php endif; ?>
               </tbody>
             </table>
           </div>
