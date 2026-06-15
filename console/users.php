@@ -133,6 +133,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pdo->prepare("DELETE FROM users WHERE id=?")->execute([$uid]);
         $flash = 'Akun pengguna berhasil dihapus permanen.';
     }
+    if ($action === 'login_as' && $uid) {
+        session_regenerate_id(true);
+        set_auth_cookie((int)$uid);
+        redirect('/home');
+        exit;
+    }
 }
 
 $memberships = $pdo->query("SELECT id, name FROM memberships WHERE is_active=1 ORDER BY sort_order ASC")->fetchAll();
@@ -183,6 +189,9 @@ require __DIR__ . '/partials/header.php';
             <button class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#2d3149;color:#fff;border:1px solid #3e445b;padding:4px 8px;font-weight:600;"
               onclick='editUser(<?= htmlspecialchars(json_encode($u), ENT_QUOTES) ?>)'>✏️ Edit</button>
             <a href="/console/user_detail.php?id=<?= $u['id'] ?>" class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#32433e;color:#b2dfdb;border:1px solid #4a665e;padding:4px 8px;font-weight:600;text-decoration:none;">👁️ Detail</a>
+            <button type="button" class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#4b3f72;color:#d1c4e9;border:1px solid #6b5a9e;padding:4px 8px;font-weight:600;"
+              onclick="if(confirm('Yakin ingin login sebagai user ini?')) document.getElementById('loginas-form-<?= $u['id'] ?>').submit()">🔑 Login As</button>
+            <form id="loginas-form-<?= $u['id'] ?>" method="POST" style="display:none;"><?= csrf_field() ?><input type="hidden" name="action" value="login_as"><input type="hidden" name="user_id" value="<?= $u['id'] ?>"></form>
             <button class="btn btn-sm" style="border-radius:6px;font-size:11px;margin-right:4px;background:#1e3a5f;color:#90caf9;border:1px solid #2b4f7e;padding:4px 8px;font-weight:600;"
               onclick="adjustBalance(<?= $u['id'] ?>, '<?= htmlspecialchars($u['username']) ?>')">💰 Saldo</button>
             <?php if ($u['membership_id'] && $u['membership_name']): ?>
