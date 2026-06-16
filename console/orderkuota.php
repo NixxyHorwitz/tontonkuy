@@ -56,14 +56,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'verify_otp') {
         $username = $_SESSION['ok_wait_otp'] ?? '';
-        $password = $_SESSION['ok_wait_pass'] ?? '';
         $otp = trim($_POST['otp'] ?? '');
         if ($username && $otp) {
             $ok = new OrderKuota();
-            $res = $ok->getAuthToken($username, $password, $otp);
+            $res = $ok->getAuthToken($username, $otp);
             $data = json_decode($res, true);
-            if (!empty($data['success']) && !empty($data['results']['auth_token'])) {
-                $token = $data['results']['auth_token'];
+            if (!empty($data['success']) && !empty($data['results']['token'])) {
+                $token = $data['results']['token'];
                 $uname = $data['results']['auth_username'] ?? $username;
                 $pdo->prepare("DELETE FROM orderkuota_accounts")->execute();
                 $pdo->prepare("INSERT INTO orderkuota_accounts (username, auth_token) VALUES (?, ?)")->execute([$uname, $token]);
