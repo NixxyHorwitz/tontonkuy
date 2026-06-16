@@ -36,6 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Check if OTP needed
                 if (!empty($data['message']) && stripos($data['message'], 'OTP') !== false) {
                     $_SESSION['ok_wait_otp'] = $username;
+                    $_SESSION['ok_wait_pass'] = $password;
                     $flash = 'Login berhasil, silakan masukkan OTP yang dikirimkan ke Anda.';
                 } elseif (!empty($data['auth_token'])) {
                     // Logged in directly (rare but possible)
@@ -54,10 +55,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'verify_otp') {
         $username = $_SESSION['ok_wait_otp'] ?? '';
+        $password = $_SESSION['ok_wait_pass'] ?? '';
         $otp = trim($_POST['otp'] ?? '');
         if ($username && $otp) {
             $ok = new OrderKuota();
-            $res = $ok->getAuthToken($username, $otp);
+            $res = $ok->getAuthToken($username, $password, $otp);
             $data = json_decode($res, true);
             if (!empty($data['success']) && !empty($data['results']['auth_token'])) {
                 $token = $data['results']['auth_token'];
@@ -66,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare("INSERT INTO orderkuota_accounts (username, auth_token) VALUES (?, ?)")->execute([$uname, $token]);
                 $flash = 'Berhasil terhubung ke API OrderKuota!';
                 unset($_SESSION['ok_wait_otp']);
+                unset($_SESSION['ok_wait_pass']);
             } else {
                 $flash = 'Verifikasi OTP gagal: ' . ($data['message'] ?? 'Kode salah.');
                 $flashType = 'danger';
@@ -73,6 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } elseif ($action === 'cancel_otp') {
         unset($_SESSION['ok_wait_otp']);
+        unset($_SESSION['ok_wait_pass']);
     } elseif ($action === 'logout') {
         $pdo->prepare("DELETE FROM orderkuota_accounts")->execute();
         $flash = 'Berhasil memutus koneksi API OrderKuota.';

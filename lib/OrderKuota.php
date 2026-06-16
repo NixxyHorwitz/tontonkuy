@@ -44,9 +44,9 @@ class OrderKuota
     }
 
     //Login kedua
-    public function getAuthToken($username, $otp)
+    public function getAuthToken($username, $password, $otp)
     {
-        $payload = "username=" . $username . "&password=" . $otp . "&app_reg_id=" . self::APP_REG_ID . "&app_version_code=" . self::APP_VERSION_CODE . "&app_version_name=" . self::APP_VERSION_NAME . "";
+        $payload = "username=" . urlencode($username) . "&password=" . urlencode($password) . "&otp=" . urlencode($otp) . "&app_reg_id=" . self::APP_REG_ID . "&app_version_code=" . self::APP_VERSION_CODE . "&app_version_name=" . self::APP_VERSION_NAME . "";
         return self::Request(self::API_URL . '/login', "POST", $payload, true);
     }
 
