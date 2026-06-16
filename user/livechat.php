@@ -662,7 +662,7 @@ async function startChat() {
     // Render existing messages
     const msgs = document.getElementById('chat-messages');
     msgs.innerHTML = '';
-    (data.messages || []).forEach(m => appendBubble(m.sender, m.message, m.created_at, false, m.attachment));
+    (data.messages || []).forEach(m => appendBubble(m.sender, m.message, m.created_at, false, m.attachment, m.id));
 
     // Mode sudah di-set di server, langsung update UI
     updateModeUI(currentMode);
@@ -684,12 +684,15 @@ async function startChat() {
 
 // ── Append bubble ─────────────────────────────────────────
 let _msgIdCounter = 0;
-function appendBubble(sender, text, time, animate = true, attachment = null) {
+function appendBubble(sender, text, time, animate = true, attachment = null, serverId = null) {
   const msgs = document.getElementById('chat-messages');
+  if (serverId && document.querySelector(`.bubble-wrap[data-server-id="${serverId}"]`)) return null;
+
   const wrap = document.createElement('div');
   const id   = ++_msgIdCounter;
   wrap.className   = `bubble-wrap ${sender === 'user' ? 'user' : sender === 'system' ? 'system' : sender}`;
   wrap.dataset.msgId = id;
+  if (serverId) wrap.dataset.serverId = serverId;
   if (!animate) wrap.style.animation = 'none';
 
   const senderLabels = { ai: '🤖 AI', admin: '👨‍💼 Admin', user: '🙋 Kamu', system: '' };
@@ -824,12 +827,12 @@ async function sendMessage() {
     // Ganti bubble sementara dengan data asli (termasuk gambar) dari server
     tmpBubble.remove();
     if (data.user_message) {
-        appendBubble('user', data.user_message.message, data.user_message.created_at, false, data.user_message.attachment);
+        appendBubble('user', data.user_message.message, data.user_message.created_at, false, data.user_message.attachment, data.user_message.id);
     }
 
     if (data.last_msg_id) lastMsgId = parseInt(data.last_msg_id);
     if (data.reply) {
-      appendBubble(data.reply.sender, data.reply.message, data.reply.created_at, true, data.reply.attachment);
+      appendBubble(data.reply.sender, data.reply.message, data.reply.created_at, true, data.reply.attachment, data.reply.id);
     }
   } catch(e) {
     tmpBubble.remove();
@@ -930,7 +933,7 @@ async function pollMessages() {
     (data.messages || []).forEach(m => {
       if (parseInt(m.id) > lastMsgId) {
         lastMsgId = parseInt(m.id);
-        appendBubble(m.sender, m.message, m.created_at, true, m.attachment);
+        appendBubble(m.sender, m.message, m.created_at, true, m.attachment, m.id);
       }
     });
 
