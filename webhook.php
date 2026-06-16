@@ -551,12 +551,12 @@ if (isset($update['message'])) {
         return; // Fall through for other types of messages
     }
 
-    if ((string)$chat_id !== (string)$admin_chat_id) {
+    if (trim((string)$chat_id) !== trim((string)$admin_chat_id)) {
         return; // Fall through
     }
 
-    // Command: !sethere [option]
-    if (preg_match('/^!sethere\s+([a-zA-Z0-9_]+)/i', $text, $m)) {
+    // Command: !sethere [option] or /sethere [option]
+    if (preg_match('/^[!\/]sethere\s+([a-zA-Z0-9_]+)/i', $text, $m)) {
         $option = strtolower($m[1]);
         $allowed = ['log', 'wd', 'depo', 'user_baru', 'permintaan'];
         if (in_array($option, $allowed)) {
