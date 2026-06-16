@@ -70,10 +70,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // Referral check
             $ref_by = null;
             if ($ref_input) {
-                $rs = $pdo->prepare("SELECT referral_code FROM users WHERE referral_code=?");
+                $rs = $pdo->prepare("SELECT referral_code, is_promotor, is_referral_active FROM users WHERE referral_code=?");
                 $rs->execute([$ref_input]);
-                if (!$rs->fetchColumn()) { $error = 'Kode referral tidak valid.'; goto end_reg; }
-                $ref_by = $ref_input;
+                $referrer = $rs->fetch();
+                if (!$referrer) { $error = 'Kode referral tidak valid.'; goto end_reg; }
+                
+                if (!empty($referrer['is_promotor']) && empty($referrer['is_referral_active'])) {
+                    $ref_by = null; // Do not attach referral if promotor disabled it
+                } else {
+                    $ref_by = $ref_input;
+                }
             }
             // Create user
             $code = generate_referral_code($pdo);

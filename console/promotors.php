@@ -45,6 +45,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
+    // Toggle Referral Status
+    if ($action === 'toggle_referral') {
+        $user_id = (int)($_POST['user_id'] ?? 0);
+        $new_val = (int)($_POST['new_val'] ?? 1);
+        if ($user_id > 0) {
+            $pdo->prepare("UPDATE users SET is_referral_active = ? WHERE id = ?")->execute([$new_val, $user_id]);
+            $flash = $new_val ? "Referral berhasil diaktifkan." : "Referral berhasil dihentikan.";
+        }
+    }
+    
     // Payout Promotor Salary
     if ($action === 'pay_salary') {
         $log_id = (int)($_POST['log_id'] ?? 0);
@@ -113,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Fetch active promotors
-$promotors = $pdo->query("SELECT id, username, email, referral_code, promotor_target_deposits, promotor_target_regs, promotor_salary_rate FROM users WHERE is_promotor=1 ORDER BY username ASC")->fetchAll();
+$promotors = $pdo->query("SELECT id, username, email, referral_code, promotor_target_deposits, promotor_target_regs, promotor_salary_rate, is_referral_active FROM users WHERE is_promotor=1 ORDER BY username ASC")->fetchAll();
 
 // Fetch potential promotors (non-promotors) for selection
 $eligible_users = $pdo->query("SELECT id, username FROM users WHERE is_promotor=0 ORDER BY username ASC")->fetchAll();
@@ -234,6 +244,15 @@ require __DIR__ . '/partials/header.php';
                           onclick="openEditModal(<?= htmlspecialchars(json_encode($p)) ?>)">
                     ✏️ Edit Target
                   </button>
+                  <form method="POST" style="display:inline;" onsubmit="return confirm('Yakin ingin ' + (<?= $p['is_referral_active'] ? "'menghentikan'" : "'mengaktifkan'" ?>) + ' referral promotor ini?');">
+                    <?= csrf_field() ?>
+                    <input type="hidden" name="action" value="toggle_referral">
+                    <input type="hidden" name="user_id" value="<?= $p['id'] ?>">
+                    <input type="hidden" name="new_val" value="<?= $p['is_referral_active'] ? 0 : 1 ?>">
+                    <button type="submit" class="btn btn-sm <?= $p['is_referral_active'] ? 'btn-warning' : 'btn-success' ?> text-white me-1" style="border:none;border-radius:6px;font-size:11px">
+                      <?= $p['is_referral_active'] ? '🛑 Stop Referral' : '✅ Aktifkan Referral' ?>
+                    </button>
+                  </form>
                   <button class="btn btn-sm btn-danger" style="border:none;border-radius:6px;font-size:11px"
                           onclick="confirmRemove(<?= $p['id'] ?>, '<?= htmlspecialchars($p['username']) ?>')">
                     ❌ Nonaktifkan
