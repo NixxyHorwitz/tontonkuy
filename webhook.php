@@ -16,7 +16,7 @@ $admin_chat_id = setting($pdo, 'tg_chat_id', '');
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
-function tg_api(string $token, string $method, array $post): ?array {
+function wh_tg_api(string $token, string $method, array $post): ?array {
     $ch = curl_init("https://api.telegram.org/bot{$token}/{$method}");
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -27,7 +27,7 @@ function tg_api(string $token, string $method, array $post): ?array {
     return json_decode($res ?: '{}', true);
 }
 
-function tg_api_json(string $token, string $method, array $body): void {
+function wh_tg_api_json(string $token, string $method, array $body): void {
     $ch = curl_init("https://api.telegram.org/bot{$token}/{$method}");
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
@@ -39,13 +39,13 @@ function tg_api_json(string $token, string $method, array $body): void {
 }
 
 function answer_cb(string $token, string $cb_id, string $text): void {
-    tg_api($token, 'answerCallbackQuery', ['callback_query_id' => $cb_id, 'text' => $text, 'show_alert' => false]);
+    wh_tg_api($token, 'answerCallbackQuery', ['callback_query_id' => $cb_id, 'text' => $text, 'show_alert' => false]);
 }
 
 function edit_msg(string $token, $chat_id, $msg_id, string $text, ?array $kb = null): void {
     $body = ['chat_id' => $chat_id, 'message_id' => $msg_id, 'text' => $text, 'parse_mode' => 'HTML'];
     if ($kb !== null) $body['reply_markup'] = ['inline_keyboard' => $kb];
-    tg_api_json($token, 'editMessageText', $body);
+    wh_tg_api_json($token, 'editMessageText', $body);
 }
 
 function send_msg(string $token, $chat_id, string $text, ?array $kb = null, $thread_id = null): ?int {
@@ -572,7 +572,7 @@ if (isset($update['message'])) {
     }
 
     $state = get_tg_state($pdo, $chat_id);
-    if (!$state) { http_response_code(200); exit; }
+    if (!$state) { return; }
 
     $parts = explode('|', $state, 7);
     
