@@ -154,27 +154,30 @@ require dirname(__DIR__) . '/partials/header.php';
 <div class="card card--yellow" style="margin-bottom:16px">
   <div class="card__body" style="padding:16px 18px">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-1" style="margin-bottom:8px">
-      <span style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.5px;color:#555">🎯 Target Hari Ini</span>
+      <span style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.5px;color:#555">💰 Pendapatan Hari Ini</span>
       <span class="badge badge--success" style="font-size:10px;padding:3px 8px;border-radius:6px;background:var(--lime)">
-        Gaji Diperoleh: <?= format_rp($today_earned) ?>
+        Total: <?= format_rp((float)$today_target['salary_rate']) ?>
       </span>
     </div>
 
-    <!-- Combined percentage and Neobrutalist progress bar -->
     <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:6px">
-      <span style="font-size:36px;font-weight:900;letter-spacing:-1px;line-height:1"><?= number_format((float)$today_target['percentage'], 1) ?>%</span>
-      <span style="font-size:12px;font-weight:800;color:#555">tercapai</span>
+      <span style="font-size:36px;font-weight:900;letter-spacing:-1px;line-height:1"><?= format_rp((float)$today_target['salary_rate']) ?></span>
     </div>
 
-    <div style="background:var(--white);border:2.5px solid var(--ink);border-radius:var(--radius-sm);height:20px;overflow:hidden;position:relative;margin-bottom:12px;box-shadow:2px 2px 0 var(--ink)">
-      <div style="height:100%;width:<?= min(100.0, (float)$today_target['percentage']) ?>%;background:var(--brand);transition:width .4s ease"></div>
-    </div>
-
-    <!-- Metrics splits (hiding targets as requested) -->
-    <div style="margin-top:12px;border-top:1.5px dashed var(--ink);padding-top:12px;text-align:center">
-      <div style="font-size:10px;font-weight:800;color:#666;text-transform:uppercase">🧑‍🤝‍🧑 Total Member Baru (Hari Ini)</div>
-      <div style="font-size:16px;font-weight:900;color:var(--ink);margin-top:4px">
-        <?= number_format((int)$today_target['actual_regs']) ?> member
+    <!-- Metrics splits (Flat Rate Breakdown) -->
+    <div style="margin-top:12px;border-top:1.5px dashed var(--ink);padding-top:12px;display:flex;gap:12px;text-align:center">
+      <div style="flex:1">
+        <div style="font-size:10px;font-weight:800;color:#666;text-transform:uppercase">🧑‍🤝‍🧑 Member Baru</div>
+        <div style="font-size:14px;font-weight:900;color:var(--ink);margin-top:4px">
+          <?= number_format((int)$today_target['actual_regs']) ?> <span style="font-size:10px;color:#888;font-weight:700">(+<?= format_rp((float)$today_target['target_regs']) ?>)</span>
+        </div>
+      </div>
+      <div style="width:1.5px;background:var(--ink);opacity:0.2"></div>
+      <div style="flex:1">
+        <div style="font-size:10px;font-weight:800;color:#666;text-transform:uppercase">💸 Deposit Downline</div>
+        <div style="font-size:14px;font-weight:900;color:var(--ink);margin-top:4px">
+          <?= number_format((int)$today_target['target_deposits']) ?>x <span style="font-size:10px;color:#888;font-weight:700">(+<?= format_rp((float)($today_target['salary_rate'] - $today_target['target_regs'])) ?>)</span>
+        </div>
       </div>
     </div>
   </div>
@@ -244,16 +247,24 @@ require dirname(__DIR__) . '/partials/header.php';
             <?php endif; ?>
           </div>
           <div style="font-size:10px;color:#666;font-weight:700;margin-top:3px">
-            Pencapaian: <strong style="color:var(--ink)"><?= number_format((float)$log['percentage'], 1) ?>%</strong>
-            · Reg: <?= $log['actual_regs'] ?> Member
+            <?php if ($log['date'] < '2026-06-16'): ?>
+              Pencapaian: <strong style="color:var(--ink)"><?= number_format((float)$log['percentage'], 1) ?>%</strong>
+              · Reg: <?= $log['actual_regs'] ?> Member
+            <?php else: ?>
+              Reg: <?= $log['actual_regs'] ?> Member · Depo: <?= (int)$log['target_deposits'] ?>x
+            <?php endif; ?>
           </div>
           <?php if ($log['is_paid']): ?>
           <div style="font-size:9px;color:#4CAF82;font-weight:700;margin-top:2px">
             💸 Gaji sebesar <strong><?= format_rp((float)$log['paid_amount']) ?></strong> berhasil ditransfer ke Saldo Penarikan Anda.
           </div>
-          <?php elseif ($earned > 0): ?>
+          <?php elseif ($earned > 0 || (float)$log['salary_rate'] > 0): ?>
           <div style="font-size:9px;color:#ff8c00;font-weight:700;margin-top:2px">
-            🎉 Estimasi Gaji Diperoleh: <strong><?= format_rp($earned) ?></strong> (dari total <?= format_rp((float)$log['salary_rate']) ?>) - akan ditransfer setelah diverifikasi admin.
+            <?php if ($log['date'] < '2026-06-16'): ?>
+              🎉 Estimasi Gaji Diperoleh: <strong><?= format_rp($earned) ?></strong> (dari total <?= format_rp((float)$log['salary_rate']) ?>) - akan ditransfer setelah diverifikasi admin.
+            <?php else: ?>
+              🎉 Estimasi Pendapatan: <strong><?= format_rp((float)$log['salary_rate']) ?></strong> - akan ditransfer setelah diverifikasi admin.
+            <?php endif; ?>
           </div>
           <?php endif; ?>
         </div>

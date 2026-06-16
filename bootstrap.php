@@ -496,15 +496,17 @@ function sync_promotor_daily_targets(PDO $pdo, int $promotor_id, string $date = 
         $p = $p_stmt->fetch();
         if (!$p) return;
         
-        // Calculate actual deposits today from referred users
+        // Calculate actual deposits today from referred users (COUNT and SUM)
         $dep_stmt = $pdo->prepare(
-            "SELECT COALESCE(SUM(d.amount), 0) 
+            "SELECT COALESCE(SUM(d.amount), 0) as total_amt, COUNT(d.id) as total_cnt
              FROM deposits d 
              JOIN users u ON u.id = d.user_id 
              WHERE u.referred_by = ? AND d.status = 'confirmed' AND DATE(d.confirmed_at) = ?"
         );
         $dep_stmt->execute([$p['referral_code'], $date]);
-        $actual_deposits = (float)$dep_stmt->fetchColumn();
+        $dep_data = $dep_stmt->fetch();
+        $actual_deposits_amt = (float)$dep_data['total_amt'];
+        $actual_deposits_cnt = (int)$dep_data['total_cnt'];
         
         // Calculate actual registrations today
         $reg_stmt = $pdo->prepare(
@@ -515,18 +517,23 @@ function sync_promotor_daily_targets(PDO $pdo, int $promotor_id, string $date = 
         $reg_stmt->execute([$p['referral_code'], $date]);
         $actual_regs = (int)$reg_stmt->fetchColumn();
         
-        // Calculate percentage
-        $target_deposits = (float)$p['promotor_target_deposits'];
-        $target_regs = (int)$p['promotor_target_regs'];
+        // Flat Rate Calculation
+        $bonus_reg  = (float)setting($pdo, 'promotor_per_member_bonus', '0');
+        $bonus_depo = (float)setting($pdo, 'promotor_per_deposit_bonus', '0');
         
-        $dep_progress = $target_deposits > 0 ? min(1.0, $actual_deposits / $target_deposits) : 1.0;
-        $reg_progress = $target_regs > 0 ? min(1.0, $actual_regs / $target_regs) : 1.0;
+        $earned_amount = ($actual_regs * $bonus_reg) + ($actual_deposits_cnt * $bonus_depo);
         
-        // Weighted Average: 85% Deposit, 15% Registration
-        $percentage = round((($dep_progress * 0.85) + ($reg_progress * 0.15)) * 100, 2);
+        $percentage = 100.0;
+        
+        // We repurpose fields to store flat rate info:
+        // actual_deposits = the sum nominal of deposits
+        // target_deposits = the count of deposits (so we can display it later)
+        // target_regs = the total earned from regs (so we can display it)
+        // percentage = 100
+        // salary_rate = earned_amount
         
         // Upsert into promotor_daily_targets
-        $check = $pdo->prepare("SELECT id, is_paid, salary_rate FROM promotor_daily_targets WHERE user_id=? AND date=?");
+        $check = $pdo->prepare("SELECT id, is_paid FROM promotor_daily_targets WHERE user_id=? AND date=?");
         $check->execute([$promotor_id, $date]);
         $exist = $check->fetch();
         
@@ -536,19 +543,19 @@ function sync_promotor_daily_targets(PDO $pdo, int $promotor_id, string $date = 
                     "UPDATE promotor_daily_targets 
                      SET actual_deposits=?, actual_regs=?, percentage=?, target_deposits=?, target_regs=?, salary_rate=?
                      WHERE id=?"
-                )->execute([$actual_deposits, $actual_regs, $percentage, $target_deposits, $target_regs, $p['promotor_salary_rate'], $exist['id']]);
+                )->execute([$actual_deposits_amt, $actual_regs, $percentage, $actual_deposits_cnt, ($actual_regs * $bonus_reg), $earned_amount, $exist['id']]);
             } else {
                 $pdo->prepare(
                     "UPDATE promotor_daily_targets 
                      SET actual_deposits=?, actual_regs=?, percentage=? 
                      WHERE id=?"
-                )->execute([$actual_deposits, $actual_regs, $percentage, $exist['id']]);
+                )->execute([$actual_deposits_amt, $actual_regs, $percentage, $exist['id']]);
             }
         } else {
             $pdo->prepare(
                 "INSERT INTO promotor_daily_targets (user_id, date, target_deposits, actual_deposits, target_regs, actual_regs, percentage, salary_rate, is_paid) 
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)"
-            )->execute([$promotor_id, $date, $target_deposits, $actual_deposits, $target_regs, $actual_regs, $percentage, $p['promotor_salary_rate']]);
+            )->execute([$promotor_id, $date, $actual_deposits_cnt, $actual_deposits_amt, ($actual_regs * $bonus_reg), $actual_regs, $percentage, $earned_amount]);
         }
     } catch (\Throwable $th) {
         // Silently fail to not block requests
