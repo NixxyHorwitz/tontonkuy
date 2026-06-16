@@ -7,7 +7,7 @@ $s = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by=?");
 $s->execute([$user['referral_code']]);
 $ref_count = (int)$s->fetchColumn();
 
-$e = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM referral_commissions WHERE user_id=?");
+$e = $pdo->prepare("SELECT COALESCE(SUM(amount),0) FROM referral_commissions WHERE upline_id=?");
 $e->execute([$user['id']]);
 $ref_earned = (float)$e->fetchColumn();
 
@@ -15,8 +15,8 @@ $ref_earned = (float)$e->fetchColumn();
 $hist = $pdo->prepare(
   "SELECT rc.amount, rc.created_at, u.username
    FROM referral_commissions rc
-   JOIN users u ON u.id = rc.from_user_id
-   WHERE rc.user_id = ?
+   JOIN users u ON u.id = rc.downline_id
+   WHERE rc.upline_id = ?
    ORDER BY rc.created_at DESC LIMIT 20"
 );
 $hist->execute([$user['id']]);
@@ -41,7 +41,7 @@ $refs = $pdo->prepare(
   "SELECT u.username, u.created_at, 
           COALESCE(m.name, 'Free') as membership_name,
           COALESCE((SELECT SUM(amount) FROM deposits WHERE user_id = u.id AND status = 'confirmed'), 0) as total_deposit,
-          COALESCE((SELECT SUM(amount) FROM referral_commissions WHERE user_id = ? AND from_user_id = u.id), 0) as commission_earned
+          COALESCE((SELECT SUM(amount) FROM referral_commissions WHERE upline_id = ? AND downline_id = u.id), 0) as commission_earned
    FROM users u
    LEFT JOIN memberships m ON m.id = u.membership_id
    WHERE u.referred_by = ?
