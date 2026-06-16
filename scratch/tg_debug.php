@@ -3,7 +3,7 @@
 if (php_sapi_name() !== 'cli') {
     header('Content-Type: text/plain; charset=utf-8');
 }
-require __DIR__ . '/bootstrap.php';
+require __DIR__ . '/../bootstrap.php';
 
 $chatId = setting($pdo, 'lc_tg_chat_id', '');
 $token  = setting($pdo, 'lc_tg_token', '');
