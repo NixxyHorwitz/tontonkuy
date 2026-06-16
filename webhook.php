@@ -2,10 +2,12 @@
 declare(strict_types=1);
 require_once __DIR__ . '/bootstrap.php';
 
-$json   = file_get_contents('php://input');
-$update = json_decode($json, true);
+if (!isset($update)) {
+    $json   = file_get_contents('php://input');
+    $update = json_decode($json, true);
+}
 
-if (!$update) { http_response_code(200); exit; }
+if (!$update) { http_response_code(200); return; }
 
 $token = setting($pdo, 'tg_bot_token', '');
 if (!$token) { http_response_code(200); exit; }
@@ -143,7 +145,7 @@ if (isset($update['callback_query'])) {
 
     if ((string)$chat_id !== (string)$admin_chat_id) {
         answer_cb($token, $cb_id, "⚠️ Akses Ditolak! Chat ID anda ({$chat_id}) tidak cocok dengan ID Admin di pengaturan.");
-        http_response_code(200); exit;
+        http_response_code(200); return;
     }
 
     // ── REFRESH ──────────────────────────────────────────────────────────────
@@ -534,8 +536,7 @@ if (isset($update['callback_query'])) {
         }
         http_response_code(200); exit;
     }
-
-    http_response_code(200); exit;
+    // Fallback for callback_query: do not exit, so it can fall through
 }
 
 // ── Message Handler (for reject reason text) ─────────────────────────────────
@@ -547,11 +548,11 @@ if (isset($update['message'])) {
     $thread_id = $msg['message_thread_id'] ?? null;
 
     if (empty($text)) {
-        http_response_code(200); exit;
+        return; // Fall through for other types of messages
     }
 
     if ((string)$chat_id !== (string)$admin_chat_id) {
-        http_response_code(200); exit;
+        return; // Fall through
     }
 
     // Command: !sethere [option]
@@ -599,7 +600,7 @@ if (isset($update['message'])) {
         http_response_code(200); exit;
     }
 
-    if ($parts[0] !== 'awaiting_reason') { http_response_code(200); exit; }
+    if ($parts[0] !== 'awaiting_reason') { return; }
 
     [, $type, $action, $id, $orig_msg_id, $orig_b64, $prompt_msg_id] = array_pad($parts, 7, 0);
     $id            = (int)$id;
@@ -668,5 +669,3 @@ if (isset($update['message'])) {
 
     http_response_code(200); exit;
 }
-
-http_response_code(200);

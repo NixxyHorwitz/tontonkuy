@@ -561,11 +561,15 @@ switch ($action) {
 
     // ── Webhook dari Telegram ─────────────────────────────────────
     case 'tg_webhook':
-        $input = json_decode(file_get_contents('php://input'), true);
+        $update = json_decode(file_get_contents('php://input'), true);
+        
+        // Pass to the notification/transaction webhook logic first
+        // It will NOT exit if it doesn't recognize the command, allowing LiveChat to process it.
+        require_once __DIR__ . '/webhook.php';
 
         // Handle callback_query (inline button dari Telegram)
-        if (!empty($input['callback_query'])) {
-            $cb     = $input['callback_query'];
+        if (!empty($update['callback_query'])) {
+            $cb     = $update['callback_query'];
             $cbId   = $cb['id'];
             $cbData = $cb['data'] ?? '';
 
@@ -859,9 +863,9 @@ switch ($action) {
         }
 
         // Handle regular message (admin reply)
-        if (empty($input['message'])) { echo '{}'; exit; }
+        if (empty($update['message'])) { echo '{}'; exit; }
 
-        $msg      = $input['message'];
+        $msg      = $update['message'];
         $threadId = $msg['message_thread_id'] ?? null;
         $text     = $msg['text'] ?? $msg['caption'] ?? '';
         $fromUser = $msg['from'] ?? [];
