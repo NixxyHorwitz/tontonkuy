@@ -58,7 +58,7 @@ if ($action === 'mark_read' && !empty($_POST['id'])) {
 if ($action === 'mark_all') {
     try {
         $notifs = $pdo->prepare(
-            "SELECT id FROM notifications n
+            "SELECT n.id FROM notifications n
              LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
              WHERE nr.id IS NULL
                AND " . json_uid_condition() . "
@@ -68,7 +68,7 @@ if ($action === 'mark_all') {
     } catch (\Throwable) {
         // Fallback
         $notifs = $pdo->prepare(
-            "SELECT id FROM notifications n
+            "SELECT n.id FROM notifications n
              LEFT JOIN notification_reads nr ON nr.notification_id=n.id AND nr.user_id=?
              WHERE nr.id IS NULL AND n.target_type='all'
                AND (n.expires_at IS NULL OR n.expires_at > NOW())"
