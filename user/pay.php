@@ -325,9 +325,13 @@ $qr_dl_url   = '?id=' . $dep_id . '&action=dl_qr';
       <?php endif; ?>
     </div>
 
-    <!-- Upload bukti (manual only) -->
-    <?php if ($confirm_mode !== 'auto'): ?>
-    <div class="upload-card">
+    <!-- Upload bukti -->
+    <?php 
+    $pending_secs = time() - $created_ts;
+    // Tampilkan jika manual, ATAU jika sudah lewat 5 menit (300 detik)
+    $show_upload = ($confirm_mode !== 'auto' || $pending_secs >= 300);
+    ?>
+    <div class="upload-card" id="upload-proof-card" style="display: <?= $show_upload ? 'block' : 'none' ?>;">
       <div class="upload-card__title">📸 Upload Bukti Pembayaran</div>
       <form method="POST" enctype="multipart/form-data">
         <?= csrf_field() ?>
@@ -342,7 +346,6 @@ $qr_dl_url   = '?id=' . $dep_id . '&action=dl_qr';
         <a href="/history" style="font-size:13px;color:#aaa;font-weight:700">Nanti saja → Lihat Riwayat</a>
       </div>
     </div>
-    <?php endif; ?>
 
     <!-- Actions -->
     <div class="pay-actions">
@@ -398,6 +401,17 @@ $qr_dl_url   = '?id=' . $dep_id . '&action=dl_qr';
     const expTimer = setInterval(() => {
       expSecs--;
       updateExpTimer();
+      
+      // Munculkan form upload otomatis setelah 5 menit (300 detik) berjalan
+      const elapsed = 3600 - expSecs;
+      if (elapsed >= 300) {
+        const upCard = document.getElementById('upload-proof-card');
+        if (upCard && upCard.style.display === 'none') {
+            upCard.style.display = 'block';
+            upCard.style.animation = 'toastIn 0.3s ease forwards';
+        }
+      }
+
       if (expSecs <= 0) clearInterval(expTimer);
     }, 1000);
 
