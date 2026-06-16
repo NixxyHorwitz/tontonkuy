@@ -93,6 +93,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $flash = "Gagal mencairkan gaji: " . $e->getMessage(); $flashType = 'error';
         }
     }
+    
+    // Save Global Flat Rates
+    if ($action === 'save_global_rates') {
+        if (isset($_POST['promotor_per_member_bonus'])) {
+            setting_set($pdo, 'promotor_per_member_bonus', clean_input($_POST['promotor_per_member_bonus']));
+        }
+        if (isset($_POST['promotor_per_deposit_bonus'])) {
+            setting_set($pdo, 'promotor_per_deposit_bonus', clean_input($_POST['promotor_per_deposit_bonus']));
+        }
+        $flash = "Pengaturan Rate Flat Global berhasil disimpan!";
+    }
 }
 
 // Fetch active promotors
@@ -158,6 +169,32 @@ require __DIR__ . '/partials/header.php';
   <a href="?tab=members" class="btn btn-sm <?= $tab==='members'?'text-white':'btn-secondary' ?>" style="<?= $tab==='members'?'background:var(--brand)':'' ?>">
     👥 Member Promotor
   </a>
+</div>
+
+<!-- Global Rate Settings -->
+<div class="c-card mb-4">
+  <div class="c-card-header"><span class="c-card-title">⚙️ Pengaturan Global Rate Gaji</span></div>
+  <div class="c-card-body p-3">
+    <form method="POST">
+      <?= csrf_field() ?>
+      <input type="hidden" name="action" value="save_global_rates">
+      <div class="row g-2">
+        <div class="col-md-6">
+          <div class="c-form-group mb-0">
+            <label class="c-label">Bonus Promotor Per-Member Baru (Rp)</label>
+            <input type="number" name="promotor_per_member_bonus" class="c-form-control" value="<?= setting($pdo, 'promotor_per_member_bonus', '0') ?>" min="0">
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="c-form-group mb-0">
+            <label class="c-label">Bonus Promotor Per-Deposit Sukses (Rp)</label>
+            <input type="number" name="promotor_per_deposit_bonus" class="c-form-control" value="<?= setting($pdo, 'promotor_per_deposit_bonus', '0') ?>" min="0">
+          </div>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-sm text-white mt-3" style="background:var(--brand)">Simpan Rate Global</button>
+    </form>
+  </div>
 </div>
 
 <?php if ($tab === 'list'): ?>

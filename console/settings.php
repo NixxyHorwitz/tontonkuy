@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $flashType = '';
 
     if ($action === 'save_general') {
-        $keys = ['site_name','site_tagline','free_watch_limit','referral_bonus','promotor_per_member_bonus','promotor_per_deposit_bonus',
+        $keys = ['site_name','site_tagline','free_watch_limit','referral_bonus',
                  'referral_commission_percent','checkin_reward','min_deposit','min_withdraw','wd_min_level',
                  'depo_unique_code_min','depo_unique_code_max','plinko_buy_rate','plinko_sell_rate',
                  'target_deposit_daily','target_member_daily'];
@@ -264,13 +264,6 @@ $tabs = [
             
             <div class="c-form-group"><label class="c-label">Bonus Referral Registrasi (Rp) <small style="color:#888">(opsional)</small></label>
               <input type="number" name="referral_bonus" class="c-form-control" value="<?= $s('referral_bonus','1000') ?>" min="0"></div>
-
-            <div class="row g-2">
-              <div class="col-md-6"><div class="c-form-group"><label class="c-label">Bonus Promotor Per-Member Baru (Rp)</label>
-                <input type="number" name="promotor_per_member_bonus" class="c-form-control" value="<?= $s('promotor_per_member_bonus','0') ?>" min="0"></div></div>
-              <div class="col-md-6"><div class="c-form-group"><label class="c-label">Bonus Promotor Per-Deposit (Rp)</label>
-                <input type="number" name="promotor_per_deposit_bonus" class="c-form-control" value="<?= $s('promotor_per_deposit_bonus','0') ?>" min="0"></div></div>
-            </div>
             
             <div style="border-top:1px solid #2d3149;margin:20px 0 16px;"></div>
             
