@@ -304,7 +304,10 @@ require dirname(__DIR__) . '/partials/header.php';
   
   <div style="margin-top:10px;">
     <?php if ($can_refund): ?>
-    <button type="button" class="btn" onclick="document.getElementById('brutal-refund-confirm').style.display='flex'" style="background:#fff;border:2px solid var(--red);color:var(--red);font-size:12px;font-weight:900;box-shadow:2px 2px 0 var(--red); white-space: normal; padding: 10px; width: 100%; text-align: center; display: flex; align-items: center; justify-content: center; line-height: 1.4;">⏪ Minta Pengembalian Uang (Refund)</button>
+    <button type="button" class="btn" onclick="document.getElementById('brutal-refund-confirm').style.display='flex'" style="background:#fff;border:2px solid var(--red);color:var(--red);font-size:13px;font-weight:900;box-shadow:3px 3px 0 var(--red); white-space: normal; padding: 12px 16px; width: 100%; text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px; line-height: 1.4; border-radius: 12px; margin-top: 12px; cursor: pointer;">
+      <span style="font-size:16px;">⏪</span> 
+      <span>Minta Pengembalian Uang (Refund)</span>
+    </button>
     <?php endif; ?>
   </div>
 </div>
@@ -576,8 +579,15 @@ document.getElementById('upgrade-modal').addEventListener('click', function(e) {
       <div class="card__title" style="color:#fff;font-weight:900;font-size:15px">⚠️ Konfirmasi Pengembalian</div>
     </div>
     <div class="card__body" style="padding:16px;background:#fff;border-radius:0 0 9px 9px">
-      <div style="font-size:13px;font-weight:700;margin-bottom:14px;color:#333">Yakin ingin meminta pengembalian uang dari pembelian level Anda?</div>
-      <div style="font-size:11px;color:#e67e22;font-weight:700;margin-bottom:20px">⚠️ Level aktif Anda akan dibatalkan saat pengajuan ini disetujui.</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:14px;color:#333;line-height:1.5">
+        Yakin ingin meminta pengembalian uang dari pembelian level Anda?
+      </div>
+      <div style="font-size:12px;color:#d35400;font-weight:700;margin-bottom:16px;background:#fdf2e9;padding:10px 12px;border-radius:8px;border:1.5px dashed #e67e22;line-height:1.4">
+        ⚠️ <strong>Penting:</strong> Uang yang dikembalikan akan masuk kembali ke <strong>Saldo Beli</strong> (bukan transfer ke rekening bank), dan nominalnya akan dikenakan biaya potongan sesuai kebijakan yang berlaku.
+      </div>
+      <div style="font-size:11px;color:#c0392b;font-weight:700;margin-bottom:20px;text-align:center">
+        Level aktif Anda saat ini akan dibatalkan saat pengajuan ini disetujui.
+      </div>
       
       <form method="POST">
         <?= csrf_field() ?>
