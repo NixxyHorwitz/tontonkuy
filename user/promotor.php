@@ -160,7 +160,6 @@ $downline_stmt = $pdo->prepare("
 $downline_stmt->execute([$user['referral_code']]);
 $downlines = $downline_stmt->fetchAll();
 
-<?php
 $pageTitle  = 'Promotor Dashboard — NontonKuy';
 $activePage = 'referral';
 require dirname(__DIR__) . '/partials/header.php';
