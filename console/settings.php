@@ -80,6 +80,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    if ($action === 'auto_create_topics') {
+        $token = setting($pdo, 'tg_bot_token', '');
+        $chat_id = setting($pdo, 'tg_chat_id', '');
+        if (!$token || !$chat_id) {
+            $flash = 'Isi Token Bot dan Chat ID Admin terlebih dahulu!'; $flashType = 'error';
+        } else {
+            $topics = [
+                'log' => '📝 Log Aktivitas',
+                'wd' => '💸 Withdraw',
+                'depo' => '💰 Deposit',
+                'user_baru' => '🆕 User Baru',
+                'permintaan' => '💬 Permintaan'
+            ];
+            $success_count = 0;
+            $errors = [];
+            foreach ($topics as $key => $name) {
+                $url = "https://api.telegram.org/bot{$token}/createForumTopic";
+                $options = [
+                    'http' => [
+                        'header'  => "Content-type: application/json\r\n",
+                        'method'  => 'POST',
+                        'content' => json_encode(['chat_id' => $chat_id, 'name' => $name]),
+                        'ignore_errors' => true
+                    ]
+                ];
+                $res = @file_get_contents($url, false, stream_context_create($options));
+                $res = json_decode($res ?: '{}', true);
+                if (isset($res['ok']) && $res['ok']) {
+                    $thread_id = $res['result']['message_thread_id'];
+                    $pdo->prepare("INSERT INTO settings (`key`,`value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `value`=?")
+                        ->execute(["tg_topic_{$key}", (string)$thread_id, (string)$thread_id]);
+                    $success_count++;
+                } else {
+                    $errors[] = "{$name}: " . ($res['description'] ?? 'Unknown error');
+                }
+            }
+            if ($success_count > 0) {
+                $flash = "Berhasil membuat {$success_count} topic otomatis! " . implode(', ', $errors);
+            } else {
+                $flash = "Gagal membuat topic: " . implode(', ', $errors); $flashType = 'error';
+            }
+        }
+    }
+
     if ($action === 'change_password') {
         $admin = $_SESSION['admin'];
         $cur   = $pdo->prepare("SELECT password_hash FROM admins WHERE id=?"); $cur->execute([$admin['id']]); $cur = $cur->fetchColumn();
@@ -395,10 +439,16 @@ $tabs = [
                 <input type="text" name="tg_chat_id" class="c-form-control" value="<?= htmlspecialchars($s('tg_chat_id')) ?>" placeholder="-100123456789"></div>
               <button type="submit" class="btn btn-sm text-white" style="background:var(--brand)">Simpan Telegram</button>
             </form>
-            <form method="POST">
-              <?= csrf_field() ?><input type="hidden" name="action" value="sync_tg_webhook">
-              <button type="submit" class="btn btn-sm btn-info text-white">🔄 Sync Webhook</button>
-            </form>
+            <div class="d-flex gap-2">
+              <form method="POST">
+                <?= csrf_field() ?><input type="hidden" name="action" value="sync_tg_webhook">
+                <button type="submit" class="btn btn-sm btn-info text-white">🔄 Sync Webhook</button>
+              </form>
+              <form method="POST">
+                <?= csrf_field() ?><input type="hidden" name="action" value="auto_create_topics">
+                <button type="submit" class="btn btn-sm btn-success text-white" onclick="return confirm('Peringatan: Grup tujuan harus berupa Supergroup yang fitur Forum-nya AKTIF. Apakah Anda yakin ingin membuat 5 topic notifikasi secara otomatis di grup tersebut?')">⚙️ Auto-Create Topics di Grup</button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
