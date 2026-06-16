@@ -16,7 +16,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'lc_tg_token','lc_tg_chat_id','lc_tg_forum',
             'openai_api_key','openai_model','ai_system_prompt',
             'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled','chat_admin_name','livechat_enabled','lc_site_url',
-            'lc_debug_panel','lc_attachment_enabled',
+            'lc_debug_panel','lc_attachment_enabled','lc_offline_msg',
         ];
         if (!isset($_POST['lc_attachment_enabled'])) $_POST['lc_attachment_enabled'] = '0';
         if (!isset($_POST['livechat_enabled'])) $_POST['livechat_enabled'] = '0';
@@ -730,6 +730,11 @@ require_once __DIR__ . '/partials/header.php';
               <input type="checkbox" name="livechat_enabled" value="1" <?= $cfg['livechat_enabled']==='1'?'checked':'' ?>>
               <strong style="color:#e0e0f0;">Livechat Aktif</strong>
             </label>
+          </div>
+          <div class="c-form-group">
+            <label class="c-label">Pesan Livechat Ditutup (Offline)</label>
+            <textarea name="lc_offline_msg" class="c-form-control" rows="2" placeholder="Layanan live chat saat ini tidak tersedia. Silakan coba lagi nanti pada jam operasional."><?= htmlspecialchars($cfg['lc_offline_msg'] ?? 'Layanan live chat saat ini tidak tersedia. Silakan coba lagi nanti pada jam operasional.') ?></textarea>
+            <small style="color:#444;font-size:11px;">Pesan yang ditampilkan ke user jika Livechat dimatikan.</small>
           </div>
           <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;">
             <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#888;cursor:pointer;">

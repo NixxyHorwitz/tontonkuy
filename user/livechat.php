@@ -72,7 +72,7 @@ body { margin: 0; padding: 0; overflow: hidden; background: var(--bg); }
   <div style="text-align:center;max-width:320px;">
     <div style="font-size:52px;color:var(--ink);margin-bottom:12px;"><i class="ph-fill ph-clock"></i></div>
     <h2 style="font-weight:900;font-size:20px;margin-bottom:8px;color:var(--ink);">Live Chat Sedang Ditutup</h2>
-    <p style="color:#64748b;font-size:13px;font-weight:700;margin-bottom:20px;">Layanan live chat saat ini tidak tersedia. Silakan coba lagi nanti pada jam operasional.</p>
+    <p style="color:#64748b;font-size:13px;font-weight:700;margin-bottom:20px;"><?= nl2br(htmlspecialchars(setting($pdo, 'lc_offline_msg', 'Layanan live chat saat ini tidak tersedia. Silakan coba lagi nanti pada jam operasional.'))) ?></p>
     <a href="/home" style="background:var(--yellow);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);border-radius:12px;font-weight:900;padding:12px 24px;font-size:13px;text-decoration:none;color:var(--ink);display:inline-flex;align-items:center;gap:6px;"><i class="ph-bold ph-arrow-left"></i> Kembali ke Beranda</a>
   </div>
 </div>
