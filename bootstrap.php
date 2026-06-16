@@ -114,8 +114,8 @@ function process_referral_commission(PDO $pdo, int $user_id, float $amount, int 
     if ($comm > 0) {
         $pdo->prepare("UPDATE users SET balance_wd = balance_wd + ?, total_earned = total_earned + ? WHERE id=?")
             ->execute([$comm, $comm, $upline_id]);
-        $pdo->prepare("INSERT INTO referral_commissions (upline_id, downline_id, amount, depth) VALUES (?,?,?,?)")
-            ->execute([$upline_id, $user_id, $comm, $depth]);
+        $pdo->prepare("INSERT INTO referral_commissions (user_id, from_user_id, amount) VALUES (?,?,?)")
+            ->execute([$upline_id, $user_id, $comm]);
     }
     process_referral_commission($pdo, $upline_id, $amount, $depth + 1);
 }
