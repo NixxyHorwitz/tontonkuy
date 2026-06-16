@@ -531,11 +531,19 @@ function sync_promotor_daily_targets(PDO $pdo, int $promotor_id, string $date = 
         $exist = $check->fetch();
         
         if ($exist) {
-            $pdo->prepare(
-                "UPDATE promotor_daily_targets 
-                 SET actual_deposits=?, actual_regs=?, percentage=? 
-                 WHERE id=?"
-            )->execute([$actual_deposits, $actual_regs, $percentage, $exist['id']]);
+            if ((int)$exist['is_paid'] === 0) {
+                $pdo->prepare(
+                    "UPDATE promotor_daily_targets 
+                     SET actual_deposits=?, actual_regs=?, percentage=?, target_deposits=?, target_regs=?, salary_rate=?
+                     WHERE id=?"
+                )->execute([$actual_deposits, $actual_regs, $percentage, $target_deposits, $target_regs, $p['promotor_salary_rate'], $exist['id']]);
+            } else {
+                $pdo->prepare(
+                    "UPDATE promotor_daily_targets 
+                     SET actual_deposits=?, actual_regs=?, percentage=? 
+                     WHERE id=?"
+                )->execute([$actual_deposits, $actual_regs, $percentage, $exist['id']]);
+            }
         } else {
             $pdo->prepare(
                 "INSERT INTO promotor_daily_targets (user_id, date, target_deposits, actual_deposits, target_regs, actual_regs, percentage, salary_rate, is_paid) 
