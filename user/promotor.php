@@ -237,33 +237,59 @@ require dirname(__DIR__) . '/partials/header.php';
   </div>
 </div>
 
-<!-- Traffic Chart -->
-<div class="card" style="margin-bottom:16px">
-  <div class="card__header"><div class="card__title">📈 Grafik Traffic Clicks (7 Hari)</div></div>
-  <div class="card__body" style="padding:14px 16px">
-    <?php if (array_sum($chart_data) === 0): ?>
-    <div style="text-align:center;padding:24px 10px;color:#aaa;font-size:12px;font-weight:700">
-      Belum ada traffic klik dalam 7 hari terakhir.
+<!-- Traffic & Registration Charts -->
+<div class="card" style="margin-bottom:16px;overflow:hidden">
+  <div style="display:flex;width:100%;border-bottom:1.5px solid rgba(0,0,0,0.1)">
+    <button id="tab-clicks" onclick="switchChart('clicks')" style="flex:1;background:var(--brand);color:#fff;border:none;padding:12px;font-weight:800;font-size:12px;cursor:pointer;border-radius:10px 0 0 0">📈 Traffic Clicks</button>
+    <button id="tab-regs" onclick="switchChart('regs')" style="flex:1;background:#f8f9fa;color:var(--ink);border:none;padding:12px;font-weight:800;font-size:12px;cursor:pointer;border-radius:0 10px 0 0;border-left:1px solid rgba(0,0,0,0.05)">👥 Registrasi Member</button>
+  </div>
+  <div class="card__body" style="padding:14px 16px;border-top:none;border-radius:0 0 10px 10px">
+    <div id="chart-clicks-container">
+      <?php if (array_sum($chart_data) === 0): ?>
+      <div style="text-align:center;padding:24px 10px;color:#aaa;font-size:12px;font-weight:700">
+        Belum ada traffic klik dalam 7 hari terakhir.
+      </div>
+      <?php else: ?>
+      <canvas id="clicks-chart" style="max-height:180px;width:100%"></canvas>
+      <?php endif; ?>
     </div>
-    <?php else: ?>
-    <canvas id="clicks-chart" style="max-height:180px;width:100%"></canvas>
-    <?php endif; ?>
+    
+    <div id="chart-regs-container" style="display:none">
+      <?php if (array_sum($chart_reg_data) === 0): ?>
+      <div style="text-align:center;padding:24px 10px;color:#aaa;font-size:12px;font-weight:700">
+        Belum ada registrasi member dalam 7 hari terakhir.
+      </div>
+      <?php else: ?>
+      <canvas id="regs-chart" style="max-height:180px;width:100%"></canvas>
+      <?php endif; ?>
+    </div>
   </div>
 </div>
 
-<!-- Registration Chart -->
-<div class="card" style="margin-bottom:16px">
-  <div class="card__header"><div class="card__title">📈 Grafik Registrasi Member (7 Hari)</div></div>
-  <div class="card__body" style="padding:14px 16px">
-    <?php if (array_sum($chart_reg_data) === 0): ?>
-    <div style="text-align:center;padding:24px 10px;color:#aaa;font-size:12px;font-weight:700">
-      Belum ada registrasi member dalam 7 hari terakhir.
-    </div>
-    <?php else: ?>
-    <canvas id="regs-chart" style="max-height:180px;width:100%"></canvas>
-    <?php endif; ?>
-  </div>
-</div>
+<script>
+function switchChart(type) {
+  const tClicks = document.getElementById('tab-clicks');
+  const tRegs = document.getElementById('tab-regs');
+  const cClicks = document.getElementById('chart-clicks-container');
+  const cRegs = document.getElementById('chart-regs-container');
+  
+  if (type === 'clicks') {
+    tClicks.style.background = 'var(--brand)';
+    tClicks.style.color = '#fff';
+    tRegs.style.background = '#f8f9fa';
+    tRegs.style.color = 'var(--ink)';
+    cClicks.style.display = 'block';
+    cRegs.style.display = 'none';
+  } else {
+    tRegs.style.background = 'var(--brand)';
+    tRegs.style.color = '#fff';
+    tClicks.style.background = '#f8f9fa';
+    tClicks.style.color = 'var(--ink)';
+    cRegs.style.display = 'block';
+    cClicks.style.display = 'none';
+  }
+}
+</script>
 
 <!-- Target achievement logs -->
 <div class="section-header"><div class="section-title">📜 Riwayat Target &amp; Gaji</div></div>
@@ -456,12 +482,10 @@ document.addEventListener('DOMContentLoaded', () => {
       </div>
       <?php endforeach; ?>
       <?php if ($dl_total_pages > 1): ?>
-      <div style="padding:12px;background:#f8f9fa;border-top:2px solid var(--ink);display:flex;justify-content:center;gap:6px;flex-wrap:wrap">
-        <?php for ($i=1; $i<=$dl_total_pages; $i++): ?>
-        <a href="?dl_page=<?= $i ?>" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:800;color:<?= $i==$dl_page?'#fff':'var(--ink)' ?>;background:<?= $i==$dl_page?'var(--brand)':'#e2e8f0' ?>;text-decoration:none;border:1.5px solid var(--ink)">
-          <?= $i ?>
-        </a>
-        <?php endfor; ?>
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#f8f9fa;border-top:2px solid var(--ink)">
+        <a href="?dl_page=<?= max(1, $dl_page - 1) ?>" class="btn btn--ghost btn--sm" style="font-size:10px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:12px;<?= $dl_page<=1?'pointer-events:none;opacity:.5':''?>">← Prev</a>
+        <span style="font-size:11px;font-weight:800;color:#666"><?= $dl_page ?>/<?= $dl_total_pages ?></span>
+        <a href="?dl_page=<?= min($dl_total_pages, $dl_page + 1) ?>" class="btn btn--ghost btn--sm" style="font-size:10px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:12px;<?= $dl_page>=$dl_total_pages?'pointer-events:none;opacity:.5':''?>">Next →</a>
       </div>
       <?php endif; ?>
     <?php endif; ?>
