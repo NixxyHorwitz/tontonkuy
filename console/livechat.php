@@ -152,6 +152,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: /console/livechat.php?t=webhook'); exit;
     }
 
+    // Nuclear: delete ALL topics (brute force range) — General is protected by Telegram
+    if ($tab === 'nuclear_clear_topics') {
+        header('Content-Type: application/json');
+        $chatId = setting($pdo, 'lc_tg_chat_id', '');
+        $token  = setting($pdo, 'lc_tg_token', '');
+        if (!$chatId || !$token) {
+            echo json_encode(['ok' => false, 'error' => 'Token/ChatID belum diset']);
+            exit;
+        }
+        // Determine range: max tg_thread_id in DB + buffer, min 500
+        $maxDb = (int)$pdo->query("SELECT COALESCE(MAX(tg_thread_id),0) FROM chat_sessions WHERE tg_thread_id IS NOT NULL")->fetchColumn();
+        $maxRange = max($maxDb + 200, 500);
+        $deleted = 0; $failed = 0;
+        set_time_limit(120);
+        for ($tid = 2; $tid <= $maxRange; $tid++) {
+            $ch = curl_init("https://api.telegram.org/bot{$token}/deleteForumTopic");
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => json_encode(['chat_id' => $chatId, 'message_thread_id' => $tid]),
+                CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                CURLOPT_TIMEOUT        => 4,
+            ]);
+            $res  = curl_exec($ch); curl_close($ch);
+            $data = json_decode($res ?: '{}', true);
+            if (!empty($data['ok'])) { $deleted++; } else { $failed++; }
+            // Telegram rate limit: max ~30 req/s — small sleep every 10
+            if ($tid % 10 === 0) usleep(300000); // 300ms per 10 requests
+        }
+        // Clear tg_thread_id in DB for all sessions
+        $pdo->exec("UPDATE chat_sessions SET tg_thread_id=NULL");
+        echo json_encode(['ok' => true, 'deleted' => $deleted, 'failed' => $failed, 'range' => "2–{$maxRange}"]);
+        exit;
+    }
+
     // Bulk delete sessions
     if ($tab === 'bulk_delete') {
         $ids = array_filter(array_map('intval', (array)($_POST['session_ids'] ?? [])));
@@ -857,15 +892,63 @@ require_once __DIR__ . '/partials/header.php';
             </button>
           </form>
 
+          <!-- Nuclear: delete ALL topics -->
+          <button type="button" id="btn-nuclear-topics" onclick="nuclearClearTopics()"
+            style="background:rgba(139,0,0,.2);border:1.5px solid rgba(200,0,0,.5);color:#ff6b6b;padding:10px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+            ☢️ Hapus SEMUA Topics (Nuclear)
+          </button>
+
         </div>
         <p style="font-size:11px;color:#555;margin-top:10px;margin-bottom:0;">
           ⚠️ Hanya topics yang dibuat oleh bot (punya <code>tg_thread_id</code> di database) yang akan dihapus.
           Topic <strong>General</strong> dan topic yang dibuat manual tidak akan tersentuh.
         </p>
+        <div id="nuclear-result" style="display:none;margin-top:12px;padding:12px 16px;border-radius:8px;font-size:12px;font-family:monospace;"></div>
       </div>
     </div>
   </div>
 </div>
+
+<script>
+async function nuclearClearTopics() {
+  if (!confirm('HAPUS SEMUA TOPICS TELEGRAM? Bot akan mencoba menghapus semua topic ID mulai dari 2 hingga batas terdeteksi. General topic akan dilewati otomatis oleh Telegram. TIDAK BISA DIBATALKAN!')) return;
+
+  const btn = document.getElementById('btn-nuclear-topics');
+  const result = document.getElementById('nuclear-result');
+  btn.disabled = true;
+  btn.innerHTML = '⏳ Menghapus... (bisa 30-60 detik, mohon tunggu)';
+  result.style.display = 'block';
+  result.style.background = 'rgba(66,133,244,.08)';
+  result.style.border = '1px solid rgba(66,133,244,.2)';
+  result.style.color = '#a0b4f0';
+  result.textContent = '⏳ Sedang memproses... bot mencoba menghapus semua topic. Jangan tutup halaman ini.';
+
+  try {
+    const fd = new FormData();
+    fd.append('tab', 'nuclear_clear_topics');
+    const res  = await fetch('/console/livechat.php', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (data.ok) {
+      result.style.background = 'rgba(76,175,130,.12)';
+      result.style.border = '1px solid rgba(76,175,130,.3)';
+      result.style.color = '#4CAF82';
+      result.textContent = `✅ Selesai! Topics dihapus: ${data.deleted} | Gagal/tidak ada: ${data.failed} | Range dicek: ${data.range}`;
+    } else {
+      result.style.background = 'rgba(244,78,59,.1)';
+      result.style.border = '1px solid rgba(244,78,59,.3)';
+      result.style.color = '#F44E3B';
+      result.textContent = '❌ Error: ' + (data.error || 'Unknown');
+    }
+  } catch(e) {
+    result.style.background = 'rgba(244,78,59,.1)';
+    result.style.border = '1px solid rgba(244,78,59,.3)';
+    result.style.color = '#F44E3B';
+    result.textContent = '❌ Gagal: ' + e.message;
+  }
+  btn.disabled = false;
+  btn.innerHTML = '☢️ Hapus SEMUA Topics (Nuclear)';
+}
+</script>
 <?php endif; ?>
 
 <?php require_once __DIR__ . '/partials/footer.php'; ?>
