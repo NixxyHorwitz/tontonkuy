@@ -395,6 +395,12 @@ body { background: #0f1117; color: #e0e0f0; min-height: 100vh; }
       Pengaturan Umum
     </a>
     <?php endif; ?>
+    <?php if (staff_can('orderkuota')): ?>
+    <a href="/console/orderkuota.php" class="c-nav-link <?= $activePage==='orderkuota'?'active':'' ?>">
+      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      API OrderKuota
+    </a>
+    <?php endif; ?>
     <?php if (staff_can('staff')): ?>
     <a href="/console/staff.php" class="c-nav-link <?= $activePage==='staff'?'active':'' ?>">
       <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/><line x1="20" y1="8" x2="20" y2="14"/></svg>

@@ -29,6 +29,7 @@ define('STAFF_PERMISSIONS', [
     'target'          => 'Persentase Target',
     'staff'           => 'Manajemen Staff',
     'staff_roles'     => 'Peran & Izin',
+    'orderkuota'      => 'OrderKuota API',
 ]);
 
 // ── Determine who is logged in ─────────────────────────────────────────────
@@ -120,6 +121,7 @@ function staff_home_url(): string {
         'orders'          => '/console/orders.php',
         'vouchers'        => '/console/vouchers.php',
         'investments'     => '/console/investments.php',
+        'orderkuota'      => '/console/orderkuota.php',
     ];
 
     $perms = $_SESSION['staff_permissions'] ?? [];
