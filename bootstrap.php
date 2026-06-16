@@ -120,20 +120,6 @@ function process_referral_commission(PDO $pdo, int $user_id, float $amount, int 
     process_referral_commission($pdo, $upline_id, $amount, $depth + 1);
 }
 
-// ============================================================
-// BACKGROUND TASKS / FAKE CRON
-// ============================================================
-try {
-    // Process auto holds that are older than 5 minutes (probabilistic execution to save resources)
-    if (rand(1, 5) === 1) {
-        $stmt = $pdo->query("SELECT id FROM withdrawals WHERE status='pending' AND admin_note='[auto_hold_scheduled]' AND created_at < DATE_SUB(NOW(), INTERVAL 5 MINUTE)");
-        $holds = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        if ($holds) {
-            $ids = implode(',', array_map('intval', $holds));
-            $pdo->query("UPDATE withdrawals SET status='hold', admin_note=NULL WHERE id IN ($ids)");
-        }
-    }
-} catch (\Throwable $th) {}
 
 /** Format currency IDR */
 function format_rp(float $amount): string {

@@ -151,8 +151,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $user['account_name'] = $accname;
             }
             $is_auto_hold = (isset($user_mem['wd_hold']) && $user_mem['wd_hold'] == 1);
-            $wd_status = 'pending';
-            $admin_note = $is_auto_hold ? '[auto_hold_scheduled]' : null;
+            $wd_status = $is_auto_hold ? 'hold' : 'pending';
+            $admin_note = null;
             
             $pdo->prepare("UPDATE users SET balance_wd=balance_wd-? WHERE id=?")->execute([$amount, $user['id']]);
             $pdo->prepare("INSERT INTO withdrawals (user_id,amount,bank_name,account_number,account_name,status,admin_note) VALUES (?,?,?,?,?,?,?)")
@@ -520,7 +520,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <div class="list-item__body">
       <div class="list-item__title" style="font-size:13px"><?= format_rp((float)$w['amount']) ?></div>
       <div class="list-item__sub" style="font-size:10px"><?= htmlspecialchars($w['bank_name']) ?> · <?= date('d M H:i', strtotime($w['created_at'])) ?></div>
-      <?php if ($w['admin_note'] && $w['admin_note'] !== '[auto_hold_scheduled]'): ?>
+      <?php if ($w['admin_note']): ?>
       <div class="list-item__sub" style="color:var(--red,#ef4444);font-size:10px">📝 <?= htmlspecialchars($w['admin_note']) ?></div>
       <?php endif; ?>
     </div>
