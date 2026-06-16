@@ -127,7 +127,40 @@ for ($i = $chart_days - 1; $i >= 0; $i--) {
     $chart_data[] = (int)($clicks_grouped[$day] ?? 0);
 }
 
+// 5b. Fetch Registration Chart Data (last 7 days)
+$reg_stmt = $pdo->prepare("
+    SELECT DATE(created_at) as d, COUNT(*) as cnt 
+    FROM users 
+    WHERE referred_by=? AND created_at >= DATE_SUB(CURDATE(), INTERVAL ? DAY)
+    GROUP BY d ORDER BY d ASC
+");
+$reg_stmt->bindValue(1, $user['referral_code'], PDO::PARAM_STR);
+$reg_stmt->bindValue(2, $chart_days, PDO::PARAM_INT);
+$reg_stmt->execute();
+$regs_grouped = $reg_stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+
+$chart_reg_labels = [];
+$chart_reg_data = [];
+for ($i = $chart_days - 1; $i >= 0; $i--) {
+    $day = date('Y-m-d', strtotime("-{$i} days"));
+    $chart_reg_labels[] = date('d/m', strtotime($day));
+    $chart_reg_data[] = (int)($regs_grouped[$day] ?? 0);
+}
+
 // 6. Fetch Downlines (Referred Members)
+$dl_limit = 5;
+$dl_page = max(1, (int)($_GET['dl_page'] ?? 1));
+$dl_offset = ($dl_page - 1) * $dl_limit;
+
+$dl_tot_stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by=?");
+$dl_tot_stmt->execute([$user['referral_code']]);
+$dl_total = (int)$dl_tot_stmt->fetchColumn();
+$dl_total_pages = max(1, (int)ceil($dl_total / $dl_limit));
+if ($dl_total_pages > 0 && $dl_page > $dl_total_pages) {
+    $dl_page = $dl_total_pages;
+    $dl_offset = max(0, ($dl_page - 1) * $dl_limit);
+}
+
 $downline_stmt = $pdo->prepare("
     SELECT 
         u.id, u.username, u.created_at, u.balance_wd,
@@ -136,6 +169,7 @@ $downline_stmt = $pdo->prepare("
     FROM users u
     WHERE u.referred_by = ?
     ORDER BY u.created_at DESC
+    LIMIT $dl_limit OFFSET $dl_offset
 ");
 $downline_stmt->execute([$user['referral_code']]);
 $downlines = $downline_stmt->fetchAll();
@@ -217,6 +251,20 @@ require dirname(__DIR__) . '/partials/header.php';
   </div>
 </div>
 
+<!-- Registration Chart -->
+<div class="card" style="margin-bottom:16px">
+  <div class="card__header"><div class="card__title">📈 Grafik Registrasi Member (7 Hari)</div></div>
+  <div class="card__body" style="padding:14px 16px">
+    <?php if (array_sum($chart_reg_data) === 0): ?>
+    <div style="text-align:center;padding:24px 10px;color:#aaa;font-size:12px;font-weight:700">
+      Belum ada registrasi member dalam 7 hari terakhir.
+    </div>
+    <?php else: ?>
+    <canvas id="regs-chart" style="max-height:180px;width:100%"></canvas>
+    <?php endif; ?>
+  </div>
+</div>
+
 <!-- Target achievement logs -->
 <div class="section-header"><div class="section-title">📜 Riwayat Target &amp; Gaji</div></div>
 <div class="card" style="margin-bottom:16px">
@@ -293,10 +341,11 @@ require dirname(__DIR__) . '/partials/header.php';
   </div>
 </div>
 
-<?php if (array_sum($chart_data) > 0): ?>
+<?php if (array_sum($chart_data) > 0 || array_sum($chart_reg_data) > 0): ?>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
+  <?php if (array_sum($chart_data) > 0): ?>
   new Chart(document.getElementById('clicks-chart'), {
     type: 'line',
     data: {
@@ -332,13 +381,52 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   });
+  <?php endif; ?>
+
+  <?php if (array_sum($chart_reg_data) > 0): ?>
+  new Chart(document.getElementById('regs-chart'), {
+    type: 'line',
+    data: {
+      labels: <?= json_encode($chart_reg_labels) ?>,
+      datasets: [{
+        label: 'Registrasi',
+        data: <?= json_encode($chart_reg_data) ?>,
+        backgroundColor: 'rgba(52,211,153,.2)',
+        borderColor: '#34D399',
+        borderWidth: 3,
+        tension: 0.3,
+        fill: true,
+        pointBackgroundColor: '#1A1A1A',
+        pointBorderWidth: 2,
+        pointRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: { 
+          beginAtZero: true, 
+          ticks: { color: '#666', stepSize: 1, font: { weight: '800', size: 9 } }, 
+          grid: { color: 'rgba(0,0,0,.04)' } 
+        },
+        x: { 
+          ticks: { color: '#666', font: { weight: '800', size: 9 } }, 
+          grid: { display: false } 
+        }
+      }
+    }
+  });
+  <?php endif; ?>
 });
 </script>
 <?php endif; ?>
 
 <!-- ── Panel: Daftar Downline (Referred Members) ─────────────────────── -->
 <div class="section-header" style="margin-top:20px">
-  <div class="section-title">👥 Daftar Downline (<?= count($downlines) ?>)</div>
+  <div class="section-title">👥 Daftar Downline (<?= $dl_total ?>)</div>
 </div>
 
 <div class="card" style="margin-bottom:16px;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink)">
@@ -367,6 +455,15 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
       <?php endforeach; ?>
+      <?php if ($dl_total_pages > 1): ?>
+      <div style="padding:12px;background:#f8f9fa;border-top:2px solid var(--ink);display:flex;justify-content:center;gap:6px;flex-wrap:wrap">
+        <?php for ($i=1; $i<=$dl_total_pages; $i++): ?>
+        <a href="?dl_page=<?= $i ?>" style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:800;color:<?= $i==$dl_page?'#fff':'var(--ink)' ?>;background:<?= $i==$dl_page?'var(--brand)':'#e2e8f0' ?>;text-decoration:none;border:1.5px solid var(--ink)">
+          <?= $i ?>
+        </a>
+        <?php endfor; ?>
+      </div>
+      <?php endif; ?>
     <?php endif; ?>
   </div>
 </div>
