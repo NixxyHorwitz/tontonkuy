@@ -94,6 +94,64 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    // Reset ALL chat sessions
+    if ($tab === 'reset_all_sessions') {
+        $chatId = setting($pdo, 'lc_tg_chat_id', '');
+        $token  = setting($pdo, 'lc_tg_token', '');
+        // Delete all Telegram topics created by bot
+        if ($chatId && $token) {
+            $threads = $pdo->query("SELECT tg_thread_id FROM chat_sessions WHERE tg_thread_id IS NOT NULL")->fetchAll();
+            foreach ($threads as $t) {
+                if ((int)$t['tg_thread_id'] > 0) {
+                    $ch = curl_init("https://api.telegram.org/bot{$token}/deleteForumTopic");
+                    curl_setopt_array($ch, [
+                        CURLOPT_RETURNTRANSFER => true,
+                        CURLOPT_POST           => true,
+                        CURLOPT_POSTFIELDS     => json_encode(['chat_id' => $chatId, 'message_thread_id' => (int)$t['tg_thread_id']]),
+                        CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                        CURLOPT_TIMEOUT        => 5,
+                    ]);
+                    curl_exec($ch); curl_close($ch);
+                }
+            }
+        }
+        $pdo->exec("DELETE FROM chat_messages");
+        $pdo->exec("DELETE FROM chat_sessions");
+        $_SESSION['wh_result'] = ['ok' => true, 'webhook_url' => '(reset) Semua sesi dan topics berhasil dihapus.'];
+        header('Location: /console/livechat.php?t=webhook'); exit;
+    }
+
+    // Delete all Telegram topics only (keep DB sessions)
+    if ($tab === 'delete_tg_topics') {
+        $chatId = setting($pdo, 'lc_tg_chat_id', '');
+        $token  = setting($pdo, 'lc_tg_token', '');
+        $deleted = 0; $failed = 0;
+        if ($chatId && $token) {
+            $threads = $pdo->query("SELECT id, tg_thread_id FROM chat_sessions WHERE tg_thread_id IS NOT NULL")->fetchAll();
+            foreach ($threads as $t) {
+                if ((int)$t['tg_thread_id'] <= 0) continue;
+                $ch = curl_init("https://api.telegram.org/bot{$token}/deleteForumTopic");
+                curl_setopt_array($ch, [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_POST           => true,
+                    CURLOPT_POSTFIELDS     => json_encode(['chat_id' => $chatId, 'message_thread_id' => (int)$t['tg_thread_id']]),
+                    CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                    CURLOPT_TIMEOUT        => 5,
+                ]);
+                $res  = curl_exec($ch); curl_close($ch);
+                $data = json_decode($res ?: '{}', true);
+                if (!empty($data['ok'])) {
+                    $pdo->prepare("UPDATE chat_sessions SET tg_thread_id=NULL WHERE id=?")->execute([$t['id']]);
+                    $deleted++;
+                } else {
+                    $failed++;
+                }
+            }
+        }
+        $_SESSION['wh_result'] = ['ok' => true, 'webhook_url' => "Topics dihapus: {$deleted}, gagal: {$failed}. (Sesi DB tetap ada)"];
+        header('Location: /console/livechat.php?t=webhook'); exit;
+    }
+
     // Bulk delete sessions
     if ($tab === 'bulk_delete') {
         $ids = array_filter(array_map('intval', (array)($_POST['session_ids'] ?? [])));
@@ -765,6 +823,45 @@ require_once __DIR__ . '/partials/header.php';
           <li>Setiap sesi chat baru = 1 Thread baru di grup</li>
           <li>Balas thread di Telegram → pesan masuk ke chat user</li>
         </ol>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Danger Zone card -->
+<div class="row g-3 mt-2">
+  <div class="col-12">
+    <div class="c-card" style="border-color:rgba(244,78,59,.3);">
+      <div class="c-card-header" style="background:rgba(244,78,59,.07);border-bottom-color:rgba(244,78,59,.2);">
+        <span class="c-card-title" style="color:#F44E3B;">⚠️ Danger Zone</span>
+        <span style="font-size:11px;color:#555;">Tindakan ini tidak bisa dibatalkan</span>
+      </div>
+      <div class="c-card-body">
+        <div style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+
+          <!-- Reset all sessions + delete topics -->
+          <form method="POST" onsubmit="return confirm('RESET SEMUA SESI? Ini akan menghapus semua chat dari DB dan semua topics dari Telegram. Tidak bisa dibatalkan!');">
+            <input type="hidden" name="tab" value="reset_all_sessions">
+            <button type="submit"
+              style="background:rgba(244,78,59,.15);border:1.5px solid rgba(244,78,59,.4);color:#F44E3B;padding:10px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+              🗑️ Reset Semua Sesi + Topics
+            </button>
+          </form>
+
+          <!-- Delete Telegram topics only -->
+          <form method="POST" onsubmit="return confirm('Hapus semua Topics Telegram yang dibuat bot? Data sesi di database TETAP tersimpan.');">
+            <input type="hidden" name="tab" value="delete_tg_topics">
+            <button type="submit"
+              style="background:rgba(251,188,4,.1);border:1.5px solid rgba(251,188,4,.3);color:#FBBC04;padding:10px 20px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+              🧹 Hapus Topics Telegram Saja
+            </button>
+          </form>
+
+        </div>
+        <p style="font-size:11px;color:#555;margin-top:10px;margin-bottom:0;">
+          ⚠️ Hanya topics yang dibuat oleh bot (punya <code>tg_thread_id</code> di database) yang akan dihapus.
+          Topic <strong>General</strong> dan topic yang dibuat manual tidak akan tersentuh.
+        </p>
       </div>
     </div>
   </div>
