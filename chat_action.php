@@ -9,6 +9,9 @@ require_once __DIR__ . '/bootstrap.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
+// Reconnect MySQL in case connection has gone away (error 2006/2013)
+pdo_reconnect($pdo);
+
 $action = $_GET['action'] ?? $_POST['action'] ?? '';
 error_log('[chat_action] action=' . $action . ' method=' . ($_SERVER['REQUEST_METHOD'] ?? '?') . ' cookie=' . (isset($_COOKIE['chat_session']) ? 'yes' : 'no'));
 

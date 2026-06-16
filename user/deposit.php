@@ -22,6 +22,9 @@ if (empty($_SESSION[$_ftk])) $_SESSION[$_ftk] = bin2hex(random_bytes(16));
 $_form_token = $_SESSION[$_ftk];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Reconnect MySQL in case connection has gone away (error 2006/2013)
+    pdo_reconnect($pdo);
+    
     $submitted_ftk = $_POST['form_token'] ?? '';
     if (!hash_equals($_SESSION[$_ftk] ?? '', $submitted_ftk)) {
         $flash = '⚠️ Request kamu gagal diproses atau gak valid. Coba refresh halaman dulu ya!';

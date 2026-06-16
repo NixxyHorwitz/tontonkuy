@@ -12,6 +12,9 @@ $dep = $dep->fetch();
 if (!$dep || $dep['method'] !== 'qris') redirect('/deposit');
 
 // ── AJAX: check_status — HARUS sebelum redirect confirmed ──
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    pdo_reconnect($pdo);
+}
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'check_status') {
     header('Content-Type: application/json; charset=utf-8');
     $st = $pdo->prepare("SELECT status FROM deposits WHERE id=? AND user_id=?");

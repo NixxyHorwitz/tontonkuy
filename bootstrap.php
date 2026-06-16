@@ -55,12 +55,31 @@ function createPdo(): PDO {
         PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
         PDO::ATTR_EMULATE_PREPARES   => false,
+        PDO::MYSQL_ATTR_INIT_COMMAND => "SET time_zone='+07:00', wait_timeout=600",
     ]);
+}
+
+/**
+ * Reconnect PDO if the MySQL connection has gone away (error 2006 / 2013).
+ * Usage: pdo_reconnect($pdo); before any critical query block.
+ */
+function pdo_reconnect(PDO &$pdo): void {
+    try {
+        $pdo->query('SELECT 1');
+    } catch (PDOException $e) {
+        $code = (int)$e->errorInfo[1];
+        if ($code === 2006 || $code === 2013) {
+            try {
+                $pdo = createPdo();
+            } catch (\Throwable) {
+                // silently fail, the next query will throw a proper error
+            }
+        }
+    }
 }
 
 try {
     $pdo = createPdo();
-    $pdo->exec("SET time_zone = '+07:00'");
 } catch (PDOException $e) {
     http_response_code(503);
     die('<h1 style="font-family:sans-serif">⚠️ Database Error</h1><p>Please start MySQL and check .env config</p><pre style="background:#f5f5f5;padding:12px;border-radius:6px">' . htmlspecialchars($e->getMessage()) . '</pre>');
