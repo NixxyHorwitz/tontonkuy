@@ -132,7 +132,7 @@ try {
     if ($tg_msg_id) {
         edit_telegram_notif($pdo, (int)$tg_msg_id, $msg, []);
     } else {
-        send_telegram_notif($pdo, $msg);
+        send_telegram_notif($pdo, $msg, [], 'depo');
     }
 
     header('Content-Type: application/json; charset=utf-8');

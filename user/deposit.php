@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
             [['text'=>'✅ Approve', 'callback_data'=>'depo_approve_'.$dep_id], ['text'=>'❌ Reject', 'callback_data'=>'depo_reject_'.$dep_id]],
             [['text'=>'⚡ Acc Expired', 'callback_data'=>'depo_accexp_'.$dep_id], ['text'=>'🔄 Refresh Status', 'callback_data'=>'refresh_depo_'.$dep_id]]
         ];
-        send_telegram_notif($pdo, $msg, $kb);
+        send_telegram_notif($pdo, $msg, $kb, 'depo');
         
         // Success — regenerate token for next request
         $_SESSION[$_ftk] = bin2hex(random_bytes(16));
@@ -120,7 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'submi
             [['text'=>'⚡ Acc Expired', 'callback_data'=>'depo_accexp_'.$dep_id], ['text'=>'🔄 Refresh Status', 'callback_data'=>'refresh_depo_'.$dep_id]]
         ];
         
-        $tg_msg_id = send_telegram_notif($pdo, $msg, $kb);
+        $tg_msg_id = send_telegram_notif($pdo, $msg, $kb, 'depo');
         if ($tg_msg_id) {
             $pdo->prepare("UPDATE deposits SET tg_msg_id = ? WHERE id = ?")->execute([$tg_msg_id, $dep_id]);
         }

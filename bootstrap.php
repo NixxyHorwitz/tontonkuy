@@ -365,7 +365,7 @@ function require_admin(): array {
 
 
 /** Send message to Telegram Admin Group/Channel */
-function send_telegram_notif(PDO $pdo, string $message, array $inline_keyboard = []): ?int {
+function send_telegram_notif(PDO $pdo, string $message, array $inline_keyboard = [], ?string $topic = null): ?int {
     $token = setting($pdo, 'tg_bot_token', '');
     $chat_id = setting($pdo, 'tg_chat_id', '');
     if (!$token || !$chat_id) return null;
@@ -376,6 +376,13 @@ function send_telegram_notif(PDO $pdo, string $message, array $inline_keyboard =
         'text' => $message,
         'parse_mode' => 'HTML'
     ];
+    
+    if ($topic) {
+        $thread_id = setting($pdo, "tg_topic_{$topic}", '');
+        if ($thread_id) {
+            $post['message_thread_id'] = $thread_id;
+        }
+    }
     
     if (!empty($inline_keyboard)) {
         $post['reply_markup'] = json_encode(['inline_keyboard' => $inline_keyboard]);

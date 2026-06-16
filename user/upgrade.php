@@ -116,7 +116,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     [['text'=>'✅ Approve Refund', 'callback_data'=>'req_approve_'.$req_id], ['text'=>'❌ Reject', 'callback_data'=>'req_reject_'.$req_id]],
                     [['text'=>"⚙️ Ubah Potongan ({$pct}%)", 'callback_data'=>'edit_refcut_'.$user['id']], ['text'=>'🔒 Cabut Akses Refund', 'callback_data'=>'toggle_ref_'.$user['id']]]
                 ];
-                send_telegram_notif($pdo, $msg, $kb);
+                send_telegram_notif($pdo, $msg, $kb, 'permintaan');
                 
                 $flash = '✅ Permintaan pengembalian dana kamu telah masuk dan sedang diverifikasi oleh sistem secara otomatis.';
             }
@@ -219,7 +219,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $msgNotif .= "🏆 Level Baru: <b>{$chosen['name']}</b>\n";
                     $msgNotif .= "💰 Harga: " . format_rp((float)$final_price) . "\n";
                     $msgNotif .= "🕐 Waktu: " . date('d M Y H:i:s');
-                    send_telegram_notif($pdo, $msgNotif);
+                    send_telegram_notif($pdo, $msgNotif, [], 'log');
                 } else {
                     $pdo->rollBack();
                     $flash = 'Saldo Beli kamu kurang nih. Transaksi gagal ya.'; $flashType = 'error';

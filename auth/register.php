@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  . "🕐 Waktu: " . date('d M Y H:i:s');
             $site_url = rtrim(setting($pdo, 'lc_site_url', ''), '/');
             $kb_reg = $site_url ? [[['text' => '👤 Lihat Detail User', 'url' => "{$site_url}/console/user_detail.php?id={$new_id}"]]] : [];
-            send_telegram_notif($pdo, $msg, $kb_reg);
+            send_telegram_notif($pdo, $msg, $kb_reg, 'user_baru');
             
             // Reset rate limit
             unset($_SESSION[$ip_key . '_attempts'], $_SESSION[$ip_key . '_lock']);

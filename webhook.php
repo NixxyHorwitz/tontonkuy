@@ -139,6 +139,7 @@ if (isset($update['callback_query'])) {
     $msg_id  = $cb['message']['message_id'] ?? '';
     $cb_id   = $cb['id'] ?? '';
     $orig    = $cb['message']['text'] ?? '';
+    $thread_id = $cb['message']['message_thread_id'] ?? null;
 
     if ((string)$chat_id !== (string)$admin_chat_id) {
         answer_cb($token, $cb_id, "⚠️ Akses Ditolak! Chat ID anda ({$chat_id}) tidak cocok dengan ID Admin di pengaturan.");
@@ -434,7 +435,7 @@ if (isset($update['callback_query'])) {
     if (preg_match('/^edit_refcut_(\d+)$/', $data, $m)) {
         $uid = (int)$m[1];
         answer_cb($token, $cb_id, "📝 Ketik persentase potongan baru (contoh: 25)...");
-        $prompt_msg_id = send_msg($token, $chat_id, "📝 <b>Ketik angka persentase potongan refund baru</b> (0 - 100) untuk User ID: <b>{$uid}</b> lalu kirim sebagai pesan.", []);
+        $prompt_msg_id = send_msg($token, $chat_id, "📝 <b>Ketik angka persentase potongan refund baru</b> (0 - 100) untuk User ID: <b>{$uid}</b> lalu kirim sebagai pesan.", [], $thread_id);
         $state = implode('|', ['awaiting_refcut', $uid, $msg_id, base64_encode($orig), (int)$prompt_msg_id]);
         set_tg_state($pdo, $chat_id, $state);
         http_response_code(200); exit;
@@ -471,7 +472,7 @@ if (isset($update['callback_query'])) {
         // Send prompt and capture its message_id
         $prompt_msg_id = send_msg($token, $chat_id,
             "📝 <b>Ketik alasan {$label}</b> untuk {$type} #{$id} (User: <b>{$uname}</b>) dan kirim sebagai pesan.\n\nAtau tekan tombol di bawah untuk langsung memproses tanpa alasan.",
-            [[['text' => '⏭ Skip (Tanpa Alasan)', 'callback_data' => "{$act_id}_skip_{$id}"]]]
+            [[['text' => '⏭ Skip (Tanpa Alasan)', 'callback_data' => "{$act_id}_skip_{$id}"]]], $thread_id
         );
         // Save state: awaiting_reason|type|action|id|orig_msg_id|orig_b64|prompt_msg_id
         $state = implode('|', ['awaiting_reason', $type, $action, $id, $msg_id, base64_encode($orig), (int)$prompt_msg_id]);
@@ -543,14 +544,29 @@ if (isset($update['message'])) {
     $msg     = $update['message'];
     $chat_id = $msg['chat']['id'] ?? '';
     $text    = trim($msg['text'] ?? '');
+    $thread_id = $msg['message_thread_id'] ?? null;
 
     if (empty($text)) {
         http_response_code(200); exit;
     }
 
-
-
     if ((string)$chat_id !== (string)$admin_chat_id) {
+        http_response_code(200); exit;
+    }
+
+    // Command: /sethere [option]
+    if (preg_match('/^\/sethere\s+([a-zA-Z0-9_]+)/i', $text, $m)) {
+        $option = strtolower($m[1]);
+        $allowed = ['log', 'wd', 'depo', 'user_baru', 'permintaan'];
+        if (in_array($option, $allowed)) {
+            $key = 'tg_topic_' . $option;
+            $val = $thread_id ? (string)$thread_id : '';
+            $pdo->prepare("INSERT INTO settings (`key`,`value`) VALUES (?,?) ON DUPLICATE KEY UPDATE `value`=?")
+                ->execute([$key, $val, $val]);
+            send_msg($token, $chat_id, "✅ Topic untuk <b>{$option}</b> berhasil diset ke thread ini.", null, $thread_id);
+        } else {
+            send_msg($token, $chat_id, "⚠️ Option tidak valid. Gunakan: " . implode(', ', $allowed), null, $thread_id);
+        }
         http_response_code(200); exit;
     }
 
