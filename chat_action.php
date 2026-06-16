@@ -1,9 +1,8 @@
-﻿<?php
+<?php
 /**
  * chat_action.php — AJAX handler untuk LiveChat (Telegram + OpenAI)
  * Endpoint: /chat_action?action=...
  */
-declare(strict_types=1);
 ini_set('log_errors', '1');
 error_reporting(E_ALL);
 require_once __DIR__ . '/bootstrap.php';
