@@ -148,19 +148,6 @@ for ($i = $chart_days - 1; $i >= 0; $i--) {
 }
 
 // 6. Fetch Downlines (Referred Members)
-$dl_limit = 5;
-$dl_page = max(1, (int)($_GET['dl_page'] ?? 1));
-$dl_offset = ($dl_page - 1) * $dl_limit;
-
-$dl_tot_stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by=?");
-$dl_tot_stmt->execute([$user['referral_code']]);
-$dl_total = (int)$dl_tot_stmt->fetchColumn();
-$dl_total_pages = max(1, (int)ceil($dl_total / $dl_limit));
-if ($dl_total_pages > 0 && $dl_page > $dl_total_pages) {
-    $dl_page = $dl_total_pages;
-    $dl_offset = max(0, ($dl_page - 1) * $dl_limit);
-}
-
 $downline_stmt = $pdo->prepare("
     SELECT 
         u.id, u.username, u.created_at, u.balance_wd,
@@ -169,7 +156,6 @@ $downline_stmt = $pdo->prepare("
     FROM users u
     WHERE u.referred_by = ?
     ORDER BY u.created_at DESC
-    LIMIT $dl_limit OFFSET $dl_offset
 ");
 $downline_stmt->execute([$user['referral_code']]);
 $downlines = $downline_stmt->fetchAll();
@@ -452,7 +438,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 <!-- ── Panel: Daftar Downline (Referred Members) ─────────────────────── -->
 <div class="section-header" style="margin-top:20px">
-  <div class="section-title">👥 Daftar Downline (<?= $dl_total ?>)</div>
+  <div class="section-title">👥 Daftar Downline (<?= count($downlines) ?>)</div>
 </div>
 
 <div class="card" style="margin-bottom:16px;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink)">
@@ -460,8 +446,8 @@ document.addEventListener('DOMContentLoaded', () => {
     <?php if (empty($downlines)): ?>
       <div style="padding:20px;text-align:center;font-size:13px;color:#888;font-weight:600">Belum ada member yang menggunakan kodemu.</div>
     <?php else: ?>
-      <?php foreach ($downlines as $dl): ?>
-      <div class="list-item" style="padding:10px 14px;border-bottom:1.5px dashed rgba(0,0,0,0.1)">
+      <?php foreach ($downlines as $idx => $dl): ?>
+      <div class="list-item dl-item-row" data-index="<?= $idx ?>" style="padding:10px 14px;border-bottom:1.5px dashed rgba(0,0,0,0.1);<?= $idx >= 5 ? 'display:none' : '' ?>">
         <div class="list-item__icon" style="background:var(--mint);width:32px;height:32px;font-size:14px">👤</div>
         <div class="list-item__body">
           <div class="list-item__title" style="font-size:13px;font-weight:800;color:var(--ink)">
@@ -481,16 +467,62 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       </div>
       <?php endforeach; ?>
-      <?php if ($dl_total_pages > 1): ?>
+      <?php if (count($downlines) > 5): ?>
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px;background:#f8f9fa;border-top:2px solid var(--ink)">
-        <a href="?dl_page=<?= max(1, $dl_page - 1) ?>" class="btn btn--ghost btn--sm" style="font-size:10px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:12px;<?= $dl_page<=1?'pointer-events:none;opacity:.5':''?>">← Prev</a>
-        <span style="font-size:11px;font-weight:800;color:#666"><?= $dl_page ?>/<?= $dl_total_pages ?></span>
-        <a href="?dl_page=<?= min($dl_total_pages, $dl_page + 1) ?>" class="btn btn--ghost btn--sm" style="font-size:10px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:12px;<?= $dl_page>=$dl_total_pages?'pointer-events:none;opacity:.5':''?>">Next →</a>
+        <button onclick="dlPrev()" id="dl-btn-prev" class="btn btn--ghost btn--sm" style="font-size:10px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:12px;pointer-events:none;opacity:.5">← Prev</button>
+        <span id="dl-page-info" style="font-size:11px;font-weight:800;color:#666">1/<?= ceil(count($downlines) / 5) ?></span>
+        <button onclick="dlNext()" id="dl-btn-next" class="btn btn--ghost btn--sm" style="font-size:10px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:12px">Next →</button>
       </div>
       <?php endif; ?>
     <?php endif; ?>
   </div>
 </div>
+
+<script>
+let dlCurrentPage = 1;
+const dlLimit = 5;
+const dlTotal = <?= count($downlines) ?>;
+const dlTotalPages = Math.max(1, Math.ceil(dlTotal / dlLimit));
+
+function updateDlPagination() {
+  const items = document.querySelectorAll('.dl-item-row');
+  items.forEach((item, idx) => {
+    if (idx >= (dlCurrentPage - 1) * dlLimit && idx < dlCurrentPage * dlLimit) {
+      item.style.display = 'flex';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+  
+  const info = document.getElementById('dl-page-info');
+  if (info) info.textContent = dlCurrentPage + '/' + dlTotalPages;
+  
+  const prevBtn = document.getElementById('dl-btn-prev');
+  if (prevBtn) {
+    prevBtn.style.opacity = dlCurrentPage <= 1 ? '0.5' : '1';
+    prevBtn.style.pointerEvents = dlCurrentPage <= 1 ? 'none' : 'auto';
+  }
+  const nextBtn = document.getElementById('dl-btn-next');
+  if (nextBtn) {
+    nextBtn.style.opacity = dlCurrentPage >= dlTotalPages ? '0.5' : '1';
+    nextBtn.style.pointerEvents = dlCurrentPage >= dlTotalPages ? 'none' : 'auto';
+  }
+}
+
+function dlPrev() {
+  if (dlCurrentPage > 1) {
+    dlCurrentPage--;
+    updateDlPagination();
+  }
+}
+
+function dlNext() {
+  if (dlCurrentPage < dlTotalPages) {
+    dlCurrentPage++;
+    updateDlPagination();
+  }
+}
+</script>
 
 <!-- ── Panel: Buat Data WD Fake ─────────────────────────────────────────── -->
 <div class="section-header" style="margin-top:6px">

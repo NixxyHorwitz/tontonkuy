@@ -22,21 +22,7 @@ $hist = $pdo->prepare(
 $hist->execute([$user['id']]);
 $history = $hist->fetchAll();
 
-// Referred users list with details and pagination
-$limit = 5;
-$page = max(1, (int)($_GET['page'] ?? 1));
-$offset = ($page - 1) * $limit;
-
-// Count total referred users
-$total_stmt = $pdo->prepare("SELECT COUNT(*) FROM users WHERE referred_by=?");
-$total_stmt->execute([$user['referral_code']]);
-$total_refs = (int)$total_stmt->fetchColumn();
-$total_pages = max(1, (int)ceil($total_refs / $limit));
-if ($page > $total_pages) {
-    $page = $total_pages;
-    $offset = ($page - 1) * $limit;
-}
-
+// Referred users list
 $refs = $pdo->prepare(
   "SELECT u.username, u.created_at, 
           COALESCE(m.name, 'Free') as membership_name,
@@ -45,14 +31,9 @@ $refs = $pdo->prepare(
    FROM users u
    LEFT JOIN memberships m ON m.id = u.membership_id
    WHERE u.referred_by = ?
-   ORDER BY u.created_at DESC
-   LIMIT ? OFFSET ?"
+   ORDER BY u.created_at DESC"
 );
-$refs->bindValue(1, $user['id'], PDO::PARAM_INT);
-$refs->bindValue(2, $user['referral_code'], PDO::PARAM_STR);
-$refs->bindValue(3, $limit, PDO::PARAM_INT);
-$refs->bindValue(4, $offset, PDO::PARAM_INT);
-$refs->execute();
+$refs->execute([$user['id'], $user['referral_code']]);
 $referreds = $refs->fetchAll();
 
 $ref_url = base_url('register?ref=' . $user['referral_code']);
@@ -184,8 +165,8 @@ require dirname(__DIR__) . '/partials/header.php';
     </div>
     <?php else: ?>
     <div class="c-list">
-      <?php foreach ($referreds as $r): ?>
-      <div class="c-list-item">
+      <?php foreach ($referreds as $idx => $r): ?>
+      <div class="c-list-item ref-item-row" data-index="<?= $idx ?>" style="<?= $idx >= 5 ? 'display:none' : '' ?>">
         <div class="c-list-item__icon" style="background:var(--sky)">👤</div>
         <div class="c-list-item__body">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px">
@@ -201,11 +182,11 @@ require dirname(__DIR__) . '/partials/header.php';
       </div>
       <?php endforeach; ?>
     </div>
-    <?php if ($total_pages > 1): ?>
+    <?php if (count($referreds) > 5): ?>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:10px;padding-top:10px;border-top:2px solid var(--ink)">
-      <a href="?page=<?= max(1, $page - 1) ?>" class="btn btn--ghost btn--sm" style="font-size:10px;padding:4px 8px;<?= $page<=1?'pointer-events:none;opacity:.5':''?>">← Prev</a>
-      <span style="font-size:10px;font-weight:800;color:#666"><?= $page ?>/<?= $total_pages ?></span>
-      <a href="?page=<?= min($total_pages, $page + 1) ?>" class="btn btn--ghost btn--sm" style="font-size:10px;padding:4px 8px;<?= $page>=$total_pages?'pointer-events:none;opacity:.5':''?>">Next →</a>
+      <button onclick="refPrev()" id="ref-btn-prev" class="btn btn--ghost btn--sm" style="font-size:10px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:12px;pointer-events:none;opacity:.5">← Prev</button>
+      <span id="ref-page-info" style="font-size:11px;font-weight:800;color:#666">1/<?= ceil(count($referreds) / 5) ?></span>
+      <button onclick="refNext()" id="ref-btn-next" class="btn btn--ghost btn--sm" style="font-size:10px;padding:4px 12px;border:1.5px solid var(--ink);border-radius:12px">Next →</button>
     </div>
     <?php endif; ?>
     <?php endif; ?>
@@ -247,6 +228,52 @@ function copyRef() {
   }).catch(() => {
     document.execCommand('copy');
   });
+}
+</script>
+
+<script>
+let refCurrentPage = 1;
+const refLimit = 5;
+const refTotal = <?= count($referreds) ?>;
+const refTotalPages = Math.max(1, Math.ceil(refTotal / refLimit));
+
+function updateRefPagination() {
+  const items = document.querySelectorAll('.ref-item-row');
+  items.forEach((item, idx) => {
+    if (idx >= (refCurrentPage - 1) * refLimit && idx < refCurrentPage * refLimit) {
+      item.style.display = 'flex';
+    } else {
+      item.style.display = 'none';
+    }
+  });
+  
+  const info = document.getElementById('ref-page-info');
+  if (info) info.textContent = refCurrentPage + '/' + refTotalPages;
+  
+  const prevBtn = document.getElementById('ref-btn-prev');
+  if (prevBtn) {
+    prevBtn.style.opacity = refCurrentPage <= 1 ? '0.5' : '1';
+    prevBtn.style.pointerEvents = refCurrentPage <= 1 ? 'none' : 'auto';
+  }
+  const nextBtn = document.getElementById('ref-btn-next');
+  if (nextBtn) {
+    nextBtn.style.opacity = refCurrentPage >= refTotalPages ? '0.5' : '1';
+    nextBtn.style.pointerEvents = refCurrentPage >= refTotalPages ? 'none' : 'auto';
+  }
+}
+
+function refPrev() {
+  if (refCurrentPage > 1) {
+    refCurrentPage--;
+    updateRefPagination();
+  }
+}
+
+function refNext() {
+  if (refCurrentPage < refTotalPages) {
+    refCurrentPage++;
+    updateRefPagination();
+  }
 }
 </script>
 
