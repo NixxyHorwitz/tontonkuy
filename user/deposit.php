@@ -207,14 +207,6 @@ require dirname(__DIR__) . '/partials/header.php';
       
       <?php if ($u_enabled): ?>
       <input type="hidden" name="unique_code" value="<?= $unique_code ?>">
-      <div class="alert" style="margin-bottom:12px;font-size:11px;background:#fff;border:2px dashed var(--orange);color:var(--ink);font-weight:700;padding:8px">
-        <div style="font-size:10px;color:#64748b;margin-bottom:2px;text-transform:uppercase">Total ditransfer:</div>
-        <div id="bank-total-transfer" style="font-size:20px;font-weight:900;color:var(--ink)">Rp 0</div>
-        <div style="font-size:10px;font-weight:800;color:var(--orange);margin-top:6px;background:rgba(251,146,60,0.1);padding:6px;border-radius:6px;border:1px solid rgba(251,146,60,0.3);display:flex;align-items:flex-start;gap:4px">
-          <i class="ph-fill ph-warning-circle" style="font-size:14px;margin-top:1px"></i> 
-          <div>Wajib transfer nominal persis!</div>
-        </div>
-      </div>
       <?php endif; ?>
 
       <div class="form-group" style="margin-bottom:12px">
@@ -260,10 +252,6 @@ require dirname(__DIR__) . '/partials/header.php';
       
       <?php if ($u_enabled): ?>
       <input type="hidden" name="unique_code" value="<?= $unique_code ?>">
-      <div class="alert" style="margin-bottom:10px;font-size:11px;background:#f8fafc;border:2px dashed var(--mint);color:var(--ink);font-weight:700;padding:8px">
-        <div style="font-size:10px;color:#666;margin-bottom:2px">Total bayar QRIS:</div>
-        <div id="qris-total-transfer" style="font-size:18px;font-weight:900;color:var(--brand)">Rp 0</div>
-      </div>
       <?php endif; ?>
 
       <div class="alert alert--info" style="margin-bottom:12px;font-size:11px;padding:8px;display:flex;align-items:flex-start;gap:6px;border:2px solid var(--ink);background:#fef08a;color:var(--ink);border-radius:8px;box-shadow:2px 2px 0 var(--ink)">
@@ -336,27 +324,7 @@ function copyRek() {
 document.addEventListener('DOMContentLoaded', () => {
   const cards = ['bank','qris'].filter(k => document.getElementById('card-' + k));
   if (cards.length === 1) toggleCard(cards[0]);
-  
-  if (uEnabled) {
-    document.getElementById('bank-amount')?.addEventListener('input', updateTotals);
-    document.getElementById('qris-amount')?.addEventListener('input', updateTotals);
-  }
 });
-
-const uEnabled = <?= $u_enabled ? 'true' : 'false' ?>;
-const uCode    = <?= $unique_code ?>;
-
-function updateTotals() {
-  if (!uEnabled) return;
-  const bAmt = parseInt(document.getElementById('bank-amount')?.value || 0);
-  const qAmt = parseInt(document.getElementById('qris-amount')?.value || 0);
-  
-  const bTotal = document.getElementById('bank-total-transfer');
-  const qTotal = document.getElementById('qris-total-transfer');
-  
-  if (bTotal) bTotal.innerText = bAmt > 0 ? 'Rp ' + (bAmt + uCode).toLocaleString('id-ID') : 'Rp 0';
-  if (qTotal) qTotal.innerText = qAmt > 0 ? 'Rp ' + (qAmt + uCode).toLocaleString('id-ID') : 'Rp 0';
-}
 </script>
 
 <?php require dirname(__DIR__) . '/partials/footer.php'; ?>

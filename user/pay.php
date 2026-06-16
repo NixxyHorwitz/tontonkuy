@@ -280,6 +280,15 @@ $qr_dl_url   = '?id=' . $dep_id . '&action=dl_qr';
     <div class="alert alert--warn">QRIS belum dikonfigurasi. Hubungi admin.</div>
     <?php endif; ?>
 
+    <!-- Info Unique Nominal -->
+    <div style="font-size:12px;margin-bottom:14px;background:#fff3cd;border:2px dashed #f59e0b;color:#b45309;border-radius:12px;padding:12px;display:flex;gap:8px;align-items:flex-start">
+      <div style="font-size:20px;line-height:1">💡</div>
+      <div>
+        <div style="font-weight:900;margin-bottom:3px">Keberatan dengan nominal unik?</div>
+        Jika saldo Anda pas-pasan dan tidak bisa mentransfer nominal persis di atas, silakan hubungi <strong>Admin via LiveChat</strong> (ikon di pojok kanan bawah) untuk bantuan.
+      </div>
+    </div>
+
     <!-- Steps -->
     <div class="steps-card">
       <div class="steps-card__title">📋 Cara Bayar</div>
