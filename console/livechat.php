@@ -32,6 +32,57 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $saved = true;
     }
 
+    // Sync Webhook via CURL dari server
+    if ($tab === 'sync_webhook') {
+        $token   = setting($pdo, 'lc_tg_token', '');
+        $siteUrl = rtrim(setting($pdo, 'lc_site_url', ''), '/');
+        if (!$siteUrl) {
+            // Fallback ke HTTP_HOST
+            $scheme  = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+            $siteUrl = $scheme . '://' . ($_SERVER['HTTP_HOST'] ?? '');
+        }
+        $webhookTarget = $siteUrl . '/chat_action?action=tg_webhook';
+        
+        if (!$token) {
+            $_SESSION['wh_result'] = ['ok' => false, 'error' => 'Bot Token belum diisi di Pengaturan.'];
+        } else {
+            $ch = curl_init("https://api.telegram.org/bot{$token}/setWebhook");
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_POSTFIELDS     => json_encode(['url' => $webhookTarget, 'allowed_updates' => ['message', 'callback_query']]),
+                CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                CURLOPT_TIMEOUT        => 15,
+            ]);
+            $res = curl_exec($ch);
+            $err = curl_error($ch);
+            curl_close($ch);
+            if ($err) {
+                $_SESSION['wh_result'] = ['ok' => false, 'error' => 'CURL Error: ' . $err];
+            } else {
+                $data = json_decode($res ?: '{}', true);
+                $_SESSION['wh_result'] = array_merge($data, ['webhook_url' => $webhookTarget]);
+            }
+        }
+        header('Location: /console/livechat.php?t=webhook'); exit;
+    }
+
+    // Check Webhook Info
+    if ($tab === 'check_webhook') {
+        $token = setting($pdo, 'lc_tg_token', '');
+        if (!$token) {
+            $_SESSION['wh_info'] = ['ok' => false, 'error' => 'Bot Token belum diisi.'];
+        } else {
+            $ch = curl_init("https://api.telegram.org/bot{$token}/getWebhookInfo");
+            curl_setopt_array($ch, [CURLOPT_RETURNTRANSFER => true, CURLOPT_TIMEOUT => 10]);
+            $res = curl_exec($ch);
+            $err = curl_error($ch);
+            curl_close($ch);
+            $_SESSION['wh_info'] = $err ? ['ok' => false, 'error' => $err] : (json_decode($res ?: '{}', true) ?: []);
+        }
+        header('Location: /console/livechat.php?t=webhook'); exit;
+    }
+
     // Close a session
     if ($tab === 'close_session') {
         $sid = (int)($_POST['session_id'] ?? 0);
@@ -648,18 +699,51 @@ require_once __DIR__ . '/partials/header.php';
         </div>
 
         <?php if ($setWebhookUrl): ?>
-        <div class="c-form-group">
-          <label class="c-label">Set Webhook Otomatis (klik link ini di browser)</label>
-          <div class="webhook-url">
-            <a href="<?= htmlspecialchars($setWebhookUrl) ?>" target="_blank" style="color:#a8f0dc;word-break:break-all;">
-              <?= htmlspecialchars($setWebhookUrl) ?>
-            </a>
-          </div>
+        <?php
+          $wh_result = $_SESSION['wh_result'] ?? null;
+          $wh_info   = $_SESSION['wh_info']   ?? null;
+          unset($_SESSION['wh_result'], $_SESSION['wh_info']);
+        ?>
+        <?php if ($wh_result): ?>
+        <div style="margin-bottom:14px;padding:12px 16px;border-radius:8px;font-size:12px;font-family:monospace;
+             background:<?= !empty($wh_result['ok']) ? 'rgba(76,175,130,.12)' : 'rgba(244,78,59,.1)' ?>;
+             border:1px solid <?= !empty($wh_result['ok']) ? 'rgba(76,175,130,.3)' : 'rgba(244,78,59,.3)' ?>;
+             color:<?= !empty($wh_result['ok']) ? '#4CAF82' : '#F44E3B' ?>">
+          <?= !empty($wh_result['ok']) ? '✅' : '❌' ?>
+          <?php if (!empty($wh_result['ok'])): ?>
+            Webhook berhasil diset ke: <strong><?= htmlspecialchars($wh_result['webhook_url'] ?? '') ?></strong>
+          <?php else: ?>
+            Gagal: <?= htmlspecialchars($wh_result['description'] ?? $wh_result['error'] ?? 'Unknown error') ?>
+          <?php endif; ?>
         </div>
-        <a href="<?= htmlspecialchars($setWebhookUrl) ?>" target="_blank"
-           style="display:inline-block;background:var(--brand);color:#fff;padding:9px 20px;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;margin-top:4px;">
-          🚀 Set Webhook Sekarang
-        </a>
+        <?php endif; ?>
+
+        <?php if ($wh_info): ?>
+        <div style="margin-bottom:14px;padding:12px 16px;border-radius:8px;font-size:12px;font-family:monospace;
+             background:rgba(66,133,244,.08);border:1px solid rgba(66,133,244,.2);color:#a0b4f0;word-break:break-all;">
+          <strong>ℹ️ Webhook Info:</strong><br>
+          URL: <?= htmlspecialchars($wh_info['result']['url'] ?? '(kosong)') ?><br>
+          Pending: <?= (int)($wh_info['result']['pending_update_count'] ?? 0) ?><br>
+          Last Error: <?= htmlspecialchars($wh_info['result']['last_error_message'] ?? '–') ?>
+        </div>
+        <?php endif; ?>
+
+        <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:4px;">
+          <form method="POST">
+            <input type="hidden" name="tab" value="sync_webhook">
+            <button type="submit"
+              style="background:var(--brand);border:none;color:#fff;padding:10px 22px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+              🚀 Sync Webhook via Server
+            </button>
+          </form>
+          <form method="POST">
+            <input type="hidden" name="tab" value="check_webhook">
+            <button type="submit"
+              style="background:#1f2235;border:1px solid #2a2d3e;color:#ccc;padding:10px 22px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">
+              🔍 Cek Status Webhook
+            </button>
+          </form>
+        </div>
         <?php else: ?>
         <div style="background:rgba(242,153,0,.1);border:1px solid rgba(242,153,0,.3);color:#F29900;padding:10px 14px;border-radius:8px;font-size:12px;">
           ⚠️ Isi Bot Token di tab Pengaturan dulu.
