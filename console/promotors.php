@@ -91,6 +91,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (\Throwable $e) {
             $pdo->rollBack();
             $flash = "Gagal mencairkan gaji: " . $e->getMessage(); $flashType = 'error';
+        }
+    }
+    
     // Save Global Flat Rates
     if ($action === 'save_global_rates') {
         if (isset($_POST['promotor_per_member_bonus'])) {
