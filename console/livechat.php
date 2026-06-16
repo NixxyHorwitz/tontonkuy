@@ -205,7 +205,7 @@ foreach ([
     'lc_tg_token','lc_tg_chat_id','lc_tg_forum',
     'openai_api_key','openai_model','ai_system_prompt',
     'chat_welcome_msg','chat_ai_enabled','chat_admin_enabled','chat_admin_name','livechat_enabled','lc_site_url',
-    'lc_debug_panel','lc_attachment_enabled',
+    'lc_debug_panel','lc_attachment_enabled','lc_offline_msg',
 ] as $k) { $cfg[$k] = setting($pdo, $k, ''); }
 if (empty($cfg['chat_admin_name'])) $cfg['chat_admin_name'] = 'Admin';
 if (empty($cfg['livechat_enabled'])) $cfg['livechat_enabled'] = '1';
