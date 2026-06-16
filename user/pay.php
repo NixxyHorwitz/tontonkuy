@@ -62,6 +62,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'uploa
             move_uploaded_file($_FILES['proof']['tmp_name'], $dir . $fname);
             $pdo->prepare("UPDATE deposits SET proof_image=? WHERE id=?")->execute(['deposits/' . $fname, $dep_id]);
             $flash = '✅ Bukti berhasil diupload! Admin akan memverifikasi segera.';
+            
+            // Telegram Notif
+            $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+            $host = $_SERVER['HTTP_HOST'] ?? 'nontonkuy.online';
+            $proofUrl = $scheme . '://' . $host . '/uploads/deposits/' . $fname;
+            
+            $msg = "📢 <b>BUKTI DEPOSIT DIUPLOAD</b>\n";
+            $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+            $msg .= "👤 <b>User:</b> <code>" . htmlspecialchars($user['username']) . "</code>\n";
+            $msg .= "💵 <b>Amount:</b> <code>" . format_rp((float)$dep['amount']) . "</code>\n";
+            $msg .= "🖼️ <b>Bukti:</b> <a href=\"{$proofUrl}\">Klik untuk lihat gambar</a>\n";
+            $msg .= "━━━━━━━━━━━━━━━━━━━━━━\n";
+            $msg .= "<i>Silakan cek gambar bukti di atas sebelum melakukan Approve.</i>";
+            
+            $kb = [
+                [['text'=>'✅ Approve', 'callback_data'=>'depo_approve_'.$dep_id], ['text'=>'❌ Reject', 'callback_data'=>'depo_reject_'.$dep_id]],
+                [['text'=>'⚡ Acc Expired', 'callback_data'=>'depo_accexp_'.$dep_id], ['text'=>'🔄 Refresh Status', 'callback_data'=>'refresh_depo_'.$dep_id]]
+            ];
+            
+            $tg_msg_id = send_telegram_notif($pdo, $msg, $kb);
+            if ($tg_msg_id) {
+                $pdo->prepare("UPDATE deposits SET tg_msg_id = ? WHERE id = ?")->execute([$tg_msg_id, $dep_id]);
+            }
         }
     }
     $dep2 = $pdo->prepare("SELECT * FROM deposits WHERE id=?"); $dep2->execute([$dep_id]); $dep = $dep2->fetch();
