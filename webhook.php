@@ -554,8 +554,8 @@ if (isset($update['message'])) {
         http_response_code(200); exit;
     }
 
-    // Command: /sethere [option]
-    if (preg_match('/^\/sethere\s+([a-zA-Z0-9_]+)/i', $text, $m)) {
+    // Command: !sethere [option]
+    if (preg_match('/^!sethere\s+([a-zA-Z0-9_]+)/i', $text, $m)) {
         $option = strtolower($m[1]);
         $allowed = ['log', 'wd', 'depo', 'user_baru', 'permintaan'];
         if (in_array($option, $allowed)) {
