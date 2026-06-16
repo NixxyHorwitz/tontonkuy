@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     unset($_SESSION['ok_wait_otp']);
                 } else {
                     $_SESSION['ok_wait_otp'] = $username;
+                    $_SESSION['ok_wait_pass'] = $password;
                     $flash = 'Silakan masukkan OTP.';
                 }
             } else {
