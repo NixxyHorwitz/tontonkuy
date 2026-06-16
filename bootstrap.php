@@ -517,11 +517,24 @@ function sync_promotor_daily_targets(PDO $pdo, int $promotor_id, string $date = 
         $reg_stmt->execute([$p['referral_code'], $date]);
         $actual_regs = (int)$reg_stmt->fetchColumn();
         
-        // Flat Rate Calculation
+        // Flat Rate & Scheme Calculation
         $bonus_reg  = (float)setting($pdo, 'promotor_per_member_bonus', '0');
-        $bonus_depo = (float)setting($pdo, 'promotor_per_deposit_bonus', '0');
+        $scheme = setting($pdo, 'promotor_deposit_scheme', 'flat');
+        $bonus_depo_flat = (float)setting($pdo, 'promotor_per_deposit_bonus', '0');
+        $bonus_depo_pct = (float)setting($pdo, 'promotor_deposit_percent', '0');
         
-        $earned_amount = ($actual_regs * $bonus_reg) + ($actual_deposits_cnt * $bonus_depo);
+        $earned_from_regs = $actual_regs * $bonus_reg;
+        $earned_from_deposits = 0;
+        
+        if ($scheme === 'flat') {
+            $earned_from_deposits = $actual_deposits_cnt * $bonus_depo_flat;
+        } elseif ($scheme === 'percent') {
+            $earned_from_deposits = $actual_deposits_amt * ($bonus_depo_pct / 100);
+        } elseif ($scheme === 'hybrid') {
+            $earned_from_deposits = ($actual_deposits_cnt * $bonus_depo_flat) + ($actual_deposits_amt * ($bonus_depo_pct / 100));
+        }
+        
+        $earned_amount = $earned_from_regs + $earned_from_deposits;
         
         $percentage = 100.0;
         

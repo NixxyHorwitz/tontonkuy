@@ -176,7 +176,10 @@ require dirname(__DIR__) . '/partials/header.php';
       <div style="flex:1">
         <div style="font-size:10px;font-weight:800;color:#666;text-transform:uppercase">💸 Deposit Downline</div>
         <div style="font-size:14px;font-weight:900;color:var(--ink);margin-top:4px">
-          <?= number_format((int)$today_target['target_deposits']) ?>x <span style="font-size:10px;color:#888;font-weight:700">(+<?= format_rp((float)($today_target['salary_rate'] - $today_target['target_regs'])) ?>)</span>
+          <?= format_rp((float)$today_target['actual_deposits']) ?> 
+          <div style="font-size:10px;color:#888;font-weight:700;margin-top:2px">
+            <?= number_format((int)$today_target['target_deposits']) ?>x Transaksi <span style="color:var(--brand)">(+<?= format_rp((float)($today_target['salary_rate'] - $today_target['target_regs'])) ?>)</span>
+          </div>
         </div>
       </div>
     </div>
@@ -251,7 +254,7 @@ require dirname(__DIR__) . '/partials/header.php';
               Pencapaian: <strong style="color:var(--ink)"><?= number_format((float)$log['percentage'], 1) ?>%</strong>
               · Reg: <?= $log['actual_regs'] ?> Member
             <?php else: ?>
-              Reg: <?= $log['actual_regs'] ?> Member · Depo: <?= (int)$log['target_deposits'] ?>x
+              Reg: <?= $log['actual_regs'] ?> Member · Depo: <?= format_rp((float)$log['actual_deposits']) ?>
             <?php endif; ?>
           </div>
           <?php if ($log['is_paid']): ?>

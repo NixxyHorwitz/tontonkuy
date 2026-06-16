@@ -91,9 +91,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } catch (\Throwable $e) {
             $pdo->rollBack();
             $flash = "Gagal mencairkan gaji: " . $e->getMessage(); $flashType = 'error';
-        }
-    }
-    
     // Save Global Flat Rates
     if ($action === 'save_global_rates') {
         if (isset($_POST['promotor_per_member_bonus'])) {
@@ -102,7 +99,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (isset($_POST['promotor_per_deposit_bonus'])) {
             setting_set($pdo, 'promotor_per_deposit_bonus', clean_input($_POST['promotor_per_deposit_bonus']));
         }
-        $flash = "Pengaturan Rate Flat Global berhasil disimpan!";
+        if (isset($_POST['promotor_deposit_scheme'])) {
+            setting_set($pdo, 'promotor_deposit_scheme', clean_input($_POST['promotor_deposit_scheme']));
+        }
+        if (isset($_POST['promotor_deposit_percent'])) {
+            setting_set($pdo, 'promotor_deposit_percent', clean_input($_POST['promotor_deposit_percent']));
+        }
+        $flash = "Pengaturan Skenario Komisi berhasil disimpan!";
     }
 }
 
@@ -163,6 +166,9 @@ require __DIR__ . '/partials/header.php';
   <a href="?tab=list" class="btn btn-sm <?= $tab==='list'?'text-white':'btn-secondary' ?>" style="<?= $tab==='list'?'background:var(--brand)':'' ?>">
     🧑‍💼 Daftar Promotor
   </a>
+  <a href="?tab=scheme" class="btn btn-sm <?= $tab==='scheme'?'text-white':'btn-secondary' ?>" style="<?= $tab==='scheme'?'background:var(--brand)':'' ?>">
+    ⚙️ Skenario Komisi
+  </a>
   <a href="?tab=logs" class="btn btn-sm <?= $tab==='logs'?'text-white':'btn-secondary' ?>" style="<?= $tab==='logs'?'background:var(--brand)':'' ?>">
     📜 Riwayat Target &amp; Payout
   </a>
@@ -171,31 +177,7 @@ require __DIR__ . '/partials/header.php';
   </a>
 </div>
 
-<!-- Global Rate Settings -->
-<div class="c-card mb-4">
-  <div class="c-card-header"><span class="c-card-title">⚙️ Pengaturan Global Rate Gaji</span></div>
-  <div class="c-card-body p-3">
-    <form method="POST">
-      <?= csrf_field() ?>
-      <input type="hidden" name="action" value="save_global_rates">
-      <div class="row g-2">
-        <div class="col-md-6">
-          <div class="c-form-group mb-0">
-            <label class="c-label">Bonus Promotor Per-Member Baru (Rp)</label>
-            <input type="number" name="promotor_per_member_bonus" class="c-form-control" value="<?= setting($pdo, 'promotor_per_member_bonus', '0') ?>" min="0">
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="c-form-group mb-0">
-            <label class="c-label">Bonus Promotor Per-Deposit Sukses (Rp)</label>
-            <input type="number" name="promotor_per_deposit_bonus" class="c-form-control" value="<?= setting($pdo, 'promotor_per_deposit_bonus', '0') ?>" min="0">
-          </div>
-        </div>
-      </div>
-      <button type="submit" class="btn btn-sm text-white mt-3" style="background:var(--brand)">Simpan Rate Global</button>
-    </form>
-  </div>
-</div>
+
 
 <?php if ($tab === 'list'): ?>
 <!-- LIST TAB -->
@@ -248,6 +230,131 @@ require __DIR__ . '/partials/header.php';
     </div>
   </div>
 </div>
+
+<?php elseif ($tab === 'scheme'): ?>
+<!-- SCHEME & SIMULATION TAB -->
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="c-card">
+      <div class="c-card-header"><span class="c-card-title">⚙️ Konfigurasi Skenario Komisi</span></div>
+      <div class="c-card-body p-3">
+        <form method="POST">
+          <?= csrf_field() ?>
+          <input type="hidden" name="action" value="save_global_rates">
+          
+          <div class="c-form-group">
+            <label class="c-label">Skenario Komisi Deposit</label>
+            <select name="promotor_deposit_scheme" id="cfg_scheme" class="c-form-control" onchange="runSim()">
+              <?php $cur_scheme = setting($pdo, 'promotor_deposit_scheme', 'flat'); ?>
+              <option value="flat" <?= $cur_scheme==='flat'?'selected':'' ?>>1️⃣ Flat Rate (Pasti per Transaksi)</option>
+              <option value="percent" <?= $cur_scheme==='percent'?'selected':'' ?>>2️⃣ Persentase dari Nominal Deposit</option>
+              <option value="hybrid" <?= $cur_scheme==='hybrid'?'selected':'' ?>>3️⃣ Hybrid (Flat + Persentase)</option>
+            </select>
+          </div>
+          
+          <div class="c-form-group">
+            <label class="c-label">Bonus Per-Member Baru Daftar (Rp)</label>
+            <input type="number" name="promotor_per_member_bonus" id="cfg_reg" class="c-form-control" value="<?= setting($pdo, 'promotor_per_member_bonus', '0') ?>" min="0" oninput="runSim()">
+          </div>
+          
+          <div class="row g-2">
+            <div class="col-md-6">
+              <div class="c-form-group mb-0">
+                <label class="c-label">Bonus Deposit Flat (Rp)</label>
+                <input type="number" name="promotor_per_deposit_bonus" id="cfg_dep_flat" class="c-form-control" value="<?= setting($pdo, 'promotor_per_deposit_bonus', '0') ?>" min="0" oninput="runSim()">
+                <small style="color:#888;font-size:11px">Dipakai jika Flat/Hybrid</small>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="c-form-group mb-0">
+                <label class="c-label">Bonus Deposit Persen (%)</label>
+                <input type="number" name="promotor_deposit_percent" id="cfg_dep_pct" class="c-form-control" value="<?= setting($pdo, 'promotor_deposit_percent', '0') ?>" min="0" max="100" step="0.1" oninput="runSim()">
+                <small style="color:#888;font-size:11px">Dipakai jika Persen/Hybrid</small>
+              </div>
+            </div>
+          </div>
+          
+          <button type="submit" class="btn btn-sm text-white mt-3" style="background:var(--brand)">Simpan Konfigurasi</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  
+  <div class="col-md-6">
+    <div class="c-card" style="border:2px dashed var(--brand); background:rgba(99,102,241,0.05)">
+      <div class="c-card-header" style="border-bottom:1px dashed var(--brand)"><span class="c-card-title text-brand">🕹️ Kalkulator Simulasi</span></div>
+      <div class="c-card-body p-3">
+        <div style="font-size:12px;color:#aaa;margin-bottom:12px">Uji coba Skenario sebelum disimpan! Ubah input di bawah ini untuk melihat estimasi perhitungan gaji harian promotor.</div>
+        
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="c-label">Jumlah Member Baru Daftar</label>
+            <input type="number" id="sim_reg_count" class="c-form-control" value="10" oninput="runSim()">
+          </div>
+          <div class="col-6">
+            <label class="c-label">Berapa Kali Deposit?</label>
+            <input type="number" id="sim_dep_count" class="c-form-control" value="2" oninput="runSim()">
+          </div>
+          <div class="col-12 mt-2">
+            <label class="c-label">Total Nominal Seluruh Deposit (Rp)</label>
+            <input type="number" id="sim_dep_amount" class="c-form-control" value="100000" oninput="runSim()">
+          </div>
+        </div>
+        
+        <div style="background:#11131a;border-radius:8px;padding:12px;border:1px solid #2d3149">
+          <div style="font-size:11px;font-weight:700;color:#666;text-transform:uppercase;margin-bottom:8px">Hasil Simulasi (Berdasarkan Konfigurasi Kiri):</div>
+          
+          <div class="d-flex justify-content-between mb-1" style="font-size:13px">
+            <span style="color:#aaa">Dari Pendaftaran:</span>
+            <strong id="res_reg" style="color:#fff">Rp 0</strong>
+          </div>
+          <div class="d-flex justify-content-between mb-2" style="font-size:13px">
+            <span style="color:#aaa">Dari Transaksi Deposit:</span>
+            <strong id="res_dep" style="color:#fff">Rp 0</strong>
+          </div>
+          <div style="border-top:1px dashed #444;margin:8px 0"></div>
+          <div class="d-flex justify-content-between align-items-center">
+            <span style="font-size:14px;font-weight:800;color:var(--lime)">Total Gaji Promotor:</span>
+            <strong id="res_total" style="font-size:18px;color:var(--lime)">Rp 0</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function formatRp(num) {
+    return 'Rp ' + parseFloat(num).toLocaleString('id-ID');
+}
+function runSim() {
+    let scheme = document.getElementById('cfg_scheme').value;
+    let b_reg = parseFloat(document.getElementById('cfg_reg').value) || 0;
+    let b_flat = parseFloat(document.getElementById('cfg_dep_flat').value) || 0;
+    let b_pct = parseFloat(document.getElementById('cfg_dep_pct').value) || 0;
+    
+    let sim_regs = parseInt(document.getElementById('sim_reg_count').value) || 0;
+    let sim_deps = parseInt(document.getElementById('sim_dep_count').value) || 0;
+    let sim_amt = parseFloat(document.getElementById('sim_dep_amount').value) || 0;
+    
+    let total_reg = sim_regs * b_reg;
+    let total_dep = 0;
+    
+    if (scheme === 'flat') {
+        total_dep = sim_deps * b_flat;
+    } else if (scheme === 'percent') {
+        total_dep = sim_amt * (b_pct / 100);
+    } else if (scheme === 'hybrid') {
+        total_dep = (sim_deps * b_flat) + (sim_amt * (b_pct / 100));
+    }
+    
+    document.getElementById('res_reg').textContent = formatRp(total_reg);
+    document.getElementById('res_dep').textContent = formatRp(total_dep);
+    document.getElementById('res_total').textContent = formatRp(total_reg + total_dep);
+}
+// Run initially
+setTimeout(runSim, 100);
+</script>
 
 <?php elseif ($tab === 'logs'): ?>
 <!-- LOGS TAB -->
