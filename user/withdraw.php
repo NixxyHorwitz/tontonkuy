@@ -122,6 +122,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $flash = '🔴 Penarikan untuk level Anda saat ini sedang ditutup (Maintenance). Silakan upgrade level Anda!'; $flashType = 'error';
     } elseif ($level_blocked) {
         $flash = "Upgrade ke {$min_level_name} dulu yuk biar bisa tarik saldo!"; $flashType = 'error';
+    } elseif ($is_free_level && strtotime($user['created_at']) > strtotime('-1 day')) {
+        $flash = '❌ Akun harus berumur minimal 1 hari untuk bisa melakukan WD di level Gratis!'; $flashType = 'error';
     } else {
         $amount  = (float) preg_replace('/\D/', '', $_POST['amount'] ?? '0');
         

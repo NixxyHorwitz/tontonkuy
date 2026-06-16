@@ -129,16 +129,27 @@ $logs = $pdo->query("
 // Fetch referred members if tab is members
 $referred_members = [];
 if ($tab === 'members') {
-    $referred_members = $pdo->query("
+    $filter_promotor_id = (int)($_GET['promotor_id'] ?? 0);
+    $whereClause = "WHERE p.is_promotor = 1";
+    $params = [];
+    
+    if ($filter_promotor_id > 0) {
+        $whereClause .= " AND p.id = ?";
+        $params[] = $filter_promotor_id;
+    }
+
+    $stmt = $pdo->prepare("
         SELECT u.id, u.username, u.email, u.created_at, p.username as promotor_name,
                COALESCE((SELECT SUM(amount) FROM deposits WHERE user_id = u.id AND status = 'confirmed'), 0) as total_deposit,
                COALESCE(m.name, 'Free') as membership_name
         FROM users u 
         JOIN users p ON u.referred_by = p.referral_code 
         LEFT JOIN memberships m ON u.membership_id = m.id
-        WHERE p.is_promotor = 1 
+        $whereClause
         ORDER BY u.created_at DESC
-    ")->fetchAll();
+    ");
+    $stmt->execute($params);
+    $referred_members = $stmt->fetchAll();
 }
 
 $pageTitle  = 'Kelola Promotor';
@@ -216,6 +227,9 @@ require __DIR__ . '/partials/header.php';
                 <td><?= number_format((int)$p['promotor_target_regs']) ?> member</td>
                 <td style="color: #FF6B35; font-weight: 700;"><?= format_rp((float)$p['promotor_salary_rate']) ?></td>
                 <td class="text-end">
+                  <a href="?tab=members&promotor_id=<?= $p['id'] ?>" class="btn btn-sm btn-primary text-white me-1" style="border:none;border-radius:6px;font-size:11px">
+                    👥 Downlines
+                  </a>
                   <button class="btn btn-sm btn-info text-white me-1" style="border:none;border-radius:6px;font-size:11px"
                           onclick="openEditModal(<?= htmlspecialchars(json_encode($p)) ?>)">
                     ✏️ Edit Target
