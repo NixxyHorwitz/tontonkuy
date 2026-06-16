@@ -160,10 +160,24 @@ $downline_stmt = $pdo->prepare("
 $downline_stmt->execute([$user['referral_code']]);
 $downlines = $downline_stmt->fetchAll();
 
+<?php
 $pageTitle  = 'Promotor Dashboard — NontonKuy';
 $activePage = 'referral';
 require dirname(__DIR__) . '/partials/header.php';
 ?>
+
+<style>
+/* ── Compact Neo-Brutalism Overrides ── */
+.ref-card { border: 2.5px solid var(--ink); border-radius: 10px; background: #fff; box-shadow: 3px 3px 0 var(--ink); margin-bottom: 12px; overflow: hidden; }
+.ref-card__hd { padding: 8px 12px; font-size: 13px; font-weight: 900; border-bottom: 2px solid var(--ink); background: var(--yellow); display: flex; align-items: center; justify-content: space-between; }
+.ref-card__bd { padding: 10px 12px; }
+
+/* Stats mini */
+.ref-stats { display: flex; gap: 8px; margin-bottom: 12px; }
+.ref-stat { flex: 1; border: 2.5px solid var(--ink); border-radius: 10px; background: #fff; box-shadow: 3px 3px 0 var(--ink); padding: 8px; text-align: center; }
+.ref-stat__val { font-size: 15px; font-weight: 900; color: var(--ink); line-height: 1.1; }
+.ref-stat__lbl { font-size: 10px; font-weight: 800; color: #666; margin-top: 3px; }
+</style>
 
 <div class="page-title-bar">
   <h1>🚀 Promotor Dashboard</h1>
@@ -171,11 +185,11 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 
 <!-- Target progress card -->
-<div class="card card--yellow" style="margin-bottom:16px">
-  <div class="card__body" style="padding:16px 18px">
+<div class="ref-card" style="background:var(--yellow)">
+  <div class="ref-card__bd">
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-1" style="margin-bottom:8px">
       <span style="font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:0.5px;color:#555">💰 Pendapatan Hari Ini</span>
-      <span class="badge badge--success" style="font-size:10px;padding:3px 8px;border-radius:6px;background:var(--lime)">
+      <span class="badge badge--success" style="font-size:10px;padding:3px 8px;border-radius:6px;background:var(--lime);color:var(--ink);border:1.5px solid var(--ink)">
         Total: <?= format_rp((float)$today_target['salary_rate']) ?>
       </span>
     </div>
@@ -204,32 +218,32 @@ require dirname(__DIR__) . '/partials/header.php';
 </div>
 
 <!-- Click stats mini row -->
-<div class="stat-row" style="margin-bottom:16px">
-  <div class="stat-mini" style="background:var(--sky)">
-    <div class="stat-mini__val"><?= number_format($today_clicks) ?></div>
-    <div class="stat-mini__lbl">Clicks Hari Ini</div>
+<div class="ref-stats">
+  <div class="ref-stat" style="background:var(--sky)">
+    <div class="ref-stat__val"><?= number_format($today_clicks) ?></div>
+    <div class="ref-stat__lbl">Clicks Hari Ini</div>
   </div>
-  <div class="stat-mini" style="background:var(--mint)">
-    <div class="stat-mini__val"><?= number_format($total_clicks) ?></div>
-    <div class="stat-mini__lbl">Total Clicks</div>
+  <div class="ref-stat" style="background:var(--mint)">
+    <div class="ref-stat__val"><?= number_format($total_clicks) ?></div>
+    <div class="ref-stat__lbl">Total Clicks</div>
   </div>
-  <div class="stat-mini" style="background:var(--peach)">
-    <div class="stat-mini__val"><?= number_format($avg_percentage, 1) ?>%</div>
-    <div class="stat-mini__lbl">Rata-rata Target</div>
+  <div class="ref-stat" style="background:var(--peach)">
+    <div class="ref-stat__val"><?= number_format($avg_percentage, 1) ?>%</div>
+    <div class="ref-stat__lbl">Rata-rata Target</div>
   </div>
-  <div class="stat-mini" style="background:var(--lavender);cursor:pointer" onclick="location.href='/referral'">
-    <div class="stat-mini__val">👥</div>
-    <div class="stat-mini__lbl">Program Referral</div>
+  <div class="ref-stat" style="background:var(--lavender);cursor:pointer" onclick="location.href='/user/referral.php'">
+    <div class="ref-stat__val">👥</div>
+    <div class="ref-stat__lbl">Referral</div>
   </div>
 </div>
 
 <!-- Traffic & Registration Charts -->
-<div class="card" style="margin-bottom:16px;overflow:hidden">
-  <div style="display:flex;width:100%;border-bottom:1.5px solid rgba(0,0,0,0.1)">
-    <button id="tab-clicks" onclick="switchChart('clicks')" style="flex:1;background:var(--brand);color:#fff;border:none;padding:12px;font-weight:800;font-size:12px;cursor:pointer;border-radius:10px 0 0 0">📈 Traffic Clicks</button>
-    <button id="tab-regs" onclick="switchChart('regs')" style="flex:1;background:#f8f9fa;color:var(--ink);border:none;padding:12px;font-weight:800;font-size:12px;cursor:pointer;border-radius:0 10px 0 0;border-left:1px solid rgba(0,0,0,0.05)">👥 Registrasi Member</button>
+<div class="ref-card">
+  <div style="display:flex;width:100%;border-bottom:2px solid var(--ink)">
+    <button id="tab-clicks" onclick="switchChart('clicks')" style="flex:1;background:var(--brand);color:#fff;border:none;padding:10px;font-weight:900;font-size:12px;cursor:pointer;border-right:2px solid var(--ink);border-radius:0">📈 Traffic Clicks</button>
+    <button id="tab-regs" onclick="switchChart('regs')" style="flex:1;background:var(--sky);color:var(--ink);border:none;padding:10px;font-weight:900;font-size:12px;cursor:pointer;border-radius:0">👥 Registrasi Member</button>
   </div>
-  <div class="card__body" style="padding:14px 16px;border-top:none;border-radius:0 0 10px 10px">
+  <div class="ref-card__bd">
     <div id="chart-clicks-container">
       <?php if (array_sum($chart_data) === 0): ?>
       <div style="text-align:center;padding:24px 10px;color:#aaa;font-size:12px;font-weight:700">
@@ -262,14 +276,14 @@ function switchChart(type) {
   if (type === 'clicks') {
     tClicks.style.background = 'var(--brand)';
     tClicks.style.color = '#fff';
-    tRegs.style.background = '#f8f9fa';
+    tRegs.style.background = 'var(--sky)';
     tRegs.style.color = 'var(--ink)';
     cClicks.style.display = 'block';
     cRegs.style.display = 'none';
   } else {
     tRegs.style.background = 'var(--brand)';
     tRegs.style.color = '#fff';
-    tClicks.style.background = '#f8f9fa';
+    tClicks.style.background = 'var(--sky)';
     tClicks.style.color = 'var(--ink)';
     cRegs.style.display = 'block';
     cClicks.style.display = 'none';
@@ -279,8 +293,8 @@ function switchChart(type) {
 
 <!-- Target achievement logs -->
 <div class="section-header"><div class="section-title">📜 Riwayat Target &amp; Gaji</div></div>
-<div class="card" style="margin-bottom:16px">
-  <div class="card__body" style="padding:4px 0">
+<div class="ref-card">
+  <div class="ref-card__bd" style="padding:4px 0">
     <?php if (empty($history_logs)): ?>
     <div style="text-align:center;padding:30px 20px;color:#aaa;font-size:12px;font-weight:700">
       Belum ada riwayat target tercatat.
@@ -441,8 +455,8 @@ document.addEventListener('DOMContentLoaded', () => {
   <div class="section-title">👥 Daftar Downline (<?= count($downlines) ?>)</div>
 </div>
 
-<div class="card" style="margin-bottom:16px;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink)">
-  <div class="card__body" style="padding:0">
+<div class="ref-card">
+  <div class="ref-card__bd" style="padding:0">
     <?php if (empty($downlines)): ?>
       <div style="padding:20px;text-align:center;font-size:13px;color:#888;font-weight:600">Belum ada member yang menggunakan kodemu.</div>
     <?php else: ?>
@@ -535,18 +549,16 @@ function dlNext() {
 </div>
 <?php endif; ?>
 
-<div class="card" style="margin-bottom:16px;border:2px solid var(--ink);box-shadow:4px 4px 0 var(--ink)">
-  <div class="card__header" style="background:var(--yellow)">
-    <div class="card__title" style="font-size:13px">💸 Input Data WD</div>
-  </div>
-  <div class="card__body" style="padding:14px 16px">
+<div class="ref-card">
+  <div class="ref-card__hd">💸 Input Data WD</div>
+  <div class="ref-card__bd">
     <form method="POST" id="fwd-form">
       <?= csrf_field() ?>
       <input type="hidden" name="action" value="fake_wd">
 
       <!-- Info rekening promotor (read-only) -->
-      <div class="card card--mint" style="margin-bottom:12px;border:1.5px solid var(--ink)">
-        <div class="card__body" style="padding:9px 12px;font-size:13px;font-weight:700">
+      <div class="ref-card" style="background:var(--mint);margin-bottom:12px">
+        <div class="ref-card__bd" style="padding:9px 12px;font-size:13px;font-weight:700">
           <div style="font-size:10px;font-weight:900;color:#555;margin-bottom:5px">🏦 Rekening yang Digunakan</div>
           <?php if (!empty($user['bank_name'])): ?>
           <?php $user_wl = $channel_logos[strtolower($user['bank_name'])] ?? null; ?>
