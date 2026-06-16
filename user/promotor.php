@@ -261,7 +261,7 @@ require dirname(__DIR__) . '/partials/header.php';
           <?php elseif ($earned > 0 || (float)$log['salary_rate'] > 0): ?>
           <div style="font-size:9px;color:#ff8c00;font-weight:700;margin-top:2px">
             <?php if ($log['date'] < '2026-06-16'): ?>
-              🎉 Estimasi Gaji Diperoleh: <strong><?= format_rp($earned) ?></strong> (dari total <?= format_rp((float)$log['salary_rate']) ?>) - akan ditransfer setelah diverifikasi admin.
+              🎉 Estimasi Gaji Diperoleh: <strong><?= format_rp($earned) ?></strong> - akan ditransfer setelah diverifikasi admin.
             <?php else: ?>
               🎉 Estimasi Pendapatan: <strong><?= format_rp((float)$log['salary_rate']) ?></strong> - akan ditransfer setelah diverifikasi admin.
             <?php endif; ?>
