@@ -143,17 +143,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $memberships = $pdo->query("SELECT id, name FROM memberships WHERE is_active=1 ORDER BY sort_order ASC")->fetchAll();
 
-$total  = (int)$pdo->query("SELECT COUNT(*) FROM users")->fetchColumn();
-$stmt   = $pdo->query("SELECT u.*, m.name as membership_name FROM users u LEFT JOIN memberships m ON m.id=u.membership_id ORDER BY u.created_at DESC");
-$users  = $stmt->fetchAll();
+$limit = 50;
+$page  = max(1, (int)($_GET['p'] ?? 1));
+$q     = trim($_GET['q'] ?? '');
+
+$where = "";
+$params = [];
+if ($q !== '') {
+    $where = "WHERE u.username LIKE ? OR u.email LIKE ?";
+    $params = ["%{$q}%", "%{$q}%"];
+}
+
+$stmtTotal = $pdo->prepare("SELECT COUNT(*) FROM users u $where");
+$stmtTotal->execute($params);
+$total = (int)$stmtTotal->fetchColumn();
+$totalPages = ceil($total / $limit) ?: 1;
+if ($page > $totalPages) $page = $totalPages;
+
+$offset = ($page - 1) * $limit;
+$stmt = $pdo->prepare("SELECT u.*, m.name as membership_name FROM users u LEFT JOIN memberships m ON m.id=u.membership_id $where ORDER BY u.created_at DESC LIMIT $limit OFFSET $offset");
+$stmt->execute($params);
+$users = $stmt->fetchAll();
 
 $pageTitle  = 'Pengguna';
 $activePage = 'users';
 require __DIR__ . '/partials/header.php';
 ?>
 
-<div class="d-flex align-items-center justify-content-between mb-4">
-  <div><h5 class="mb-0 fw-bold">👥 Pengguna</h5><small class="text-secondary"><?= number_format($total) ?> pengguna terdaftar</small></div>
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-3">
+  <div>
+    <h5 class="mb-0 fw-bold">👥 Pengguna</h5>
+    <small class="text-secondary"><?= number_format($total) ?> pengguna <?= $q ? 'ditemukan' : 'terdaftar' ?></small>
+  </div>
+  <form method="GET" class="d-flex gap-2">
+    <input type="text" name="q" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Cari username / email..." value="<?= htmlspecialchars($q) ?>">
+    <button type="submit" class="btn btn-sm btn-primary">Cari</button>
+    <?php if ($q): ?>
+    <a href="users.php" class="btn btn-sm btn-secondary">Reset</a>
+    <?php endif; ?>
+  </form>
 </div>
 
 <?php if ($flash): ?>
@@ -206,9 +234,30 @@ require __DIR__ . '/partials/header.php';
         <?php endforeach; ?>
       </tbody>
     </table>
-    <?php if (empty($users)): ?><div style="padding:40px;text-align:center;color:#555">Tidak ada pengguna ditemukan.</div><?php endif; ?>
+    <?php if (empty($users)): ?><div style="padding:40px;text-align:center;color:#555">Tidak ada user ditemukan.</div><?php endif; ?>
   </div>
 </div>
+
+<!-- Pagination Controls -->
+<?php if ($totalPages > 1): ?>
+<div class="d-flex justify-content-center mt-4">
+  <nav>
+    <ul class="pagination pagination-sm" style="--bs-pagination-bg:#1a1d27;--bs-pagination-border-color:#2d3149;--bs-pagination-color:#e0e0f0;--bs-pagination-hover-bg:#2d3149;--bs-pagination-hover-color:#fff">
+      <?php if ($page > 1): ?>
+      <li class="page-item"><a class="page-link" href="?p=1&q=<?= urlencode($q) ?>">First</a></li>
+      <li class="page-item"><a class="page-link" href="?p=<?= $page-1 ?>&q=<?= urlencode($q) ?>">Prev</a></li>
+      <?php endif; ?>
+      
+      <li class="page-item active"><span class="page-link" style="background:var(--brand);border-color:var(--brand);"><?= $page ?> / <?= $totalPages ?></span></li>
+      
+      <?php if ($page < $totalPages): ?>
+      <li class="page-item"><a class="page-link" href="?p=<?= $page+1 ?>&q=<?= urlencode($q) ?>">Next</a></li>
+      <li class="page-item"><a class="page-link" href="?p=<?= $totalPages ?>&q=<?= urlencode($q) ?>">Last</a></li>
+      <?php endif; ?>
+    </ul>
+  </nav>
+</div>
+<?php endif; ?>
 
 <!-- ── Edit User Modal ───────────────────────────────── -->
 <div class="modal fade" id="editUserModal" tabindex="-1">
