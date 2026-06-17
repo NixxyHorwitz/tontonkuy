@@ -872,8 +872,8 @@ switch ($action) {
 
         if (!empty($fromUser['is_bot'])) { echo '{}'; exit; }
         
-        // Intercept /start command in private chat for Mini App
-        if (($msg['chat']['type'] ?? '') === 'private' && strpos(trim($text), '/start') === 0) {
+        // Intercept /panel command in private chat for Mini App (Admin only)
+        if (($msg['chat']['type'] ?? '') === 'private' && strpos(trim($text), '/panel') === 0) {
             $siteUrl = rtrim(setting($pdo, 'lc_site_url', ''), '/');
             if (!$siteUrl && isset($_SERVER['HTTP_HOST'])) {
                 $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
