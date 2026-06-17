@@ -872,6 +872,30 @@ switch ($action) {
 
         if (!empty($fromUser['is_bot'])) { echo '{}'; exit; }
         
+        // Intercept /start command in private chat for Mini App
+        if (($msg['chat']['type'] ?? '') === 'private' && strpos(trim($text), '/start') === 0) {
+            $siteUrl = rtrim(setting($pdo, 'lc_site_url', ''), '/');
+            if (!$siteUrl && isset($_SERVER['HTTP_HOST'])) {
+                $scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+                $siteUrl = "{$scheme}://{$_SERVER['HTTP_HOST']}";
+            }
+            $miniAppUrl = "{$siteUrl}/console/miniapp.php";
+            if (strpos($miniAppUrl, 'http://') === 0) {
+                $miniAppUrl = str_replace('http://', 'https://', $miniAppUrl);
+            }
+            
+            tg_api($pdo, 'sendMessage', [
+                'chat_id' => $msg['chat']['id'],
+                'text' => "Halo Admin! 👋\nIni adalah Bot Livechat & Panel Admin.\nKlik tombol di bawah untuk membuka Mini App manajemen user.",
+                'reply_markup' => [
+                    'inline_keyboard' => [
+                        [['text' => "📱 Buka Panel Admin (Mini App)", 'web_app' => ['url' => $miniAppUrl]]]
+                    ]
+                ]
+            ]);
+            echo '{}'; exit;
+        }
+        
         // Handle attachment download
         $attachmentPath = null;
         $fileId = null;
