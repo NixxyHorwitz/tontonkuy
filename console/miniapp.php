@@ -67,7 +67,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'refund_cut_percent' => (float)($_POST['refund_cut_percent'] ?? 20),
                 'is_refund_enabled' => (int)($_POST['is_refund_enabled'] ?? 1),
                 'is_promotor' => (int)($_POST['is_promotor'] ?? 0),
+                'edit_bank_deposit_min' => (int)($_POST['edit_bank_deposit_min'] ?? 50000),
+                'plinko_rtp' => $_POST['plinko_rtp'] !== '' ? (float)$_POST['plinko_rtp'] : null,
+                'is_referral_active' => (int)($_POST['is_referral_active'] ?? 1),
+                'promotor_target_deposits' => (int)($_POST['promotor_target_deposits'] ?? 0),
+                'promotor_target_regs' => (int)($_POST['promotor_target_regs'] ?? 0),
+                'promotor_salary_rate' => (float)($_POST['promotor_salary_rate'] ?? 0),
+                'referral_code' => trim($_POST['referral_code'] ?? ''),
+                'membership_expires_at' => trim($_POST['membership_expires_at'] ?? '') ?: null,
             ];
+            
+            if (!empty($_POST['new_password'])) {
+                $upd['password_hash'] = password_hash(trim($_POST['new_password']), PASSWORD_DEFAULT);
+            }
             
             $mid = (int)($_POST['membership_id'] ?? 0);
             $memSql = "";
@@ -82,8 +94,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 plinko_coins=:plinko_coins, is_active=:is_active, can_withdraw=:can_withdraw,
                 can_chat=:can_chat, bank_name=:bank_name, account_number=:account_number,
                 account_name=:account_name, refund_cut_percent=:refund_cut_percent,
-                is_refund_enabled=:is_refund_enabled, is_promotor=:is_promotor {$memSql}
-                WHERE id=:id";
+                is_refund_enabled=:is_refund_enabled, is_promotor=:is_promotor,
+                edit_bank_deposit_min=:edit_bank_deposit_min, plinko_rtp=:plinko_rtp,
+                is_referral_active=:is_referral_active, promotor_target_deposits=:promotor_target_deposits,
+                promotor_target_regs=:promotor_target_regs, promotor_salary_rate=:promotor_salary_rate,
+                referral_code=:referral_code, membership_expires_at=:membership_expires_at {$memSql}";
+                
+            if (isset($upd['password_hash'])) {
+                $sql .= ", password_hash=:password_hash";
+            }
+            $sql .= " WHERE id=:id";
                 
             $upd['id'] = $id;
             $pdo->prepare($sql)->execute($upd);
@@ -249,7 +269,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input type="text" id="f_username" placeholder="Username" required>
       <input type="email" id="f_email" placeholder="Email" required>
       <input type="text" id="f_whatsapp" placeholder="WhatsApp">
-      <select id="f_membership"></select>
+      <input type="text" id="f_new_password" placeholder="Password Baru (Kosongkan jika tidak diubah)">
+      <div class="flex-row">
+        <select id="f_membership"></select>
+        <input type="datetime-local" id="f_membership_expires_at" placeholder="Expired">
+      </div>
+      <input type="text" id="f_referral_code" placeholder="Kode Referral">
     </div>
     
     <div class="section-card">
@@ -261,6 +286,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <div class="flex-row">
         <input type="number" id="f_total_earned" step="0.01" placeholder="Total Earned">
         <input type="number" id="f_plinko" placeholder="Plinko Coins">
+      </div>
+      <div class="flex-row">
+        <input type="number" id="f_plinko_rtp" step="0.1" placeholder="RTP Plinko (%)">
+        <input type="number" id="f_edit_bank_deposit_min" placeholder="Min. Depo (Rek)">
       </div>
     </div>
     
@@ -278,10 +307,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <select id="f_can_chat">
           <option value="1">Bisa Chat</option><option value="0">Block Chat</option>
         </select>
-        <select id="f_is_promotor">
-          <option value="0">Member</option><option value="1">Promotor</option>
+        <select id="f_is_referral_active">
+          <option value="1">Referral Aktif</option><option value="0">Referral Block</option>
         </select>
       </div>
+    </div>
+    
+    <div class="section-card">
+      <label class="label-group">Promotor</label>
+      <select id="f_is_promotor">
+        <option value="0">Member</option><option value="1">Promotor</option>
+      </select>
+      <div class="flex-row">
+        <input type="number" id="f_promotor_target_deposits" placeholder="Target Depo">
+        <input type="number" id="f_promotor_target_regs" placeholder="Target Reg">
+      </div>
+      <input type="number" id="f_promotor_salary_rate" step="0.01" placeholder="Salary Rate">
     </div>
     
     <div class="section-card">
@@ -368,14 +409,33 @@ function loadUser(id) {
     document.getElementById('f_username').value = u.username;
     document.getElementById('f_email').value = u.email;
     document.getElementById('f_whatsapp').value = u.whatsapp || '';
+    document.getElementById('f_new_password').value = '';
+    document.getElementById('f_referral_code').value = u.referral_code || '';
+    
+    // Format datetime-local
+    if(u.membership_expires_at) {
+      document.getElementById('f_membership_expires_at').value = u.membership_expires_at.slice(0, 16);
+    } else {
+      document.getElementById('f_membership_expires_at').value = '';
+    }
+
     document.getElementById('f_balance_wd').value = u.balance_wd;
     document.getElementById('f_balance_dep').value = u.balance_dep;
     document.getElementById('f_total_earned').value = u.total_earned;
     document.getElementById('f_plinko').value = u.plinko_coins;
+    document.getElementById('f_plinko_rtp').value = u.plinko_rtp !== null ? u.plinko_rtp : '';
+    document.getElementById('f_edit_bank_deposit_min').value = u.edit_bank_deposit_min;
+
     document.getElementById('f_is_active').value = u.is_active;
     document.getElementById('f_can_withdraw').value = u.can_withdraw;
     document.getElementById('f_can_chat').value = u.can_chat;
+    document.getElementById('f_is_referral_active').value = u.is_referral_active;
+    
     document.getElementById('f_is_promotor').value = u.is_promotor;
+    document.getElementById('f_promotor_target_deposits').value = u.promotor_target_deposits;
+    document.getElementById('f_promotor_target_regs').value = u.promotor_target_regs;
+    document.getElementById('f_promotor_salary_rate').value = u.promotor_salary_rate;
+
     document.getElementById('f_bank_name').value = u.bank_name || '';
     document.getElementById('f_account_number').value = u.account_number || '';
     document.getElementById('f_account_name').value = u.account_name || '';
@@ -442,15 +502,24 @@ function saveUser(e) {
     username: document.getElementById('f_username').value,
     email: document.getElementById('f_email').value,
     whatsapp: document.getElementById('f_whatsapp').value,
+    new_password: document.getElementById('f_new_password').value,
     membership_id: document.getElementById('f_membership').value,
+    membership_expires_at: document.getElementById('f_membership_expires_at').value,
+    referral_code: document.getElementById('f_referral_code').value,
     balance_wd: document.getElementById('f_balance_wd').value,
     balance_dep: document.getElementById('f_balance_dep').value,
     total_earned: document.getElementById('f_total_earned').value,
     plinko_coins: document.getElementById('f_plinko').value,
+    plinko_rtp: document.getElementById('f_plinko_rtp').value,
+    edit_bank_deposit_min: document.getElementById('f_edit_bank_deposit_min').value,
     is_active: document.getElementById('f_is_active').value,
     can_withdraw: document.getElementById('f_can_withdraw').value,
     can_chat: document.getElementById('f_can_chat').value,
+    is_referral_active: document.getElementById('f_is_referral_active').value,
     is_promotor: document.getElementById('f_is_promotor').value,
+    promotor_target_deposits: document.getElementById('f_promotor_target_deposits').value,
+    promotor_target_regs: document.getElementById('f_promotor_target_regs').value,
+    promotor_salary_rate: document.getElementById('f_promotor_salary_rate').value,
     bank_name: document.getElementById('f_bank_name').value,
     account_number: document.getElementById('f_account_number').value,
     account_name: document.getElementById('f_account_name').value,
